@@ -1,0 +1,9 @@
+[project]
+name = "ras556-project"
+version = "0.1.0"
+description = "Modeling and controller design for a pneumatically actuated soft robotic arm (RAS556)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "soft-robotic-arm>=0.4.2",
+]
