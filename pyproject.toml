@@ -5,6 +5,7 @@ description = "Modeling and controller design for a pneumatically actuated soft 
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "scipy>=1.18.1",
     "soft-robotic-arm>=0.4.2",
 ]
 

@@ -5,6 +5,16 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-07
 
+- Built the ground-truth linear plant model (`scripts/plant_model.py`, 50 states,
+  continuous time, about 4.5 psi). Matches the nonlinear sim to 0.1 % over the
+  full 0–9 psi range. Controllable 50/50; observable 16/50 from tip x, y, 40/50
+  with pressure sensors. Hankel singular values suggest about 4–5 states per axis.
+  Details in `modeling-plan.md`. Added `scipy` as a dependency.
+
+- `observe()` also returns privileged `p_actual` and full `q`, and tip sensors are
+  noise-free (read in `simulator.py`, `c92931d`). Identification should use only
+  hardware-available signals plus added tip noise; see `simulator.md`.
+
 - Moved all project context into the repo (README, AGENTS.md, `docs/`). The
   coursework notebook is now in `notebooks/`, with outputs and Colab metadata
   stripped on commit by an nbstripout git filter (`scripts/setup_git.sh`).

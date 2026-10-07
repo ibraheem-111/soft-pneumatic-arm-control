@@ -62,9 +62,44 @@ tip x, y ◄── mildly nonlinear geometry ◄── 15-DOF spring–damper ch
    almost any model has a great one-step fit. Run the model forward on held-out data
    (e.g. the notebook's random reference) and report RMSE in mm.
 4. **Separate seeds and trajectories** for training and validation.
-5. **Optional ground truth:** `mujoco.mjd_transitionFD` linearizes the true model.
-   Use it only to check the identified model — on hardware it would not exist, and
-   the course likely expects identification from input/output data.
+5. **Ground truth:** the linearized plant below (`scripts/plant_model.py`). Use it
+   only to check identified models; on hardware it would not exist, and the course
+   likely expects identification from input/output data.
+
+## Ground-truth linear plant model (done)
+
+`uv run python scripts/plant_model.py` builds the open-loop plant (no controller)
+as a continuous-time state-space model ẋ = Ax + Bu, y = Cx about every pouch at
+4.5 psi. State x = [qpos 15, qvel 15, p_actual 20], n = 50; u = 20 pouch commands;
+y = tip x, y, z and the 20 pressure sensors. Mechanics rows of A are central finite
+differences of MuJoCo's `mj_forward` acceleration (with the sim's own
+pressure→force map); the lag rows are −I/τ and I/τ exactly. Numbers below are from
+that run (soft-robotic-arm 0.4.2, 2026-10-07).
+
+- **Stable**: slowest pole −1.25 /s; lag pole −1/τ = −1.667 /s (×20); fastest
+  −15,500 /s.
+- **Matches the nonlinear sim in open loop** (figure
+  [`figures/plant_model_validation.png`](figures/plant_model_validation.png)): tip
+  x, y error RMS 0.004 mm against 4.33 mm signal RMS (0.1 %) for opposing columns
+  driven over the full 0–9 psi range (peak tip deflection ≈ 7.5 mm). Over this
+  range the plant is effectively linear.
+- **Controllable**: 50/50 from the 20 pouch commands.
+- **Observable** (PBH test per eigenvalue):
+  - 16/50 from tip x, y alone. 18 of the 20 identical lag modes can't be seen with
+    2 outputs (a mode of multiplicity g needs g outputs).
+  - 25/50 from tip x, y, z.
+  - 40/50 from tip x, y plus the 20 pressure sensors. All lag states become
+    observable. The 10 still unobservable are the modes that become observable once
+    tip z is added, i.e. the axial (extension) dynamics, which don't move x, y at
+    the straight equilibrium.
+- **Don't use rank [B AB … A⁴⁹B]** here: with poles spanning −1 to −15,000 /s it is
+  numerically meaningless (it gave 8, 16 and 35 for the same model, depending on
+  the method; at 100 Hz the stiff modes become discrete eigenvalues ≈ 1e-12). Use
+  the PBH test, Gramians or a staircase form.
+- **Hankel singular values**, 20 pouches → tip x, y, normalized; they come in x/y
+  pairs: 1, 0.235, 0.091, 0.036, 3.6e-3, 2.3e-4, then < 1e-5. So about 4–5 states
+  per axis capture the input–output behaviour; identified models should land near
+  that order.
 
 ## Consequences for SMC
 

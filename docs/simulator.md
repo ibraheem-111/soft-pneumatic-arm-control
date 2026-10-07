@@ -121,6 +121,22 @@ noise σ = 0.002 psi
 
 `segment_pressures` is the mean over a segment's five pouches.
 
+### What `observe()` returns (and what hardware would not give you)
+
+Read from `SoftArmSim.observe()` in `simulator.py` at `c92931d`: `time`,
+`tip_pos`, `tip_quat`, `tip_vel`, `pouch_pressures`, `segment_pressures`, and two
+**privileged** signals:
+
+- `p_actual` — the true lagged pouch pressure, before the sensor coupling and
+  noise.
+- `q` — the full `qpos` (all 15 joint coordinates).
+
+The tip signals are MuJoCo site sensors with no noise added; the only noise in
+the sim is the pouch-pressure noise above (the sim is otherwise deterministic).
+For identification that should transfer to hardware, use only `tip_pos`/`tip_vel`
+and `pouch_pressures`, and add measurement noise to the tip yourself. Use
+`p_actual` and `q` only to check identified models.
+
 ### The MuJoCo model is generated, not a file
 
 There is no `.xml` in the package. `soft_robotic_arm/model.py::build_arm_xml(cfg)`
@@ -141,6 +157,9 @@ XML alone has no actuators. Loaded on its own (e.g.
 - `uv run python scripts/view_arm.py --dump-xml soft_arm.xml` — write the MJCF.
 - `uv run python scripts/draw_kinematics.py` — regenerate the kinematic diagram.
 - `uv run python scripts/run_baseline.py` — reproduce the 4.10 mm PD baseline.
+- `uv run python scripts/plant_model.py` — linear state-space model of the open-loop
+  plant, validated against the sim, with controllability/observability tests (see
+  `modeling-plan.md`).
 
 ## Performance
 
