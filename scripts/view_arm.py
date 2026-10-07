@@ -1,12 +1,12 @@
 """Interactive MuJoCo viewer for the coursework soft arm.
 
 Runs the real ``make_sim()`` plant (pneumatic lag + pressure-to-joint forces)
-inside MuJoCo's passive viewer, so you can watch the arm respond to pressures.
-
-Keys (focus the viewer window):
-    1 2 3 4   raise S1..S4 by 0.5 psi (all five pouches)
-    Q W E R   lower S1..S4 by 0.5 psi
-    0         reset every segment to the 2 psi baseline
+inside MuJoCo's passive viewer, with a separate slider window holding one slider
+per pouch (rows P1 at the mount .. P5 nearest the tip, columns S1 +x, S2 +y,
+S3 -x, S4 -y), laid out like the hanging arm. The
+top slider of each column sets all five pouches in that segment at once.
+Sliders are used instead of keys because MuJoCo's viewer already binds almost
+every letter and digit.
 
 Usage:
     uv run python scripts/view_arm.py
@@ -14,7 +14,9 @@ Usage:
 """
 
 import argparse
+import threading
 import time
+import tkinter as tk
 
 import mujoco
 import mujoco.viewer
@@ -27,10 +29,57 @@ from soft_robotic_arm.model import build_arm_xml
 CONTROL_HZ = 100.0
 MAX_PRESSURE_PSI = 9.0
 BASELINE_PSI = 2.0
-STEP_PSI = 0.5
+SEGMENT_LABELS = ("S1 (+x)", "S2 (+y)", "S3 (−x)", "S4 (−y)")
 
-RAISE_KEYS = {ord("1"): 0, ord("2"): 1, ord("3"): 2, ord("4"): 3}
-LOWER_KEYS = {ord("Q"): 0, ord("W"): 1, ord("E"): 2, ord("R"): 3}
+
+def build_panel(root: tk.Tk, pouch_cmd: np.ndarray) -> tk.StringVar:
+    """Create a segment slider plus five pouch sliders per segment.
+
+    Returns the status-line variable. ``pouch_cmd`` (4, 5) is updated in place.
+    """
+    root.title("Soft arm pouch pressures [psi]")
+    pouch_sliders = [[None] * pouch_cmd.shape[1] for _ in range(pouch_cmd.shape[0])]
+
+    def make_slider(label: str, command) -> tk.Scale:
+        return tk.Scale(
+            root, label=label, from_=MAX_PRESSURE_PSI, to=0.0, resolution=0.1,
+            length=90, width=12, orient=tk.VERTICAL, command=command,
+        )
+
+    def set_segment(s: int, value: str) -> None:
+        for slider in pouch_sliders[s]:
+            slider.set(float(value))
+
+    def set_pouch(s: int, k: int, value: str) -> None:
+        pouch_cmd[s, k] = float(value)
+
+    segment_sliders = []
+    for s, label in enumerate(SEGMENT_LABELS):
+        segment = make_slider(f"{label} all", lambda v, s=s: set_segment(s, v))
+        segment.grid(row=0, column=s, padx=4, pady=(6, 10))
+        segment_sliders.append(segment)
+        # Rows follow the hanging arm: P1 (level0, at the mount) on top, P5 lowest.
+        for k in range(pouch_cmd.shape[1]):
+            pouch = make_slider(f"P{k + 1}", lambda v, s=s, k=k: set_pouch(s, k, v))
+            pouch.grid(row=k + 1, column=s, padx=4)
+            pouch_sliders[s][k] = pouch
+    for segment in segment_sliders:
+        segment.set(BASELINE_PSI)
+
+    def reset() -> None:
+        for s, segment in enumerate(segment_sliders):
+            segment.set(BASELINE_PSI)
+            set_segment(s, str(BASELINE_PSI))
+
+    last_row = pouch_cmd.shape[1] + 1
+    tk.Button(root, text=f"Reset all to {BASELINE_PSI:g} psi", command=reset).grid(
+        row=last_row, column=0, columnspan=4, pady=6
+    )
+    status = tk.StringVar()
+    tk.Label(root, textvariable=status, font=("TkFixedFont", 10), justify=tk.LEFT).grid(
+        row=last_row + 1, column=0, columnspan=4, padx=6, pady=(0, 6), sticky="w"
+    )
+    return status
 
 
 def main() -> None:
@@ -48,38 +97,47 @@ def main() -> None:
 
     sim = make_sim(control_hz=CONTROL_HZ, seed=0)
     obs = sim.reset()
-    segment_cmd = np.full(4, BASELINE_PSI)
+    home = obs["tip_pos"].copy()
+    pouch_cmd = np.full((4, 5), BASELINE_PSI)
 
-    def on_key(keycode: int) -> None:
-        if keycode in RAISE_KEYS:
-            segment_cmd[RAISE_KEYS[keycode]] += STEP_PSI
-        elif keycode in LOWER_KEYS:
-            segment_cmd[LOWER_KEYS[keycode]] -= STEP_PSI
-        elif keycode == ord("0"):
-            segment_cmd[:] = BASELINE_PSI
-        else:
-            return
-        np.clip(segment_cmd, 0.0, MAX_PRESSURE_PSI, out=segment_cmd)
-        print("command [S1 S2 S3 S4] psi:", segment_cmd)
-
-    print(__doc__)
-    dt = 1.0 / CONTROL_HZ
+    root = tk.Tk()
+    status = build_panel(root, pouch_cmd)
+    viewer = mujoco.viewer.launch_passive(sim.model, sim.data)
     start = time.monotonic()
-    last_print = 0.0
-    with mujoco.viewer.launch_passive(sim.model, sim.data, key_callback=on_key) as viewer:
-        while viewer.is_running():
-            tick = time.monotonic()
-            with viewer.lock():
-                obs = sim.step(segment_cmd.copy())
-            viewer.sync()
+    next_tick = start
 
-            if obs["time"] - last_print >= 1.0:
-                last_print = obs["time"]
-                print(f"t={obs['time']:6.2f}s  tip [mm]={np.round(obs['tip_pos'] * 1000, 1)}  "
-                      f"segment psi={np.round(obs['segment_pressures'], 2)}")
-            if args.duration is not None and tick - start >= args.duration:
-                break
-            time.sleep(max(0.0, dt - (time.monotonic() - tick)))
+    def tick() -> None:
+        """Advance the plant in real time; Tk's event loop schedules this."""
+        nonlocal obs, next_tick
+        if not viewer.is_running() or (
+            args.duration is not None and time.monotonic() - start >= args.duration
+        ):
+            root.quit()
+            return
+        # Catch up on any control steps that are due, then hand control back to Tk.
+        while time.monotonic() >= next_tick:
+            with viewer.lock():
+                obs = sim.step(pouch_cmd.copy())
+            next_tick += 1.0 / CONTROL_HZ
+        viewer.sync()
+        dx, dy, dz = (obs["tip_pos"] - home) * 1000
+        status.set(
+            f"t = {obs['time']:6.2f} s\n"
+            f"tip Δ [mm]: x {dx:+6.1f}  y {dy:+6.1f}  z {dz:+6.1f}\n"
+            f"measured psi: {np.array2string(obs['segment_pressures'], precision=2)}"
+        )
+        root.after(5, tick)
+
+    root.protocol("WM_DELETE_WINDOW", root.quit)
+    root.after(0, tick)
+    root.mainloop()
+    # close() only requests exit; wait for the viewer's render thread to finish
+    # before interpreter shutdown terminates GLFW underneath it.
+    viewer.close()
+    for thread in threading.enumerate():
+        if thread is not threading.main_thread():
+            thread.join(timeout=5.0)
+    root.destroy()
     sim.close()
 
 

@@ -22,5 +22,15 @@ uv run python scripts/view_arm.py                         # interactive MuJoCo v
 uv run python scripts/view_arm.py --dump-xml soft_arm.xml  # write the generated MJCF
 ```
 
-In the viewer, keys `1`–`4` raise segments S1–S4 by 0.5 psi, `Q W E R` lower
-them, and `0` resets all segments to 2 psi.
+A separate slider window sets every pouch pressure (0–9 psi). Columns are
+segments S1 (+x), S2 (+y), S3 (−x), S4 (−y); rows run from P1 at the mount down
+to P5 nearest the tip, like the hanging arm. Each column's top slider sets all
+five pouches of that segment.
+
+## Kinematic diagram
+
+```bash
+uv run python scripts/draw_kinematics.py   # writes docs/figures/kinematic_diagram.{svg,png,pdf}
+```
+
+![Kinematic diagram](docs/figures/kinematic_diagram.png)
