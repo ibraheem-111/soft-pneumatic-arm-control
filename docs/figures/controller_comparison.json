@@ -1,0 +1,150 @@
+{
+  "scored (7 mm, 0.1 Hz, seed 0)": {
+    "PD, notebook allocator": {
+      "family": "notebook",
+      "rmse_mm": 9.939086420753199,
+      "rmse_after_5s_mm": 9.682794272458874,
+      "max_error_mm": 12.56458772281319,
+      "phase_lag_s": 2.06,
+      "effort_psi": 2.3846965027422216,
+      "saturated_pct": 8.511111111111111
+    },
+    "PD, corrected allocator": {
+      "family": "notebook",
+      "rmse_mm": 4.080191637450987,
+      "rmse_after_5s_mm": 3.9599590891887866,
+      "max_error_mm": 6.999803490484795,
+      "phase_lag_s": 0.66,
+      "effort_psi": 1.0193471596979315,
+      "saturated_pct": 0.0
+    },
+    "SMC (notebook model), as written": {
+      "family": "notebook",
+      "rmse_mm": 4.37041593729883,
+      "rmse_after_5s_mm": 4.203548600346986,
+      "max_error_mm": 6.999803490484795,
+      "phase_lag_s": -0.81,
+      "effort_psi": 1.2702452691635877,
+      "saturated_pct": 0.0
+    },
+    "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
+      "family": "notebook",
+      "rmse_mm": 2.4496275302446464,
+      "rmse_after_5s_mm": 2.1302126240596833,
+      "max_error_mm": 6.999803490484795,
+      "phase_lag_s": 0.34,
+      "effort_psi": 1.4368193422790652,
+      "saturated_pct": 0.0
+    },
+    "Paper SMC, eq. 5 (M1)": {
+      "family": "paper",
+      "rmse_mm": 1.4643018108889407,
+      "rmse_after_5s_mm": 0.866788822124898,
+      "max_error_mm": 6.999803490484795,
+      "phase_lag_s": 0.06,
+      "effort_psi": 2.404590081488264,
+      "saturated_pct": 0.16666666666666669
+    },
+    "Paper NDOSMC, eq. 12 (M1)": {
+      "family": "paper",
+      "rmse_mm": 2.837045327019816,
+      "rmse_after_5s_mm": 2.5109831155509164,
+      "max_error_mm": 6.999803490484795,
+      "phase_lag_s": 0.05,
+      "effort_psi": 3.168384937333097,
+      "saturated_pct": 31.033333333333335
+    },
+    "Delay-aware SMC, no observer (M2)": {
+      "family": "delay",
+      "rmse_mm": 1.2345626141576502,
+      "rmse_after_5s_mm": 0.09093252120037998,
+      "max_error_mm": 6.999803490484795,
+      "phase_lag_s": 0.01,
+      "effort_psi": 2.13386638056866,
+      "saturated_pct": 0.08888888888888889
+    },
+    "Delay-aware NDOSMC (M2)": {
+      "family": "delay",
+      "rmse_mm": 1.2112017097445986,
+      "rmse_after_5s_mm": 0.10208557808145052,
+      "max_error_mm": 6.999803490484795,
+      "phase_lag_s": 0.01,
+      "effort_psi": 2.1510056249140703,
+      "saturated_pct": 0.044444444444444446
+    }
+  },
+  "held-out (10 mm, 0.15 Hz, seed 5)": {
+    "PD, notebook allocator": {
+      "family": "notebook",
+      "rmse_mm": 20.10239779489926,
+      "rmse_after_5s_mm": 20.47964645347575,
+      "max_error_mm": 24.09871041051143,
+      "phase_lag_s": 2.41,
+      "effort_psi": 3.41014694563279,
+      "saturated_pct": 29.17777777777778
+    },
+    "PD, corrected allocator": {
+      "family": "notebook",
+      "rmse_mm": 6.681660939129767,
+      "rmse_after_5s_mm": 6.526113761493257,
+      "max_error_mm": 9.99980349048472,
+      "phase_lag_s": 0.68,
+      "effort_psi": 1.6466848883178544,
+      "saturated_pct": 0.5333333333333333
+    },
+    "SMC (notebook model), as written": {
+      "family": "notebook",
+      "rmse_mm": 6.2525160371374255,
+      "rmse_after_5s_mm": 5.9749694525604475,
+      "max_error_mm": 9.99980349048472,
+      "phase_lag_s": -0.51,
+      "effort_psi": 1.6010672764373926,
+      "saturated_pct": 0.0
+    },
+    "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
+      "family": "notebook",
+      "rmse_mm": 4.891786290084234,
+      "rmse_after_5s_mm": 4.534978043846806,
+      "max_error_mm": 9.99980349048472,
+      "phase_lag_s": 0.42,
+      "effort_psi": 2.0423623083755573,
+      "saturated_pct": 0.0
+    },
+    "Paper SMC, eq. 5 (M1)": {
+      "family": "paper",
+      "rmse_mm": 3.4546082109401905,
+      "rmse_after_5s_mm": 3.07649459269379,
+      "max_error_mm": 9.99980349048472,
+      "phase_lag_s": 0.17,
+      "effort_psi": 3.6477360911534005,
+      "saturated_pct": 43.32222222222222
+    },
+    "Paper NDOSMC, eq. 12 (M1)": {
+      "family": "paper",
+      "rmse_mm": 3.191185254932523,
+      "rmse_after_5s_mm": 2.541578943597676,
+      "max_error_mm": 9.99980349048472,
+      "phase_lag_s": 0.06,
+      "effort_psi": 3.669389012034991,
+      "saturated_pct": 52.94444444444445
+    },
+    "Delay-aware SMC, no observer (M2)": {
+      "family": "delay",
+      "rmse_mm": 1.9995357083700875,
+      "rmse_after_5s_mm": 0.9766405025882272,
+      "max_error_mm": 9.99980349048472,
+      "phase_lag_s": -0.01,
+      "effort_psi": 3.3251641989265543,
+      "saturated_pct": 21.266666666666666
+    },
+    "Delay-aware NDOSMC (M2)": {
+      "family": "delay",
+      "rmse_mm": 1.9699834564621044,
+      "rmse_after_5s_mm": 0.9498720156777458,
+      "max_error_mm": 9.99980349048472,
+      "phase_lag_s": -0.01,
+      "effort_psi": 3.3079799072834644,
+      "saturated_pct": 21.244444444444444
+    }
+  }
+}

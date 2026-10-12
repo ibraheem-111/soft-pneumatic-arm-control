@@ -5,6 +5,29 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-12
 
+- Qiao/Tao/Zhang SMC (eq. 5) and NDOSMC (eqs. 6-8, 12, 14) implemented in task space
+  on the identified M1, plus a delay-aware variant on M2 (Smith predictor with the
+  identified 0.5 s dead time, lag inversion, reference extrapolated by T):
+  `scripts/ndosmc.py`. Paper's printed signs corrected: B = +1/c, and -d_hat in eq. 7.
+  Scored task (`compare_controllers.py`, seed 0), whole-run / after-5-s RMSE mm: PD
+  corrected allocator 4.08 / 3.96; notebook SMC best 2.45 / 2.13; paper SMC 1.46 / 0.87;
+  paper NDOSMC 2.84 / 2.51 (observer saturates commands 31 % of samples); delay-aware
+  without observer 1.23 / 0.09; delay-aware NDOSMC 1.21 / 0.10. Held-out 10 mm 0.15 Hz
+  seed 5: 6.68, 4.89, 3.45, 3.19, 2.00, 1.97 mm, with 21-53 % saturation for the
+  model-based ones. Modelling the actuator is the decisive step; the paper's NDOB adds
+  ~0.02 mm once the delay is modelled. Gains were swept on the scored seed; every run is
+  printed by `ndosmc.py --sweep`. Report: `docs/reports/controller-comparison.html`.
+- Task-space model of `make_calibrated_sim` identified from sensors only (tip + 0.1 mm
+  noise, pressure sensors; no `q`, `p_actual`, cfg or model): `scripts/task_space_model.py`,
+  report `docs/reports/task-space-model.html`, parameters `docs/figures/task_space_model.json`.
+  Actuator per segment: dead time 0.50 s, one lag 0.60 s, gains 1.120/1.096/1.164, biases
+  0.45/0.15/0.30 psi; 0 psi command vents. Mechanics: second order, ~1.2 Hz, zeta ~0.75
+  (well damped, no resonant peak); z dynamics too fast to identify. z lift kappa =
+  2.5e-3 /mm. Paper-style M1 (Qiao 2024, command in, no delay) LPV parameters vary
+  0.1 % / 0.0 % / 1.6-6.5 % over rho, so LTI suffices; free-run RMSE M1 0.57-1.32 mm in x/y
+  (0.22-0.36 z) vs M3 (actuator + 2nd-order mechanics) 0.10-0.16 mm (noise floor 0.10). Residual x
+  error is the S1 reservoir (leaks ~0.04 psi/min). The paper's printed B = -diag(1/c) has
+  the wrong sign; its eqs. 5/13 need +1/c.
 - Ported Nikoletta's SMC notebook to `scripts/smc_reduced_model.py`; it reproduces
   her table exactly on `make_calibrated_sim` + `CircularTrackingTask` (PD 500/20:
   9.94 mm; SMC λ=5, K=0.2, φ=0.02: 4.37 mm). Her one-mode model uses joint springs

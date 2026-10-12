@@ -41,6 +41,21 @@ The coursework uses `make_sim()`. It passes an explicit `ArmConfig`, so it does
 | Regulator gain / bias | 1 / 0 | per-segment fitted gain and bias |
 | Pneumatic lag τ | 0.6 s | 0.6 s |
 
+### `make_calibrated_sim()` identified from its sensors
+
+Measured with `scripts/task_space_model.py` from command, pressure-sensor and tip data
+only (not from `cfg`; details in `docs/reports/task-space-model.html`):
+
+- Command → measured segment pressure: affine gain 1.120 / 1.096 / 1.164 and bias
+  0.449 / 0.152 / 0.299 psi (S2 / S3 / S4), a 0.50 s dead time and one 0.60 s lag on every
+  segment (fit 0.005 psi RMS; a second lag fits to < 3 ms). A 0 psi command vents to
+  0 psi; the affine law holds from 0.25 psi up.
+- Settled at 4.5 psi, S1 (reservoir) reads 2.28 psi and leaks about 0.04 psi/min; the
+  tip home is bent about 5 mm toward −x.
+- Tip mechanics from measured pressure: about 1.81 mm/psi lateral, second order near
+  1.2 Hz with ζ ≈ 0.75; z about 0.47 mm/psi (sum) plus a bending lift of
+  2.5·10⁻³ mm⁻¹ × (x² + y²).
+
 ### The package's own evaluation harness
 
 `soft_robotic_arm.evaluation` (in 0.4.2, docstring "evaluation for student
@@ -183,6 +198,8 @@ XML alone has no actuators. Loaded on its own (e.g.
 - `uv run python scripts/run_baseline.py` — reproduce the 4.10 mm PD baseline.
 - `uv run python scripts/smc_reduced_model.py [--sweep] [--gravity]` — port of the
   partner's reduced-model SMC notebook, scored with the package harness above.
+- `uv run python scripts/task_space_model.py` — identifies M1/M2/M3 task-space models of
+  `make_calibrated_sim` from sensor data only and validates them free-run.
 - `uv run python scripts/plant_model.py` — linear state-space model of the open-loop
   plant, validated against the sim, with controllability/observability tests (see
   `modeling-plan.md`).
