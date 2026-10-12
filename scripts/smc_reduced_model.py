@@ -1,6 +1,6 @@
 """Reduced-model sliding-mode controller vs PD on the package's circular tracking task.
 
-Port of Nikoletta's notebook `SMC_Controller_withoutdisturbanceobserver.ipynb`
+Port of Nikoletta's notebook `notebooks/SMC_Controller_withoutdisturbanceobserver.ipynb`
 (sections 4-10). The controllers and the reduced-model derivation follow the
 notebook; the only additions are the `--gravity` option and the gain sweeps.
 
