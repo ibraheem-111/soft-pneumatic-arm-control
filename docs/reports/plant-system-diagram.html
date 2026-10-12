@@ -1,0 +1,256 @@
+<title>Soft Arm Plant Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,600&display=swap">
+<style>
+/* Layout: one reading column; wide diagrams scroll inside their own frame. Accent = state, warm = measured signal. */
+:root {
+  --bg: #f5f7f8;
+  --panel: #ffffff;
+  --fg: #1c2529;
+  --muted: #5b6a71;
+  --rule: #cfd8dc;
+  --state: #0f7a6c;
+  --state-tint: #e2f2ef;
+  --signal: #b0561a;
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181b; --panel: #1a2226; --fg: #e3eaec; --muted: #93a3a9; --rule: #33424a;
+    --state: #4fc2b0; --state-tint: #173430; --signal: #e8935a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181b; --panel: #1a2226; --fg: #e3eaec; --muted: #93a3a9; --rule: #33424a;
+  --state: #4fc2b0; --state-tint: #173430; --signal: #e8935a; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 64px; display: grid; gap: 40px; }
+header { display: grid; gap: 8px; max-width: 68ch; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-size: 22px; margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: .92em; }
+section { display: grid; gap: 14px; }
+.answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.answer { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 20px; display: grid; gap: 10px; min-width: 0; }
+.answer h3 { margin: 0; font-size: 15px; font-weight: 600; }
+.answer .big { font-family: var(--font-mono); font-size: 20px; color: var(--state); }
+.answer ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 12px; }
+.scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 80ch; }
+.svg-wide { min-width: 820px; }
+table { border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
+th, td { border: 1px solid var(--rule); padding: 6px 10px; text-align: center; }
+th { font-weight: 600; }
+td.dir { font-family: var(--font-mono); color: var(--muted); }
+.note { border-left: 3px solid var(--signal); padding-left: 14px; }
+.src { font-size: 13px; color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Soft pneumatic arm · open-loop plant · make_sim()</span>
+    <h1>What goes in, what is remembered, what comes out</h1>
+    <p>The plant is everything between the 20 pressure commands and the measured tip position, with no controller inside it. Values come from <code>docs/simulator.md</code> and <code>scripts/plant_model.py</code>, which were read from the simulator source and checked against the running sim.</p>
+  </header>
+
+  <section class="answers" aria-label="Short answers">
+    <div class="answer">
+      <h3>Is u 20 long?</h3>
+      <div class="big">u ∈ ℝ²⁰ &nbsp;(yes, in the simulator)</div>
+      <ul>
+        <li>One absolute pressure command per pouch, 0–9 psi. 4 columns (S1–S4) × 5 levels (P1–P5), flattened S1P1 … S4P5.</li>
+        <li>Only <b>15</b> of the 20 directions move the arm. At each level the 4 pressures make 3 things: a bend about x, a bend about y and a stretch. Raising S1 and S3 while lowering S2 and S4 by the same amount does nothing.</li>
+        <li>The real lab arm may have only 3 driven inputs plus a sealed sensing column (open question in <code>hardware.md</code>).</li>
+      </ul>
+    </div>
+    <div class="answer">
+      <h3>What is the state?</h3>
+      <div class="big">x = [q, q̇, p] ∈ ℝ⁵⁰</div>
+      <ul>
+        <li><b>q</b> (15): joint coordinates of the 5-link chain. Each level has a stretch <code>ext k</code> and two bends <code>bx k</code>, <code>by k</code>.</li>
+        <li><b>q̇</b> (15): their rates. The mechanics are second order, so both are needed.</li>
+        <li><b>p</b> (20): the actual pouch pressures after the 0.6 s lag. They lag behind u, so they carry memory.</li>
+        <li>For tip x, y only about 4–5 states per axis matter (Hankel singular values 1, 0.235, 0.091, 0.036, 0.0036).</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Signal chain</h2>
+    <figure>
+      <div class="scroll">
+        <svg class="svg-wide" viewBox="0 0 1100 400" role="img" aria-label="Signal chain: the controller sends 20 pressure commands into the plant; 20 first-order lags hold the pouch pressures, a linear map turns them into 15 joint forces, a 15-joint chain holds positions and velocities, and the tip position plus 20 pressure sensors are fed back to the controller.">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+            <marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--signal)"/>
+            </marker>
+          </defs>
+
+          <!-- plant boundary -->
+          <rect x="205" y="70" width="885" height="290" rx="8" fill="none" stroke="var(--muted)" stroke-dasharray="6 5"/>
+          <text x="220" y="92" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--muted)">PLANT · make_sim() · steps at 100 Hz, 10 × 1 ms physics substeps</text>
+
+          <!-- controller -->
+          <rect x="20" y="110" width="130" height="100" rx="6" fill="var(--panel)" stroke="currentColor"/>
+          <text x="85" y="150" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">Controller</text>
+          <text x="85" y="170" text-anchor="middle" font-size="12" fill="var(--muted)">compute(t, obs)</text>
+          <text x="85" y="186" text-anchor="middle" font-size="12" fill="var(--muted)">not part of plant</text>
+
+          <!-- u arrow -->
+          <line x1="150" y1="160" x2="228" y2="160" stroke="currentColor" stroke-width="1.6" marker-end="url(#ah)"/>
+          <text x="189" y="150" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" fill="currentColor">u ∈ ℝ²⁰</text>
+          <text x="189" y="178" text-anchor="middle" font-size="11" fill="var(--muted)">psi, 0–9</text>
+
+          <!-- lag -->
+          <rect x="230" y="110" width="170" height="100" rx="6" fill="var(--state-tint)" stroke="var(--state)" stroke-width="1.6"/>
+          <text x="315" y="138" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">Pneumatic lag × 20</text>
+          <text x="315" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">ṗ = (u − p) / τ</text>
+          <text x="315" y="177" text-anchor="middle" font-size="12" fill="var(--muted)">τ = 0.6 s, one per pouch</text>
+          <text x="315" y="198" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--state)">state p: 20</text>
+
+          <!-- p arrow -->
+          <line x1="400" y1="160" x2="478" y2="160" stroke="currentColor" stroke-width="1.6" marker-end="url(#ah)"/>
+          <text x="439" y="150" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" fill="currentColor">p ∈ ℝ²⁰</text>
+
+          <!-- force map -->
+          <rect x="480" y="110" width="170" height="100" rx="6" fill="var(--panel)" stroke="currentColor"/>
+          <text x="565" y="138" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">Pressure → force</text>
+          <text x="565" y="158" text-anchor="middle" font-size="12" fill="var(--muted)">linear, no memory</text>
+          <text x="565" y="176" text-anchor="middle" font-size="12" fill="currentColor">pouch k acts on level k only</text>
+          <text x="565" y="194" text-anchor="middle" font-size="12" fill="currentColor">20 → 10 bends + 5 stretches</text>
+
+          <!-- force arrow -->
+          <line x1="650" y1="160" x2="728" y2="160" stroke="currentColor" stroke-width="1.6" marker-end="url(#ah)"/>
+          <text x="689" y="150" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" fill="currentColor">F ∈ ℝ¹⁵</text>
+          <text x="689" y="178" text-anchor="middle" font-size="11" fill="var(--muted)">joint forces</text>
+
+          <!-- mechanics -->
+          <rect x="730" y="110" width="180" height="100" rx="6" fill="var(--state-tint)" stroke="var(--state)" stroke-width="1.6"/>
+          <text x="820" y="138" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">5-link hanging chain</text>
+          <text x="820" y="160" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">M q̈ + D q̇ + K q = G + F</text>
+          <text x="820" y="177" text-anchor="middle" font-size="12" fill="var(--muted)">springs, dampers, gravity</text>
+          <text x="820" y="198" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="var(--state)">state q, q̇: 15 + 15</text>
+
+          <!-- q arrow -->
+          <line x1="910" y1="160" x2="978" y2="160" stroke="currentColor" stroke-width="1.6" marker-end="url(#ah)"/>
+          <text x="944" y="150" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" fill="currentColor">q</text>
+
+          <!-- tip -->
+          <rect x="980" y="110" width="100" height="100" rx="6" fill="var(--panel)" stroke="currentColor"/>
+          <text x="1030" y="145" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">Tip site</text>
+          <text x="1030" y="166" text-anchor="middle" font-size="12" fill="var(--muted)">forward</text>
+          <text x="1030" y="182" text-anchor="middle" font-size="12" fill="var(--muted)">kinematics</text>
+
+          <!-- sensors -->
+          <line x1="315" y1="210" x2="315" y2="278" stroke="var(--signal)" stroke-width="1.6" marker-end="url(#ahs)"/>
+          <text x="323" y="248" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--signal)">p</text>
+          <rect x="230" y="280" width="170" height="60" rx="6" fill="var(--panel)" stroke="var(--signal)" stroke-width="1.4"/>
+          <text x="315" y="303" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">20 pressure sensors</text>
+          <text x="315" y="323" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">p + c·κ + noise</text>
+
+          <path d="M790 210 L790 310 L402 310" fill="none" stroke="var(--signal)" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#ahs)"/>
+          <text x="596" y="302" text-anchor="middle" font-size="12" fill="var(--signal)">κ: bending leaks into the pressure reading</text>
+
+          <line x1="1030" y1="210" x2="1030" y2="278" stroke="var(--signal)" stroke-width="1.6" marker-end="url(#ahs)"/>
+          <rect x="980" y="280" width="100" height="60" rx="6" fill="var(--panel)" stroke="var(--signal)" stroke-width="1.4"/>
+          <text x="1030" y="303" text-anchor="middle" font-size="13" font-weight="600" fill="currentColor">Motion capture</text>
+          <text x="1030" y="323" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">tip pos, vel</text>
+
+          <!-- feedback -->
+          <path d="M315 340 L315 382 L85 382 L85 212" fill="none" stroke="var(--signal)" stroke-width="1.6" marker-end="url(#ahs)"/>
+          <path d="M1030 340 L1030 382 L315 382" fill="none" stroke="var(--signal)" stroke-width="1.6"/>
+          <text x="660" y="376" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--signal)">y = tip x, y, z (+ vel) and 20 pressures → obs</text>
+        </svg>
+      </div>
+      <figcaption>Memory lives in the two teal blocks only: 20 pressures in the lag and 30 positions and velocities in the chain, 50 states in all. The pressure-to-force map in between is a fixed matrix, so it adds no states. Orange marks what you can actually measure. The simulator's <code>observe()</code> also returns <code>p_actual</code> and <code>q</code> directly, but real hardware doesn't give you those, so use them only to check models.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>How the state vector is laid out</h2>
+    <figure>
+      <div class="scroll">
+        <svg class="svg-wide" viewBox="0 0 1000 250" role="img" aria-label="The 50-element state vector: 15 joint coordinates, 15 joint rates and 20 pouch pressures. The 20 commands map one-to-one onto the 20 pressure states and nowhere else, which is why B is zero except for an I over tau block.">
+          <defs>
+            <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <text x="20" y="28" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" fill="currentColor">x ∈ ℝ⁵⁰</text>
+
+          <!-- q block -->
+          <rect x="20" y="40" width="288" height="44" fill="var(--panel)" stroke="currentColor"/>
+          <!-- qdot block -->
+          <rect x="308" y="40" width="288" height="44" fill="var(--panel)" stroke="currentColor"/>
+          <!-- p block -->
+          <rect x="596" y="40" width="384" height="44" fill="var(--state-tint)" stroke="var(--state)" stroke-width="1.6"/>
+
+          <!-- level dividers in q and qdot (every 3 cells = 57.6px) -->
+          <g stroke="var(--rule)">
+            <line x1="77.6" y1="40" x2="77.6" y2="84"/><line x1="135.2" y1="40" x2="135.2" y2="84"/><line x1="192.8" y1="40" x2="192.8" y2="84"/><line x1="250.4" y1="40" x2="250.4" y2="84"/>
+            <line x1="365.6" y1="40" x2="365.6" y2="84"/><line x1="423.2" y1="40" x2="423.2" y2="84"/><line x1="480.8" y1="40" x2="480.8" y2="84"/><line x1="538.4" y1="40" x2="538.4" y2="84"/>
+            <line x1="692" y1="40" x2="692" y2="84"/><line x1="788" y1="40" x2="788" y2="84"/><line x1="884" y1="40" x2="884" y2="84"/>
+          </g>
+          <g font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" text-anchor="middle">
+            <text x="48.8" y="67">L0</text><text x="106.4" y="67">L1</text><text x="164" y="67">L2</text><text x="221.6" y="67">L3</text><text x="279.2" y="67">L4</text>
+            <text x="336.8" y="67">L0</text><text x="394.4" y="67">L1</text><text x="452" y="67">L2</text><text x="509.6" y="67">L3</text><text x="567.2" y="67">L4</text>
+            <text x="644" y="67">S1 P1–5</text><text x="740" y="67">S2 P1–5</text><text x="836" y="67">S3 P1–5</text><text x="932" y="67">S4 P1–5</text>
+          </g>
+          <g font-size="12" fill="var(--muted)" text-anchor="middle">
+            <text x="164" y="104">q: ext, bx, by per level (15)</text>
+            <text x="452" y="104">q̇: the same 15, as rates</text>
+            <text x="788" y="104">p: pouch pressures (20)</text>
+          </g>
+
+          <!-- u bar under p -->
+          <rect x="596" y="170" width="384" height="40" fill="var(--panel)" stroke="currentColor"/>
+          <g stroke="var(--rule)"><line x1="692" y1="170" x2="692" y2="210"/><line x1="788" y1="170" x2="788" y2="210"/><line x1="884" y1="170" x2="884" y2="210"/></g>
+          <g font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" text-anchor="middle">
+            <text x="644" y="195">S1 P1–5</text><text x="740" y="195">S2 P1–5</text><text x="836" y="195">S3 P1–5</text><text x="932" y="195">S4 P1–5</text>
+          </g>
+          <text x="580" y="195" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="500" fill="currentColor">u ∈ ℝ²⁰</text>
+          <line x1="788" y1="168" x2="788" y2="88" stroke="currentColor" stroke-width="1.6" marker-end="url(#ah2)"/>
+          <text x="798" y="140" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">B = I/τ here, 0 elsewhere</text>
+
+          <!-- p feeds qdot via the force map -->
+          <path d="M640 86 C 620 140, 500 140, 470 88" fill="none" stroke="var(--state)" stroke-width="1.4" marker-end="url(#ah2)"/>
+          <text x="555" y="150" text-anchor="middle" font-size="12" fill="var(--state)">p pushes q̈ through the force map</text>
+          <text x="20" y="236" font-size="12" fill="var(--muted)">Each command reaches only its own pressure state; the arm moves only because pressure then feeds the acceleration of q.</text>
+        </svg>
+      </div>
+      <figcaption>Block form of the linear model about 4.5 psi on every pouch: <span class="mono">A = [[0, I, 0], [A_qq, A_qv, A_qp], [0, 0, −I/τ]]</span>, <span class="mono">B = [0; 0; I/τ]</span>, sizes 50×50 and 50×20. A_qq is stiffness and gravity, A_qv is damping, A_qp is pressure-to-acceleration. All three are the arm's own physics, not controller gains.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Where each element of u acts</h2>
+    <div class="scroll">
+      <table aria-label="Pouch grid: columns S1 to S4 and levels P1 at the mount to P5 at the tip">
+        <thead>
+          <tr><th></th><th>S1</th><th>S2</th><th>S3</th><th>S4</th></tr>
+          <tr><td class="dir">pushes tip</td><td class="dir">+x</td><td class="dir">+y</td><td class="dir">−x</td><td class="dir">−y</td></tr>
+        </thead>
+        <tbody>
+          <tr><th>P1 · next to mount</th><td>u₁</td><td>u₆</td><td>u₁₁</td><td>u₁₆</td></tr>
+          <tr><th>P2</th><td>u₂</td><td>u₇</td><td>u₁₂</td><td>u₁₇</td></tr>
+          <tr><th>P3</th><td>u₃</td><td>u₈</td><td>u₁₃</td><td>u₁₈</td></tr>
+          <tr><th>P4</th><td>u₄</td><td>u₉</td><td>u₁₄</td><td>u₁₉</td></tr>
+          <tr><th>P5 · nearest tip</th><td>u₅</td><td>u₁₀</td><td>u₁₅</td><td>u₂₀</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Per level: x-bend ∝ S1 − S3, y-bend ∝ S2 − S4, stretch ∝ the sum of all four. That's 3 effective inputs per level, 15 in all. Pouches near the mount move the tip more: 8 psi on S1 P1 moved it 3.4 mm, against 1.4 mm for S1 P5.</p>
+  </section>
+
+  <p class="src">Sources: <code>docs/simulator.md</code> (signal path, sensor model, pouch layout), <code>docs/modeling-plan.md</code> and <code>scripts/plant_model.py</code> (50-state linearization, Hankel singular values). Simulator: soft-robotic-arm 0.4.2, upstream commit c92931d.</p>
+</div>

@@ -1,0 +1,413 @@
+<title>SMC Tip Model Derivation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lecture notes. One reading column; displayed equations carry the argument, prose connects them, figures where the mechanism needs drawing. */
+:root {
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --fg: #1c2124;
+  --muted: #5d676c;
+  --rule: #d8dcd9;
+  --accent: #23617a;
+  --accent-soft: #e4eef1;
+  --warn: #93590a;
+  --warn-soft: #f8eedd;
+  --no: #8e2f2f;
+  --no-soft: #f5e4e2;
+  --ok: #2e6a40;
+  --ok-soft: #e4f0e6;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121618; --surface: #1a2023; --fg: #e3e8ea; --muted: #9aa6ab; --rule: #2e383c;
+    --accent: #72b9d2; --accent-soft: #1b2e35; --warn: #e3a54c; --warn-soft: #33281a;
+    --no: #e48f8f; --no-soft: #362022; --ok: #82c595; --ok-soft: #1c2e22; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121618; --surface: #1a2023; --fg: #e3e8ea; --muted: #9aa6ab; --rule: #2e383c;
+  --accent: #72b9d2; --accent-soft: #1b2e35; --warn: #e3a54c; --warn-soft: #33281a;
+  --no: #e48f8f; --no-soft: #362022; --ok: #82c595; --ok-soft: #1c2e22; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16.5px/1.65 var(--body); }
+.wrap { max-width: 860px; margin: 0 auto; padding-inline: 18px; padding-block: 40px 90px; display: grid; gap: 48px; }
+header { display: grid; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1, h2 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 42px); }
+h2 { font-size: 26px; }
+h3 { font: 600 16px/1.4 var(--body); margin: 0; }
+p, ul, ol { margin: 0; max-width: 70ch; }
+ul, ol { padding-left: 1.25em; display: grid; gap: 6px; }
+section { display: grid; gap: 16px; min-width: 0; }
+code, .mono { font-family: var(--mono); font-size: .88em; }
+.meta { color: var(--muted); font-size: 14px; }
+.lede { font-size: 18px; }
+.secno { font: 500 13px var(--mono); color: var(--accent); letter-spacing: .06em; }
+.eqn { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+.box { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 20px; display: grid; gap: 10px; }
+.box.answer { border-left: 4px solid var(--accent); }
+.box.warn { border-left: 4px solid var(--warn); background: var(--warn-soft); border-color: var(--warn-soft); }
+.box.no { border-left: 4px solid var(--no); background: var(--no-soft); border-color: var(--no-soft); }
+.box.ok { border-left: 4px solid var(--ok); background: var(--ok-soft); border-color: var(--ok-soft); }
+.box h3 { font-family: var(--display); font-size: 19px; }
+figure { margin: 0; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; min-width: 0; }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 76ch; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; min-width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 13px; }
+td.n, th.n { text-align: right; font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+tr.hi td { background: var(--accent-soft); }
+pre { font: 13px/1.5 var(--mono); background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 12px 14px; overflow-x: auto; margin: 0; }
+mjx-container[display="true"] { margin: .6em 0 !important; }
+</style>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]], tags: "ams" },
+  svg: { fontCache: "global" }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Lecture notes · reduced-order model for SMC · soft pneumatic arm</div>
+  <h1>From a five-link chain to one spring–damper</h1>
+  <p class="lede">The sliding-mode controller in Nikoletta's notebook rests on a single equation, \(\ddot x + c\,\dot x + k\,x = b\,\Delta p\). These notes derive that equation from the simulator's rigid-body model one step at a time. The aim is to show exactly in which coordinates it is a mass–spring–damper, what was thrown away to get there, and what the controller built on it actually does.</p>
+  <p class="meta">Every number was computed from <code>build_arm_xml(ArmConfig())</code> (soft-robotic-arm 0.4.2) or measured with <code>scripts/smc_reduced_model.py</code> on <code>make_calibrated_sim(seed=0)</code> with the package's <code>CircularTrackingTask</code>. Units are SI unless stated, with pressure in psi. Commands are listed at the end.</p>
+</header>
+
+<section class="box answer">
+  <h3>"Isn't a spring–damper one degree of freedom?"</h3>
+  <p>Yes, and the arm is not one. In one bending plane the simulated arm has five degrees of freedom: five rigid links joined by five hinges, each with a torsional spring and damper. That is five <em>coupled</em> spring–dampers, \(M\ddot\theta + D\dot\theta + K\theta = \tau\), with a full mass matrix \(M\). The model becomes a single 1-DOF spring–damper only after two operations. A change of coordinates to the chain's normal modes splits it into five <em>independent</em> 1-DOF oscillators. This works exactly here because the damping is proportional to the stiffness. Then four of those five oscillators are discarded (§4–§5). The surviving oscillator, rescaled to tip coordinates, is an equivalent mass of 0.185 kg on a 1.96 N/m spring with a 1.70 N·s/m damper (§5, Figure 2).</p>
+</section>
+
+<!-- 1 -->
+<section>
+  <div class="secno">§1</div>
+  <h2>The mechanism and its coordinates</h2>
+  <p>The simulator builds the arm as five rigid bodies <code>level0 … level4</code>, each \(h = 0.0592\) m long, hanging from a fixed mount. Body \(k\) attaches to body \(k-1\) through three joints: an axial slide \(e_k\) and two hinges \(\theta^{x}_k,\ \theta^{y}_k\). Every joint has a linear spring with zero rest position and a linear damper. A tip frame hangs \(h + 0.012\) m below the last hinge. The derivation keeps only the hinges that bend the arm in the x–z plane, the five \(\theta_k \equiv \theta^{y}_k\). These are <em>relative</em> angles, each measured from the link above.</p>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 600 400" role="img" aria-label="Planar five-link hanging chain. Each hinge carries a torsional spring k theta and damper d theta; relative angles theta 0 to theta 4 are measured from the extension of the link above; the tip displacement x is measured horizontally from the vertical through the mount.">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="currentColor" stroke-width="1.2"/></pattern>
+      </defs>
+      <!-- mount -->
+      <rect x="220" y="26" width="120" height="14" fill="url(#hatch)"/>
+      <line x1="220" y1="40" x2="340" y2="40" stroke="currentColor" stroke-width="2"/>
+      <text x="350" y="37" font-size="12" fill="var(--muted)">mount</text>
+      <!-- vertical reference -->
+      <line x1="280" y1="46" x2="280" y2="372" stroke="var(--muted)" stroke-dasharray="4 4"/>
+      <!-- links -->
+      <g stroke="currentColor" stroke-width="5" stroke-linecap="round">
+        <line x1="280" y1="46" x2="288" y2="107.5"/>
+        <line x1="288" y1="107.5" x2="304" y2="167.4"/>
+        <line x1="304" y1="167.4" x2="327.5" y2="224.7"/>
+        <line x1="327.5" y1="224.7" x2="358.4" y2="278.5"/>
+        <line x1="358.4" y1="278.5" x2="403.7" y2="338.2"/>
+      </g>
+      <!-- extensions of the link above (angle reference) -->
+      <g stroke="var(--muted)" stroke-dasharray="3 3" stroke-width="1">
+        <line x1="280" y1="46" x2="280" y2="80"/>
+        <line x1="288" y1="107.5" x2="292" y2="139"/>
+        <line x1="304" y1="167.4" x2="312" y2="197"/>
+        <line x1="327.5" y1="224.7" x2="339" y2="252.5"/>
+        <line x1="358.4" y1="278.5" x2="373.5" y2="305"/>
+      </g>
+      <!-- hinges with torsional springs -->
+      <g fill="var(--surface)" stroke="currentColor" stroke-width="1.6">
+        <circle cx="280" cy="46" r="5"/><circle cx="288" cy="107.5" r="5"/><circle cx="304" cy="167.4" r="5"/><circle cx="327.5" cy="224.7" r="5"/><circle cx="358.4" cy="278.5" r="5"/>
+      </g>
+      <g fill="none" stroke="var(--accent)" stroke-width="1.3">
+        <path d="M272,46 a8,8 0 1,1 8,8 a11,11 0 1,1 -11,-11"/>
+        <path d="M280,107.5 a8,8 0 1,1 8,8 a11,11 0 1,1 -11,-11"/>
+        <path d="M296,167.4 a8,8 0 1,1 8,8 a11,11 0 1,1 -11,-11"/>
+        <path d="M319.5,224.7 a8,8 0 1,1 8,8 a11,11 0 1,1 -11,-11"/>
+        <path d="M350.4,278.5 a8,8 0 1,1 8,8 a11,11 0 1,1 -11,-11"/>
+      </g>
+      <!-- angle labels -->
+      <g font-size="13" font-style="italic" fill="currentColor" font-family="Newsreader, Georgia, serif">
+        <text x="290" y="82">θ₀</text><text x="298" y="142">θ₁</text><text x="318" y="200">θ₂</text><text x="346" y="254">θ₃</text><text x="380" y="306">θ₄</text>
+      </g>
+      <!-- level labels -->
+      <g font-size="11" fill="var(--muted)" font-family="IBM Plex Mono, monospace">
+        <text x="196" y="80">level 0</text><text x="212" y="140">level 1</text><text x="232" y="198">level 2</text><text x="258" y="254">level 3</text><text x="290" y="312">level 4</text>
+      </g>
+      <!-- tip -->
+      <circle cx="403.7" cy="338.2" r="6" fill="var(--accent)"/>
+      <text x="414" y="342" font-size="12" fill="currentColor">tip (mocap)</text>
+      <!-- x arrow -->
+      <line x1="280" y1="368" x2="401" y2="368" stroke="currentColor" stroke-width="1.4" marker-end="url(#a1)"/>
+      <text x="330" y="388" font-size="14" font-style="italic" font-family="Newsreader, Georgia, serif" fill="currentColor">x</text>
+      <!-- legend -->
+      <g font-size="12" fill="currentColor">
+        <path d="M452,70 a8,8 0 1,1 8,8 a11,11 0 1,1 -11,-11" fill="none" stroke="var(--accent)" stroke-width="1.3"/>
+        <text x="476" y="68">torsional spring</text><text x="476" y="84">k<tspan font-size="9" dy="3">θ</tspan><tspan dy="-3"> = 0.4168 N·m/rad</tspan></text>
+        <text x="476" y="104">and damper</text><text x="476" y="120">d<tspan font-size="9" dy="3">θ</tspan><tspan dy="-3"> = 0.3629 N·m·s/rad</tspan></text>
+        <text x="476" y="140">at every hinge</text>
+        <text x="452" y="176">link length h = 59.2 mm</text>
+        <text x="452" y="194">link mass 0.076 kg</text>
+        <text x="452" y="212">tip disc + frame 0.094 kg</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption><b>Figure 1.</b> The planar chain the model is built on, with angles exaggerated. Five relative hinge angles \(\theta_0,\dots,\theta_4\) are the degrees of freedom. Each hinge has its own spring and damper, so the springs act on <em>relative</em> angles, while gravity and inertia act on the <em>absolute</em> orientation of each link. The two use different coordinates, and that mismatch is why the dynamics are coupled.</figcaption>
+  </figure>
+  <p>Write \(\varphi_j = \sum_{i\le j}\theta_i\) for the absolute angle of link \(j\) from the vertical, and \(\ell_j\) for its length, with \(\ell_j = h\) for \(j&lt;4\) and \(\ell_4 = h + 0.012\) to the tip site. The forward kinematics in the plane are</p>
+  <div class="eqn">\[ x_{\text{tip}}(\theta) = -\sum_{j=0}^{4} \ell_j \sin\varphi_j, \qquad z_{\text{tip}}(\theta) = z_0 - \sum_{j=0}^{4}\ell_j\cos\varphi_j. \label{fk}\]</div>
+  <p>The sign follows MuJoCo's right-hand rule: a positive rotation about \(+y\) swings a point hanging below the hinge toward \(-x\). This closed form matches MuJoCo's kinematics to \(10^{-15}\) m.</p>
+</section>
+
+<!-- 2 -->
+<section>
+  <div class="secno">§2</div>
+  <h2>Equations of motion and their linearization</h2>
+  <p>The kinetic energy is \(T = \tfrac12\dot\theta^{\mathsf T} M(\theta)\,\dot\theta\). The potential energy has a spring part and a gravity part, \(V = \tfrac12 k_\theta\,\theta^{\mathsf T}\theta + V_g(\theta)\), and the dampers give a Rayleigh dissipation function \(\mathcal R = \tfrac12 d_\theta\,\dot\theta^{\mathsf T}\dot\theta\). Each pouch level \(k\) applies a bending moment \(\tau_k\) to its own hinge. Lagrange's equations give the standard rigid-chain form:</p>
+  <div class="eqn">\[ M(\theta)\,\ddot\theta + C(\theta,\dot\theta)\,\dot\theta + D\,\dot\theta + K\,\theta + \nabla V_g(\theta) = \tau, \qquad D = d_\theta I,\; K = k_\theta I. \label{eom}\]</div>
+  <p>The pressure enters linearly. A pressure difference \(\Delta p\) across the two opposing columns of a level produces a moment \(g\,\Delta p\) on that level's hinge, with \(g = \) <code>pressure_gain</code> × <code>moment_arm</code> \(= 0.1274 \times 0.028 = 3.567\times10^{-3}\) N·m/psi. On the scored plant one pressure drives all five pouches of a segment, so</p>
+  <div class="eqn">\[ \tau = g\,\mathbf 1\,\Delta p, \qquad \mathbf 1 = (1,1,1,1,1)^{\mathsf T}. \]</div>
+  <p>Now linearize about the straight hang \(\theta = 0,\ \dot\theta = 0\). The Coriolis and centrifugal term is quadratic in \(\dot\theta\) and drops out. \(M(\theta)\) is replaced by \(M(0)\). The gravity term becomes \(\nabla V_g \approx K_g\,\theta\), with the gravity stiffness \(K_g = \nabla^2 V_g(0)\):</p>
+  <div class="eqn">\[ M\,\ddot\theta + D\,\dot\theta + \big(K + K_g\big)\,\theta = g\,\mathbf 1\,\Delta p. \label{lin}\]</div>
+  <div class="box warn">
+    <h3>The first modelling decision: \(K_g = 0\)</h3>
+    <p>The notebook builds the stiffness from the joint springs alone, \(K = 0.4168\,I\), and drops \(K_g\). Everything in §3–§5 follows the notebook, so it uses \(K_g = 0\). §6 puts gravity back.</p>
+    <p>Dropping gravity is not an oversight in the method the notebook follows. Qiao, Tao &amp; Zhang (2024) deliberately move inertia, Coriolis and gravity into a lumped disturbance \(d\) and estimate it with a nonlinear disturbance observer (§10). The notebook keeps the omission but not the observer, so here nothing compensates for gravity except the switching gain.</p>
+  </div>
+  <p>The mass matrix at the straight hang, from <code>mj_fullM</code> (kg·m², rows and columns \(\theta_0\) at the mount to \(\theta_4\) at the tip):</p>
+  <div class="eqn">\[ M = \begin{bmatrix} 0.0200 & 0.0150 & 0.0103 & 0.0061 & 0.0027\\ 0.0150 & 0.0115 & 0.0081 & 0.0049 & 0.0022\\ 0.0103 & 0.0081 & 0.0059 & 0.0036 & 0.0017\\ 0.0061 & 0.0049 & 0.0036 & 0.0024 & 0.0012\\ 0.0027 & 0.0022 & 0.0017 & 0.0012 & 0.0007 \end{bmatrix}. \]</div>
+  <p>\(M\) is full because rotating hinge \(i\) moves every link below it. That is the inertial coupling Figure 1's caption refers to. \(K\) and \(D\) are diagonal because each spring and damper sees only its own relative angle. At \(\theta=0\) the x-plane and y-plane blocks of the full 15×15 mass matrix are uncoupled, with entries exactly 0. That is what justifies treating one plane at a time.</p>
+</section>
+
+<!-- 3 -->
+<section>
+  <div class="secno">§3</div>
+  <h2>The output equation is the kinematic Jacobian</h2>
+  <p>Differentiating \(\eqref{fk}\) at \(\theta = 0\), where \(\cos\varphi_j = 1\):</p>
+  <div class="eqn">\[ \frac{\partial x_{\text{tip}}}{\partial \theta_i}\bigg|_{0} = -\sum_{j\ge i}\ell_j \;\equiv\; L_i, \qquad L = -\,(0.3080,\ 0.2488,\ 0.1896,\ 0.1304,\ 0.0712)\ \text{m}. \]</div>
+  <p>Each \(L_i\) is minus the distance from hinge \(i\) to the tip, the lever arm of that hinge. The linear output equation is \(x = L\,\theta\). The notebook computes \(L\) by a forward difference with \(\varepsilon = 0.01\) rad on the MuJoCo model and gets these same values, so this step is exact. Because \(\partial z/\partial\theta = 0\) at the straight hang, the tip height is second order in \(\theta\) and absent from the linear model.</p>
+</section>
+
+<!-- 4 -->
+<section>
+  <div class="secno">§4</div>
+  <h2>Modal decoupling: where the 1-DOF spring–damper comes from</h2>
+  <p>Solve the generalized symmetric eigenproblem and normalize the eigenvectors in the mass metric:</p>
+  <div class="eqn">\[ K\,v_r = \omega_r^2\,M\,v_r, \qquad V = [\,v_0\ \cdots\ v_4\,], \qquad V^{\mathsf T} M V = I, \qquad V^{\mathsf T} K V = \Omega^2 = \operatorname{diag}(\omega_r^2). \]</div>
+  <p>Substitute \(\theta = V\eta\) into \(\eqref{lin}\) with \(K_g = 0\) and premultiply by \(V^{\mathsf T}\):</p>
+  <div class="eqn">\[ \ddot\eta + V^{\mathsf T} D V\,\dot\eta + \Omega^2\,\eta = g\,V^{\mathsf T}\mathbf 1\,\Delta p. \]</div>
+  <p>Mass and stiffness are now diagonal. The damping term is the one that decides whether the modes truly separate. Here it does, exactly, because the damping is <em>stiffness-proportional</em> (Rayleigh damping with no mass term):</p>
+  <div class="eqn">\[ D = d_\theta I = \alpha\,K, \quad \alpha = \frac{d_\theta}{k_\theta} = \frac{0.3629}{0.4168} = 0.8706\ \text{s} \quad\Longrightarrow\quad V^{\mathsf T} D V = \alpha\,\Omega^2 \ \ \text{(diagonal)}. \]</div>
+  <p>So the five-DOF chain is, in modal coordinates, five independent unit-mass spring–dampers:</p>
+  <div class="eqn">\[ \ddot\eta_r + \alpha\,\omega_r^2\,\dot\eta_r + \omega_r^2\,\eta_r = g\,(v_r\!\cdot\!\mathbf 1)\,\Delta p, \qquad \zeta_r = \tfrac12\,\alpha\,\omega_r, \qquad r = 0,\dots,4. \label{modal}\]</div>
+  <p>This is the precise sense in which the arm is a spring–damper. Each oscillator is a modal coordinate, a fixed shape of the whole chain whose amplitude is \(\eta_r\), not a physical point. Because \(\zeta_r\) grows linearly with \(\omega_r\), every mode is overdamped, and the higher modes very heavily so:</p>
+  <div class="tbl"><table>
+    <tr><th>mode r</th><th class="n">f<sub>r</sub> (Hz)</th><th class="n">ζ<sub>r</sub></th><th class="n">L·v<sub>r</sub></th><th class="n">v<sub>r</sub>·1</th><th class="n">static tip gain (mm/psi)</th><th>shape v<sub>r</sub> (θ₀ … θ₄)</th></tr>
+    <tr class="hi"><td>0</td><td class="n">0.518</td><td class="n">1.42</td><td class="n">−2.328</td><td class="n">9.880</td><td class="n">−7.738</td><td class="mono">3.57, 2.73, 1.91, 1.15, 0.52</td></tr>
+    <tr><td>1</td><td class="n">3.349</td><td class="n">9.16</td><td class="n">1.340</td><td class="n">−31.71</td><td class="n">−0.342</td><td class="mono">17.1, −1.3, −14.9, −19.1, −13.5</td></tr>
+    <tr><td>2</td><td class="n">8.934</td><td class="n">24.4</td><td class="n">0.708</td><td class="n">−36.59</td><td class="n">−0.029</td><td class="mono">sign changes 2×</td></tr>
+    <tr><td>3</td><td class="n">15.726</td><td class="n">43.0</td><td class="n">−0.306</td><td class="n">28.18</td><td class="n">−0.003</td><td class="mono">sign changes 3×</td></tr>
+    <tr><td>4</td><td class="n">21.476</td><td class="n">58.7</td><td class="n">−0.108</td><td class="n">14.35</td><td class="n">−0.0003</td><td class="mono">sign changes 4×</td></tr>
+  </table></div>
+  <p>The static tip gain of mode \(r\) follows from \(\eqref{modal}\) at steady state, \(\eta_r = g(v_r\!\cdot\!\mathbf 1)\Delta p/\omega_r^2\), mapped to the tip by \(x = \sum_r (L\!\cdot\!v_r)\,\eta_r\). The five gains sum to −8.113 mm/psi, the springs-only static gain of the whole chain. Mode 0 bends every hinge the same way, a single C-curve, and carries 95 % of it.</p>
+  <p class="meta">A consequence worth knowing: an overdamped oscillator with \(\zeta \gg 1\) has one fast pole near \(-\alpha\omega_r^2\) and one slow pole near \(-1/\alpha = -1.149\ \text{s}^{-1}\). That is why the full springs-only chain has four slow real poles at −1.149 to −1.152 /s alongside mode 0's pair. Every discarded mode leaves behind a slow tail with time constant \(\alpha \approx 0.87\) s, but with small gain.</p>
+</section>
+
+<!-- 5 -->
+<section>
+  <div class="secno">§5</div>
+  <h2>Truncation to one mode, then a change to tip coordinates</h2>
+  <p>The notebook keeps the mode with the largest static tip gain, \(\arg\max_r |(L\!\cdot\!v_r)(v_r\!\cdot\!\mathbf 1)|/\omega_r^2\), which is mode 0. That is the right criterion for a 0.1 Hz reference, which lies below every modal corner. Truncating \(\theta \approx v_0\,\eta_0\), so that \(x = (L\!\cdot\!v_0)\,\eta_0\), and multiplying \(\eqref{modal}\) for \(r=0\) by \(L\!\cdot\!v_0\) gives the model used by the controller:</p>
+  <div class="eqn">\[ \boxed{\;\ddot x + c\,\dot x + k\,x = b\,\Delta p\;}, \qquad k = \omega_0^2 = 10.602\ \text{s}^{-2},\quad c = \alpha\,\omega_0^2 = 9.231\ \text{s}^{-1},\quad b = (L\!\cdot\!v_0)\,g\,(v_0\!\cdot\!\mathbf 1) = -0.0820\ \tfrac{\text{m}}{\text{s}^2\,\text{psi}}. \label{red}\]</div>
+  <p>As a transfer function from pressure difference to tip position:</p>
+  <div class="eqn">\[ G_{\text{model}}(s) = \frac{X(s)}{\Delta P(s)} = \frac{b}{s^2 + c\,s + k} = \frac{-0.0820}{(s + 7.887)(s + 1.344)}, \qquad \zeta = \frac{c}{2\sqrt k} = 1.42, \qquad G_{\text{model}}(0) = \frac{b}{k} = -7.74\ \tfrac{\text{mm}}{\text{psi}}. \]</div>
+  <p><b>Showing it is a physical spring–damper.</b> \(\eqref{red}\) is written per unit mass. Put a mass back in by matching kinetic energy. With \(\theta = v_0\eta_0\) and \(v_0^{\mathsf T}Mv_0 = 1\), \(T = \tfrac12\dot\eta_0^2 = \tfrac12\,\dot x^2/(L\!\cdot\!v_0)^2\). So the equivalent mass at the tip, and from it the equivalent spring, damper and force, are</p>
+  <div class="eqn">\[ m_{\text{eq}} = \frac{1}{(L\!\cdot\!v_0)^2} = 0.185\ \text{kg}, \qquad k_{\text{eq}} = m_{\text{eq}}\,k = 1.96\ \tfrac{\text{N}}{\text{m}}, \qquad c_{\text{eq}} = m_{\text{eq}}\,c = 1.70\ \tfrac{\text{N·s}}{\text{m}}, \qquad F = m_{\text{eq}}\,b\,\Delta p = -0.0151\,\Delta p\ \text{N}, \]</div>
+  <div class="eqn">\[ m_{\text{eq}}\,\ddot x + c_{\text{eq}}\,\dot x + k_{\text{eq}}\,x = F. \]</div>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 600 190" role="img" aria-label="Equivalent one degree of freedom oscillator at the tip: a 0.185 kilogram mass attached to a wall through a 1.96 newton per metre spring and a 1.70 newton second per metre damper, driven by a force of minus 0.0151 newtons per psi times delta p, with displacement x.">
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+      <pattern id="hatch2" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" stroke="currentColor" stroke-width="1.2"/></pattern></defs>
+      <rect x="40" y="30" width="16" height="120" fill="url(#hatch2)"/>
+      <line x1="56" y1="30" x2="56" y2="150" stroke="currentColor" stroke-width="2"/>
+      <!-- spring -->
+      <polyline points="56,62 90,62 100,48 116,76 132,48 148,76 164,48 180,76 196,48 206,62 250,62" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+      <text x="150" y="40" text-anchor="middle" font-size="13" fill="currentColor">k<tspan font-size="9" dy="3">eq</tspan><tspan dy="-3"></tspan> = 1.96 N/m</text>
+      <!-- damper -->
+      <line x1="56" y1="118" x2="130" y2="118" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M130,104 L170,104 M130,104 L130,132 L170,132" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <line x1="150" y1="108" x2="150" y2="128" stroke="currentColor" stroke-width="3"/>
+      <line x1="150" y1="118" x2="250" y2="118" stroke="currentColor" stroke-width="1.8"/>
+      <text x="150" y="152" text-anchor="middle" font-size="13" fill="currentColor">c<tspan font-size="9" dy="3">eq</tspan><tspan dy="-3"></tspan> = 1.70 N·s/m</text>
+      <!-- mass -->
+      <rect x="250" y="40" width="110" height="100" rx="4" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.8"/>
+      <text x="305" y="86" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">m<tspan font-size="9" dy="3">eq</tspan><tspan dy="-3"></tspan></text>
+      <text x="305" y="106" text-anchor="middle" font-size="13" fill="currentColor">0.185 kg</text>
+      <!-- force -->
+      <line x1="360" y1="90" x2="440" y2="90" stroke="currentColor" stroke-width="1.8" marker-end="url(#a2)"/>
+      <text x="448" y="86" font-size="13" fill="currentColor">F = −0.0151 Δp  N</text>
+      <text x="448" y="104" font-size="12" fill="var(--muted)">(sign: +Δp on this axis pushes −x)</text>
+      <!-- displacement -->
+      <line x1="305" y1="165" x2="380" y2="165" stroke="currentColor" stroke-width="1.2" marker-end="url(#a2)"/>
+      <line x1="305" y1="158" x2="305" y2="172" stroke="currentColor" stroke-width="1.2"/>
+      <text x="390" y="170" font-size="14" font-style="italic" font-family="Newsreader, Georgia, serif" fill="currentColor">x</text>
+    </svg>
+    </div>
+    <figcaption><b>Figure 2.</b> The controller's model, drawn literally. It is 1-DOF because four of the chain's five modes were discarded. "Mass", "spring" and "damper" are the energy-equivalent values of mode 0 seen at the tip, not physical parts. The real hinge springs are 0.417 N·m/rad each, and the links are 0.076 kg each. The natural frequency \(\sqrt{k_{\text{eq}}/m_{\text{eq}}}\) is mode 0's 0.518 Hz.</figcaption>
+  </figure>
+  <p>The notebook uses the same constants for the y axis on grounds of symmetry. The \(\theta^x\) block of the mass matrix is identical to the \(\theta^y\) block. Only the sign of the lever arm differs, because rotation about \(+x\) moves the hanging tip toward \(+y\).</p>
+</section>
+
+<!-- 6 -->
+<section>
+  <div class="secno">§6</div>
+  <h2>What the model leaves out, quantified</h2>
+  <h3>6.1 Gravity stiffness</h3>
+  <p>For a hanging chain, \(V_g = \sum_b m_b\,g_0\,z_b(\theta)\) is minimized at the straight hang. Its Hessian is positive definite, so gravity acts as an extra restoring spring. Differentiating the planar kinematics twice shows the structure. Rotating hinge \(i\) and hinge \(j\) together moves only bodies below both, about the lower hinge, so</p>
+  <div class="eqn">\[ (K_g)_{ij} = \kappa_{\max(i,j)}, \qquad \kappa_j = g_0\!\!\sum_{\text{bodies } b \text{ below hinge } j}\!\! m_b\,d_{j,b}, \qquad \kappa = (0.826,\ 0.574,\ 0.367,\ 0.204,\ 0.085)\ \text{N·m/rad}, \]</div>
+  <p>where \(d_{j,b}\) is the vertical distance from hinge \(j\) down to body \(b\)'s centre of mass. The numbers come from a finite difference of MuJoCo's <code>qfrc_bias</code>, and the result has exactly this \(\max(i,j)\) pattern. Near the mount \(\kappa_0\) is twice the joint spring \(k_\theta = 0.417\). With gravity included, \(\eqref{lin}\) becomes:</p>
+  <div class="tbl"><table>
+    <tr><th>Stiffness used</th><th class="n">f₀ (Hz)</th><th class="n">ζ₀</th><th class="n">k (s⁻²)</th><th class="n">b</th><th class="n">k<sub>eq</sub> (N/m)</th><th class="n">one-mode static (mm/psi)</th><th class="n">full-chain static (mm/psi)</th></tr>
+    <tr><td>\(K\) (notebook)</td><td class="n">0.518</td><td class="n">1.42</td><td class="n">10.602</td><td class="n">−0.0820</td><td class="n">1.96</td><td class="n">−7.74</td><td class="n">−8.11</td></tr>
+    <tr class="hi"><td>\(K + K_g\)</td><td class="n">1.142</td><td class="n">0.66</td><td class="n">51.451</td><td class="n">−0.0790</td><td class="n">9.63</td><td class="n">−1.54</td><td class="n">−1.80</td></tr>
+  </table></div>
+  <p>Two independent checks support the gravity row. The 50-state linearization of the whole simulator (<code>scripts/plant_model.py</code>, <code>make_sim</code>) gives 1.810 mm/psi for the five pouches of one column. A static step on the scored plant moves the tip 1.97–2.07 mm per psi. The springs-only model overstates the static gain by roughly a factor of four, and it gets the character of the mode wrong: underdamped at 1.14 Hz, not overdamped at 0.52 Hz.</p>
+  <p>Gravity also breaks the proportional-damping property of §4. \(D = d_\theta I\) is no longer proportional to \(K + K_g\), so \(V^{\mathsf T}DV\) acquires off-diagonal terms (up to 14.9 against mode 0's 9.41) and the modes no longer decouple exactly. The full 5-hinge chain with gravity has a lightly damped pair at \(-4.62 \pm 5.52j\) and slow real poles at −1.25, −1.32, −1.42 and −1.81 s⁻¹. The springs-only model's slow pole at −1.344 s⁻¹ (0.74 s) happens to land in that cluster, but for a different reason: it is the slow half of an overdamped mode that the real chain does not have.</p>
+
+  <h3>6.2 Actuator dynamics</h3>
+  <p>The model's input is the pressure difference acting on the arm. The controller's output is a pressure <em>command</em>. On the scored plant they are related by the regulator's fitted gain and bias, a 0.5 s transport delay and the 0.6 s first-order pneumatic lag, so the true command-to-tip map is, per axis,</p>
+  <div class="eqn">\[ G_{\text{true}}(s) \;\approx\; \underbrace{\gamma\,e^{-0.5 s}}_{\text{regulator, delay}}\;\underbrace{\frac{1}{0.6\,s + 1}}_{\text{lag}}\;\underbrace{\frac{b}{s^2 + c\,s + k}}_{\text{mechanics}}. \]</div>
+  <p>The relative degree is 3 plus dead time, while the model's is 2. Here \(\gamma\) stands for the per-segment regulator gains, and its value was not used here. This is the assumption with the largest consequence for the controller, as §7 shows.</p>
+</section>
+
+<!-- 7 -->
+<section>
+  <div class="secno">§7</div>
+  <h2>The sliding-mode law built on the model</h2>
+  <p>With tracking error \(e = x - x_d\), define the sliding variable and differentiate it along the model \(\eqref{red}\):</p>
+  <div class="eqn">\[ s = \dot e + \lambda e, \qquad \dot s = \ddot x - \ddot x_d + \lambda\dot e = -k x - c\dot x + b\,\Delta p - \ddot x_d + \lambda\dot e. \]</div>
+  <p>Impose the reaching law \(\dot s = -K\,\mathrm{sat}(s/\phi)\) and solve for the input:</p>
+  <div class="eqn">\[ \Delta p = \frac{1}{b}\Big[\,\underbrace{k x + c\dot x + \ddot x_d - \lambda\dot e}_{\text{equivalent control } u_{\text{eq}}} \;-\; K\,\mathrm{sat}(s/\phi)\Big]. \label{smc}\]</div>
+  <p>Outside the boundary layer, \(V = \tfrac12 s^2\) gives \(\dot V = -K|s| &lt; 0\), so \(s\) reaches the layer \(|s|\le\phi\) in finite time. On \(s = 0\) the error obeys \(\dot e = -\lambda e\). The algebra is correct for the model. The final gains are \(\lambda = 5\ \text{s}^{-1}\), \(K = 0.2\ \text{m/s}^2\), \(\phi = 0.02\ \text{m/s}\). Reference derivatives come from backward differences of the position reference.</p>
+
+  <h3>7.1 The robustness condition is about the lag</h3>
+  <p>The plant does not apply \(\Delta p\). It applies the lagged, delayed pressure \(p\). Write the true dynamics as the model plus a matched mismatch \(\delta\):</p>
+  <div class="eqn">\[ \ddot x = -kx - c\dot x + b\,\Delta p + \underbrace{b\,(p - \Delta p) + \delta_{\text{mech}}}_{\delta}, \qquad \dot s = -K\,\mathrm{sat}(s/\phi) + \delta. \]</div>
+  <p>Sliding is maintained only while \(|\delta| &lt; K\). Ignoring the mechanical model error, that requires \(|p - \Delta p| &lt; K/|b| = 0.2/0.082 = 2.44\) psi: the pressure that actually reaches the arm must stay within about 2.4 psi of what the controller is asking for. A 0.5 s delay followed by a 0.6 s lag makes that hard to guarantee. The switching gain \(K\) is the only thing in the design that pays for it.</p>
+
+  <h3>7.2 Inside the boundary layer the controller is linear</h3>
+  <p>Where \(|s| \le \phi\), \(\mathrm{sat}(s/\phi) = s/\phi\), and \(\eqref{smc}\) collapses to a fixed linear law. With the allocator corrected so that \(b = +0.0820\) (§8):</p>
+  <div class="eqn">\[ \Delta p = \underbrace{\frac{k}{b}x + \frac{c}{b}\dot x}_{\text{model terms}} + \frac{1}{b}\ddot x_d - \underbrace{\frac{\lambda + K/\phi}{b}}_{182.8}\,\dot e - \underbrace{\frac{\lambda K/\phi}{b}}_{609.5}\,e \;=\; 129.2\,x + 112.5\,\dot x + 12.19\,\ddot x_d - 182.8\,\dot e - 609.5\,e \quad [\text{psi, m}]. \]</div>
+  <p>Measured on the scored task with the corrected allocator, \(|s| &lt; \phi\) on both axes for 97 % of the 3000 control steps (x 97.4 %, y 100 %). With the notebook's allocator the figure was 56 %. In practice, then, the corrected controller is a PD on the error with \(K_p \approx 610\) psi/m and \(K_d \approx 183\) psi·s/m, plus reference-acceleration feedforward, plus positive state feedback \(k x/b + c\dot x/b\) that tries to cancel the modelled spring and damper. Read this way, "the model" enters the controller only through those last two coefficients and the scaling \(1/b\).</p>
+  <p>That also explains the gravity result. With \(K + K_g\), the cancellation coefficient \(k/b\) grows from 129 to 651 psi/m. Because the controller uses absolute tip position while the tip settles at \(x_0 = -4.96\) mm, the constant bias \(k x_0 / b\) grows from 0.64 to 3.23 psi. Both are pushed through a delay and a lag the model does not know about.</p>
+</section>
+
+<!-- 8 -->
+<section>
+  <div class="secno">§8</div>
+  <h2>Allocation: from \((\Delta p_x, \Delta p_y)\) to three segment pressures</h2>
+  <p>The scored plant has three commandable segments, S2, S3 and S4, at azimuths \(\phi_s = 90^\circ, 180^\circ, 270^\circ\). Measured static responses show that raising segment \(s\) pushes the tip along \(d_s = (\cos\phi_s, \sin\phi_s)\): S2 → \(+y\), S3 → \(-x\), S4 → \(-y\). With \(\mathcal D = [\,d_2\ d_3\ d_4\,]\in\mathbb R^{2\times3}\), the planar push produced by segment increments \(\Delta p_{\text{seg}}\) is proportional to \(\mathcal D\,\Delta p_{\text{seg}}\), and the minimum-norm allocator is \(\Delta p_{\text{seg}} = \mathcal D^{+}u\).</p>
+  <p>The notebook instead uses the vectors \(a_s = (-\sin\phi_s, \cos\phi_s)\), which in the simulator are the axes the bending <em>moment</em> acts about. Those are the tip directions rotated by \(+90^\circ\), \(a_s = R_{90}\,d_s\). Since \(R_{90}\) is orthogonal,</p>
+  <div class="eqn">\[ \Delta p_{\text{seg}} = (R_{90}\mathcal D)^{+}u = \mathcal D^{+}R_{90}^{\mathsf T}u \quad\Longrightarrow\quad \mathcal D\,\Delta p_{\text{seg}} = R_{-90}\,u = \begin{bmatrix}0 & 1\\ -1 & 0\end{bmatrix}u. \]</div>
+  <p>A command \(u = (1, 0)\) on the x channel therefore pushes the tip along \(-y\). The static test agrees: +1 psi of \(\Delta p_x\) moved the tip −2.07 mm in y and −0.02 mm in x. Each axis's controller was driving the other axis. The correction is \(\mathcal D^{+}\) in place of \((R_{90}\mathcal D)^{+}\), together with \(b \to -b\), because in the corrected coordinates \(+\Delta p_x\) moves the tip toward \(+x\) (<code>--fix-allocator</code>). One hypothesis for the negative phase lags reported with the original allocator, not verified here: on a 10 s circle, rotating the feedback by \(90^\circ\) is the same as shifting the reference by a quarter period.</p>
+</section>
+
+<!-- 9 -->
+<section>
+  <div class="secno">§9</div>
+  <h2>Measured results</h2>
+  <p class="meta"><code>make_calibrated_sim(control_hz=100, seed=0)</code>, <code>CircularTrackingTask()</code> (7 mm circle, 0.1 Hz, 5 s settle, 30 s scored). RMSE of the lateral error over the 30 s, in mm, with phase lag in s in brackets (positive means the tip lags). SMC gains are λ = 5, K = 0.2, φ = 0.02 unless stated. Every max error is 7.00 mm or more, because the circle starts 7 mm from the settled tip.</p>
+  <div class="tbl"><table>
+    <tr><th>Controller</th><th class="n">notebook allocator</th><th class="n">corrected allocator</th></tr>
+    <tr><td>PD, \(K_p = 500,\ K_d = 20\)</td><td class="n">9.94 (2.06)</td><td class="n">4.08 (0.66)</td></tr>
+    <tr class="hi"><td>SMC, springs-only model (her final)</td><td class="n">4.37 (−0.81)</td><td class="n">3.20 (0.44)</td></tr>
+    <tr><td>SMC, springs-only, λ = 8</td><td class="n">4.14 (−0.72)</td><td class="n">2.53 (0.34)</td></tr>
+    <tr><td>SMC, springs-only, \(x - x_0\) in place of \(x\)</td><td class="n">4.20 (−0.81)</td><td class="n">3.13 (0.44)</td></tr>
+    <tr><td>SMC, springs-only, \(x - x_0\), λ = 8</td><td class="n">3.70 (−0.63)</td><td class="n">2.45 (0.34)</td></tr>
+    <tr><td>SMC, \(K + K_g\)</td><td class="n">10.63 (−2.43)</td><td class="n">11.16 (1.38)</td></tr>
+    <tr><td>SMC, \(K + K_g\), \(x - x_0\)</td><td class="n">9.78 (−2.58)</td><td class="n">6.07 (1.37)</td></tr>
+  </table></div>
+  <ul>
+    <li>A more faithful mechanical model makes this controller worse. That is consistent with §6.2 and §7: the model has no delay or lag, so making its cancellation terms stiffer only feeds larger corrections through dynamics it doesn't know about.</li>
+    <li>The largest single improvement comes from the allocator, not from the model: PD drops from 9.94 to 4.08 mm and SMC from 4.37 to 3.20 mm.</li>
+    <li>With the corrected allocator the SMC is, 97 % of the time, the linear law of §7.2. A fair comparison against PD is therefore really a comparison of two linear controllers with different gains and feedforward.</li>
+  </ul>
+</section>
+
+<!-- 10 -->
+<section>
+  <div class="secno">§10</div>
+  <h2>The paper this follows: Qiao, Tao &amp; Zhang (2024)</h2>
+  <p>The notebook's controller is modelled on <em>Nonlinear Disturbance Observer with Sliding Mode Control for a Fabric Soft Robotic Arm</em>, IFAC-PapersOnLine 58(28), 516–521, from this robot's own lab. Read against the paper's derivation (its eqs. 1–15 and Fig. 2), the notebook departs from it in several deliberate or inherited ways.</p>
+  <h3>10.1 The paper's derivation</h3>
+  <p>The paper starts from the same rigid-chain form as \(\eqref{eom}\), written for a two-segment PCC arm whose configuration \(q = [\theta_1, L_1, \theta_2, L_2]^{\mathsf T}\) holds a bending angle and an arc length per segment. These are measured directly with wire encoders:</p>
+  <div class="eqn">\[ M_q\ddot q + CO_{q,\dot q} + G_q + K_q q + C_q\dot q = u. \]</div>
+  <p>Because the arm is light, the authors take the first-order limit. Inertia, Coriolis and gravity are moved into a lumped disturbance, and the stiffness and damping are scheduled on a pressure-derived variable \(\rho\):</p>
+  <div class="eqn">\[ \dot q = A(\rho)\,q + B(\rho)\,u + d, \qquad A(\rho) = -\operatorname{diag}\!\Big(\frac{k_i(\rho_i)}{c_i(\rho_i)}\Big), \qquad k_i, c_i \text{ quadratic in } \rho_i, \]</div>
+  <p>with \(k_i, c_i\) identified experimentally at five pressure set points. With relative degree 1, the sliding surface is the error itself, \(\sigma_i = e_i\). A nonlinear disturbance observer with state-dependent gain \(g_i = l_{1,i} + 2l_{2,i}|q_i|\) supplies \(\hat d_i\), and the control law is</p>
+  <div class="eqn">\[ u_i = -c_i(\rho_i)\big(-\dot q_{d,i} + a_i q_i + \lambda_i\sigma_i + \eta_i\,\mathrm{sat}(\sigma_i) + \hat d_i\big), \qquad V_i = \tfrac12 e_i^2,\ \ \dot V_i \le -2\lambda_i V_i. \]</div>
+  <p>The input \(u\) is a torque or force. Fig. 2 of the paper places an inner loop (torque/force controller → pressure controller → arm) between the SMC and the robot, and the text states the key assumption: the inner loop is taken to be fast enough relative to the outer loop to be neglected.</p>
+  <h3>10.2 Side by side</h3>
+  <div class="tbl"><table>
+    <tr><th></th><th>Qiao, Tao &amp; Zhang (2024)</th><th>Notebook</th></tr>
+    <tr><td>State</td><td>Configuration \(q = [\theta_j, L_j]\) per segment, measured by wire encoders</td><td>Tip \(x, y\) from motion capture, reached through the mode projection of §5</td></tr>
+    <tr><td>Model order</td><td>First order (massless), \(\dot q = Aq + Bu + d\)</td><td>Second order, \(\ddot x + c\dot x + kx = b\Delta p\)</td></tr>
+    <tr><td>Gravity, inertia</td><td>Lumped into \(d\), estimated by the NDOB</td><td>Inertia kept, gravity dropped, no estimate</td></tr>
+    <tr><td>Parameters</td><td>\(k(\rho), c(\rho)\) identified from experiments, scheduled on pressure (LPV)</td><td>Constant, from the MuJoCo joint springs and dampers</td></tr>
+    <tr><td>Input</td><td>Torque/force; inner pressure loop assumed fast</td><td>Pressure difference through the fixed gain \(g\); lag and delay assumed absent (the same assumption, left implicit)</td></tr>
+    <tr><td>Sliding surface</td><td>\(\sigma = e\)</td><td>\(s = \dot e + \lambda e\)</td></tr>
+    <tr><td>Switching gain</td><td>Adaptive \(\eta_i\), from bounds on \(\delta k, \delta c\) and the observer error</td><td>Constant \(K = 0.2\) m/s², boundary layer \(\phi\)</td></tr>
+    <tr><td>Disturbance observer</td><td>NDOB, the paper's main contribution</td><td>None (the file is "without disturbance observer")</td></tr>
+    <tr><td>Experiment</td><td>40 Hz loop; \(\theta_d = 0.35\sin^2(2\pi t/30)\), period 15 s; seven trials</td><td>100 Hz; 7 mm circle at 0.1 Hz, period 10 s</td></tr>
+  </table></div>
+  <h3>10.3 What this changes in the review above</h3>
+  <ul>
+    <li><b>Gravity (§6.1).</b> In the paper's framework, leaving \(G_q\) out of the model is a design choice, because the observer is there to absorb it. Calling the notebook's \(K_g = 0\) a modelling error is too strong. It is an omission that only works with the observer, and the notebook has no observer. In addition, the paper identifies \(k\) from steady-state experiments. That procedure would measure the combined spring-plus-gravity stiffness rather than the springs alone. This is an inference from the method; it was not run on the simulator.</li>
+    <li><b>Model order (§5).</b> The paper's model is first order. The notebook's second-order mode is its own extension. In these coordinates the paper's massless limit is easy to write down. Dropping \(\ddot\eta_0\) from \(\eqref{modal}\) leaves \(\alpha\omega_0^2\dot\eta_0 + \omega_0^2\eta_0 = g(v_0\!\cdot\!\mathbf 1)\Delta p\), with its single pole at \(-1/\alpha = -1.149\ \text{s}^{-1}\), next to the notebook's slow pole at \(-1.344\ \text{s}^{-1}\). In joint space the springs-only massless chain is already decoupled, \(d_\theta\dot\theta_i + k_\theta\theta_i = \tau_i\), which is exactly the paper's diagonal \(A\).</li>
+    <li><b>Actuator dynamics (§6.2, §7.1).</b> The fast-inner-loop assumption is the paper's, stated openly, not something the notebook added. Whether it holds is a matter of time scales. At the task's 0.1 Hz, the 0.6 s lag alone contributes \(\arctan(2\pi\cdot0.1\cdot0.6) = 20.7^\circ\) of phase and the 0.5 s delay another \(18^\circ\) (calculated, not measured). The paper's experiments ran a 15 s period on its own hardware, whose regulator dynamics it does not report.</li>
+    <li><b>Surface and gain (§7).</b> Both choices are consistent within each design: \(\sigma = e\) for a first-order model, \(s = \dot e + \lambda e\) for a second-order one. The notebook replaces the paper's adaptive \(\eta\) with a constant \(K\), which is why the robustness budget of §7.1 is a fixed 2.44 psi.</li>
+    <li><b>The paper's next step is the observer.</b> The notebook's own recommendation, a disturbance observer for the delay and the regulator miscalibration, is the paper's contribution. Per the paper's design, its observer targets a disturbance whose rate is bounded and assumes an instantaneous input. It does not model a dead time, so a 0.5 s transport delay would still have to be handled separately. That follows from the derivation; it was not tested.</li>
+  </ul>
+</section>
+
+<!-- 11 -->
+<section>
+  <div class="secno">§11</div>
+  <h2>Assumption ledger</h2>
+  <div class="tbl"><table>
+    <tr><th>Assumption</th><th>Where</th><th>Status</th></tr>
+    <tr><td>One bending plane; x and y identical; axial slide ignored</td><td>§1</td><td>Mass coupling between planes is exactly 0 at \(\theta = 0\); lever-arm signs differ by axis.</td></tr>
+    <tr><td>Linearize at the straight hang \(\theta = 0\)</td><td>§2</td><td>The settled tip is at \(x_0 = -4.96\) mm, \(z = 242.2\) mm; the effect on \(M\), \(L\) was not measured.</td></tr>
+    <tr><td>\(K_g = 0\): no gravity stiffness</td><td>§2</td><td>Static gain 7.74 vs 1.80 mm/psi; mode 0.52 Hz overdamped vs 1.14 Hz, ζ 0.66. The paper makes the same omission but compensates for it with its observer; the notebook has none (§10).</td></tr>
+    <tr><td>Output \(x = L\theta\) (kinematic Jacobian)</td><td>§3</td><td>Exact at \(\theta = 0\).</td></tr>
+    <tr><td>Modes decouple through damping</td><td>§4</td><td>Exact for \(K_g = 0\), since \(D = \alpha K\); not exact with gravity.</td></tr>
+    <tr><td>Keep one mode</td><td>§5</td><td>Mode 0 carries 95 % of the springs-only static gain.</td></tr>
+    <tr><td>Same \(\Delta p\) on all five levels</td><td>§2</td><td>True on the 3-segment plant (one pressure per segment).</td></tr>
+    <tr><td>Pressure acts instantly: no lag, delay or regulator gain (the paper's fast-inner-loop assumption)</td><td>§6.2</td><td>Relative degree 2 instead of 3 plus 0.5 s of dead time; sliding needs \(|p - \Delta p| &lt; 2.44\) psi.</td></tr>
+    <tr><td>\(x\) is absolute, not relative to the settled tip</td><td>§7</td><td>Bias \(k x_0/b\) = 0.64 psi (springs only), 3.23 psi (with gravity).</td></tr>
+    <tr><td>Moment axes used as tip directions in the allocator</td><td>§8</td><td>Error: 90° rotation of the channels; corrected PD 4.08 mm, SMC 3.20 mm.</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <div class="secno">Reproduce</div>
+<pre>uv run python scripts/smc_reduced_model.py --sweep                       # notebook as written
+uv run python scripts/smc_reduced_model.py --sweep --gravity             # K + K_g
+uv run python scripts/smc_reduced_model.py --sweep --deviation           # x - x0
+uv run python scripts/smc_reduced_model.py --sweep --fix-allocator [--deviation] [--gravity]</pre>
+  <p class="meta">The intermediate matrices (\(M\), \(K_g\), the mode table, the full-chain poles) and the boundary-layer fraction came from short scratch scripts that repeat <code>reduced_model()</code>'s steps on <code>build_arm_xml(ArmConfig())</code>. They are not yet part of the repository.</p>
+</section>
+
+</div>

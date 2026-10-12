@@ -1,0 +1,702 @@
+<title>Literature Results Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a wide reading column; one scrollable left-to-right concept map (family → paper → robot → data → result → relevance → our arm), then legend, numbers table and caveats. Tokens match docs/reports/modeling-options.html. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --fg: #1b2228;
+  --muted: #5a6670;
+  --rule: #d9dee2;
+  --accent: #1f6f8b;
+  --accent-soft: #e3eff3;
+  --cmp: #a3487a;
+  --warn: #9a5b00;
+  --warn-soft: #fbf0dd;
+  --ok: #2d6a3e;
+  --ok-soft: #e4f1e7;
+  --no: #8f2d2d;
+  --no-soft: #f6e4e4;
+  --neutral-soft: #eceef0;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121619; --surface: #1a2025; --fg: #e3e8eb; --muted: #9aa6ae; --rule: #2e373e;
+    --accent: #6cb6d0; --accent-soft: #1c3038; --cmp: #e08bbb; --warn: #e2a64a; --warn-soft: #33281a;
+    --ok: #7fc492; --ok-soft: #1c2e22; --no: #e08b8b; --no-soft: #352022; --neutral-soft: #242b31; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121619; --surface: #1a2025; --fg: #e3e8eb; --muted: #9aa6ae; --rule: #2e373e;
+  --accent: #6cb6d0; --accent-soft: #1c3038; --cmp: #e08bbb; --warn: #e2a64a; --warn-soft: #33281a;
+  --ok: #7fc492; --ok-soft: #1c2e22; --no: #e08b8b; --no-soft: #352022; --neutral-soft: #242b31; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); margin: 0; }
+.wrap { max-width: 1460px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: grid; gap: 40px; }
+.col { max-width: 860px; display: grid; gap: 14px; }
+header { display: grid; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1, h2 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 42px); }
+h2 { font-size: 27px; }
+p, ul { margin: 0; max-width: 72ch; }
+ul { padding-left: 1.2em; display: grid; gap: 6px; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--mono); font-size: .88em; }
+.meta { color: var(--muted); font-size: 14px; }
+section { display: grid; gap: 16px; min-width: 0; }
+.note { border-radius: 6px; padding: 16px 18px; display: grid; gap: 6px; background: var(--warn-soft); max-width: 860px; }
+.note strong:first-child { color: var(--warn); }
+
+/* map */
+figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
+.scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 0; }
+.map { display: block; }
+figcaption { color: var(--muted); font-size: 14px; max-width: 90ch; }
+.map text { font-family: var(--body); fill: var(--fg); }
+.map .colh { font: 500 11px var(--mono); letter-spacing: .07em; fill: var(--muted); }
+.map .nt { font-size: 11.5px; }
+.map .pt { font-weight: 500; }
+.map .famt { font: 600 13px var(--body); }
+.map .fams { font-size: 11.5px; fill: var(--muted); }
+.map .acc { font: 500 9.5px var(--mono); letter-spacing: .06em; }
+.map .acc-full { fill: var(--ok); }
+.map .acc-abs { fill: var(--warn); }
+.map .acc-none { fill: var(--no); }
+.map .acc-base { fill: var(--cmp); }
+.map .fam { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+.map .fam.base { fill: var(--surface); stroke: var(--cmp); stroke-dasharray: 5 3; }
+.map .pap { fill: var(--surface); stroke-width: 1.6; }
+.map .pap.full { stroke: var(--ok); }
+.map .pap.abs { stroke: var(--warn); stroke-dasharray: 6 3; }
+.map .pap.none { stroke: var(--no); stroke-dasharray: 2 3; fill: var(--neutral-soft); }
+.map .pap.base { stroke: var(--cmp); stroke-dasharray: 5 3; }
+.map .nd { fill: var(--surface); stroke: var(--rule); stroke-width: 1; }
+.map .nd.res { stroke: var(--accent); }
+.map .nd.nonum { fill: url(#hatch); stroke: var(--rule); }
+.map .hatch-bg { fill: var(--surface); }
+.map .hatch-ln { stroke: var(--rule); stroke-width: 2; }
+.map .rel.r-high { fill: var(--ok-soft); stroke: var(--ok); }
+.map .rel.r-part { fill: var(--warn-soft); stroke: var(--warn); }
+.map .rel.r-low { fill: var(--no-soft); stroke: var(--no); }
+.map .rel.r-frame, .map .rel.r-unk { fill: var(--neutral-soft); stroke: var(--muted); }
+.map .edge { stroke: var(--muted); stroke-width: 1; fill: none; }
+.map .ahead { fill: var(--muted); }
+.map .ahead-c { fill: var(--cmp); }
+.map .cmp { stroke: var(--cmp); stroke-width: 1.5; stroke-dasharray: 5 3; fill: none; }
+.map .cmpt { font: 500 10px var(--mono); fill: var(--cmp); }
+.map .reledge { fill: none; stroke-width: 1.4; opacity: .75; }
+.map .reledge.r-high { stroke: var(--ok); }
+.map .reledge.r-part { stroke: var(--warn); }
+.map .reledge.r-low { stroke: var(--no); }
+.map .reledge.r-frame, .map .reledge.r-unk { stroke: var(--muted); stroke-dasharray: 3 3; }
+.map .arm { fill: var(--fg); stroke: none; }
+.map .armt { font-size: 11.5px; fill: var(--bg); }
+.map .armt.b { font-weight: 600; font-size: 12.5px; }
+
+/* legend */
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 28px; max-width: 1100px; }
+.legend div { display: grid; gap: 6px; font-size: 14px; }
+.legend h3 { font: 500 11px/1.4 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.key { display: flex; gap: 10px; align-items: center; }
+.sw { flex: none; width: 30px; height: 16px; border-radius: 3px; border: 1.6px solid var(--rule); background: var(--surface); }
+.sw.full { border-color: var(--ok); }
+.sw.abs { border-color: var(--warn); border-style: dashed; }
+.sw.none { border-color: var(--no); border-style: dotted; background: var(--neutral-soft); }
+.sw.base { border-color: var(--cmp); border-style: dashed; }
+.sw.nonum { background: repeating-linear-gradient(45deg, var(--surface) 0 3px, var(--rule) 3px 5px); }
+.sw.high { background: var(--ok-soft); border-color: var(--ok); }
+.sw.part { background: var(--warn-soft); border-color: var(--warn); }
+.sw.low { background: var(--no-soft); border-color: var(--no); }
+.sw.frame { background: var(--neutral-soft); border-color: var(--muted); }
+.ln { flex: none; width: 30px; height: 0; border-top: 1.5px solid var(--muted); }
+.ln.cmp { border-top: 1.5px dashed var(--cmp); }
+
+/* table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 980px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+th { font: 500 11.5px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+tbody tr:last-child td { border-bottom: 0; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.p { font-weight: 600; }
+tr.group td { background: var(--accent-soft); font: 500 12px var(--mono); letter-spacing: .05em; text-transform: uppercase; color: var(--accent); padding-block: 6px; }
+.pill { display: inline-block; font: 500 11px/1.5 var(--mono); padding: 1px 7px; border-radius: 99px; white-space: nowrap; }
+.pill.full { background: var(--ok-soft); color: var(--ok); }
+.pill.abs { background: var(--warn-soft); color: var(--warn); }
+.pill.none { background: var(--no-soft); color: var(--no); }
+.cav { color: var(--warn); font-size: 13px; }
+footer { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--muted); font-size: 14px; display: grid; gap: 6px; }
+</style>
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">RAS556 · Soft pneumatic arm · Literature review</div>
+  <h1>Literature Results Map</h1>
+  <p>How the papers in <code>docs/references.md</code> performed: which modelling or identification method each used, on what robot, with what data, what accuracy it reported, and how far each carries over to our hanging arm (20 pouch pressure inputs, first-order pressure lag τ = 0.6 s, PD baseline 4.10 mm tip RMSE).</p>
+  <p class="meta">11 October 2026 · Built only from the two research agents' paper notes of 7 October 2026 and <code>docs/reports/modeling-options.html</code>; no paper was re-read for this page.</p>
+</header>
+
+<div class="note">
+  <strong>The numbers are not comparable across papers.</strong>
+  <p>Each paper uses a different robot, size, metric and unit: centimetres of average model error (Bruder), millimetres of per-axis tracking RMSE (Papageorgiou), dimensionless NMSE of a bending-angle readout (Hebbal Manjunath), and percent of rod length for a state observer (Zheng). A number only ranks methods inside its own paper. None of them predicts what a method would reach against our 4.10 mm baseline.</p>
+</div>
+
+<section>
+  <div class="col"><h2>The map</h2></div>
+  <figure>
+    <div class="scroll">
+<svg class="map" viewBox="0 0 1412 1593.5" width="1412" height="1593.5" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Concept map: nine method families on the left connect to thirteen papers and two baseline models, each followed by its robot, data, reported result and relevance to our 20-input arm with a 0.6 second pressure lag. Dashed edges mark compared-against baselines.">
+<defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="ahead" d="M0,0 L8,4 L0,8 z"/></marker><marker id="ahc" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path class="ahead-c" d="M0,0 L8,4 L0,8 z"/></marker><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" class="hatch-bg"/><line x1="0" y1="0" x2="0" y2="6" class="hatch-ln"/></pattern></defs>
+<text class="colh" x="16" y="22">METHOD FAMILY</text>
+<text class="colh" x="176" y="22">PAPER · ACCESS</text>
+<text class="colh" x="372" y="22">ROBOT · ACTUATION · INPUTS</text>
+<text class="colh" x="578" y="22">DATA · EXCITATION</text>
+<text class="colh" x="784" y="22">REPORTED RESULT</text>
+<text class="colh" x="1034" y="22">RELEVANCE: 0.6 S LAG · 20 INPUTS</text>
+<text class="colh" x="1284" y="22">OUR ARM</text>
+<rect class="fam" x="16" y="46" width="132" height="207.5" rx="5"/>
+<text class="famt" x="26" y="146.75">Koopman / EDMD</text>
+<text class="fams" x="26" y="161.75">lifted linear</text>
+<rect class="fam base" x="16" y="265.5" width="132" height="90.5" rx="5"/>
+<text class="famt" x="26" y="307.75">Linear state-space</text>
+<text class="fams" x="26" y="322.75">subspace (baseline)</text>
+<rect class="fam base" x="16" y="368.0" width="132" height="76.0" rx="5"/>
+<text class="famt" x="26" y="403.0">Neural network</text>
+<text class="fams" x="26" y="418.0">NARX (baseline)</text>
+<rect class="fam" x="16" y="456.0" width="132" height="222.0" rx="5"/>
+<text class="famt" x="26" y="564.0">SINDy / SINDYc</text>
+<text class="fams" x="26" y="579.0">sparse regression</text>
+<rect class="fam" x="16" y="690.0" width="132" height="383.5" rx="5"/>
+<text class="famt" x="26" y="878.75">Gray-box Lagrangian</text>
+<text class="fams" x="26" y="893.75">/ LPV</text>
+<rect class="fam" x="16" y="1085.5" width="132" height="76.0" rx="5"/>
+<text class="famt" x="26" y="1120.5">PCC kinematics</text>
+<text class="fams" x="26" y="1135.5">constant curvature</text>
+<rect class="fam" x="16" y="1173.5" width="132" height="193.0" rx="5"/>
+<text class="famt" x="26" y="1267.0">Cosserat rod</text>
+<text class="fams" x="26" y="1282.0">PDE</text>
+<rect class="fam" x="16" y="1378.5" width="132" height="90.5" rx="5"/>
+<text class="famt" x="26" y="1420.75">Reservoir /</text>
+<text class="fams" x="26" y="1435.75">linear readout</text>
+<rect class="fam" x="16" y="1481.0" width="132" height="90.5" rx="5"/>
+<text class="famt" x="26" y="1523.25">Survey</text>
+<text class="fams" x="26" y="1538.25">taxonomy</text>
+<line class="edge" x1="148" y1="98.5" x2="174" y2="98.5" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="46" width="168" height="105.0" rx="4"/>
+<text class="acc acc-full" x="185" y="64">FULL TEXT</text>
+<text class="nt pt" x="185" y="78.5">Bruder et al. 2021, IEEE</text>
+<text class="nt pt" x="185" y="93.0">T-RO</text>
+<line class="edge" x1="344" y1="98.5" x2="370" y2="98.5" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="46" width="178" height="105.0" rx="4"/>
+<text class="nt" x="381" y="66.0">Hanging 2-section McKibben</text>
+<text class="nt" x="381" y="80.5">arm, foam skin</text>
+<text class="nt" x="381" y="95.0">pneumatic</text>
+<text class="nt" x="381" y="109.5">3 regulator inputs (0–10 V</text>
+<text class="nt" x="381" y="124.0">≈ 0–140 kPa)</text>
+<text class="nt" x="381" y="138.5">laser-dot tip, Ts 0.083 s</text>
+<line class="edge" x1="550" y1="98.5" x2="576" y2="98.5" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="46" width="178" height="105.0" rx="4"/>
+<text class="nt" x="587" y="66.0">12 trials × ~5 min =</text>
+<text class="nt" x="587" y="80.5">45,103 snapshot pairs</text>
+<text class="nt" x="587" y="95.0">random ramp-and-hold</text>
+<text class="nt" x="587" y="109.5">held-out sinusoids, free-</text>
+<text class="nt" x="587" y="124.0">run over one period</text>
+<line class="edge" x1="756" y1="98.5" x2="782" y2="98.5" marker-end="url(#ah)"/>
+<rect class="nd res" x="784" y="46" width="222" height="105.0" rx="4"/>
+<text class="nt" x="793" y="66.0">Model error: linear Koopman 1.92</text>
+<text class="nt" x="793" y="80.5">cm, nonlinear 1.61 cm vs subspace</text>
+<text class="nt" x="793" y="95.0">4.74 cm, NARX 3.18 cm</text>
+<text class="nt" x="793" y="109.5">Tracking: K-MPC 0.46 cm vs L-MPC</text>
+<text class="nt" x="793" y="124.0">3.45 cm</text>
+<line class="edge" x1="1006" y1="98.5" x2="1032" y2="98.5" marker-end="url(#ah)"/>
+<rect class="nd rel r-high" x="1034" y="46" width="222" height="105.0" rx="4"/>
+<text class="nt" x="1043" y="66.0">Lag not modelled; one delay term</text>
+<text class="nt" x="1043" y="80.5">cannot span 0.6 s (60 samples at</text>
+<text class="nt" x="1043" y="95.0">100 Hz): needs measured pressures</text>
+<text class="nt" x="1043" y="109.5">or many delays</text>
+<text class="nt" x="1043" y="124.0">3 inputs, ours 20</text>
+<line class="edge" x1="148" y1="208.25" x2="174" y2="208.25" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="163.0" width="168" height="90.5" rx="4"/>
+<text class="acc acc-full" x="185" y="181.0">FULL TEXT</text>
+<text class="nt pt" x="185" y="195.5">Bruder et al. 2019, RSS</text>
+<text class="nt pt" x="185" y="210.0">(arXiv 1902.02827)</text>
+<line class="edge" x1="344" y1="208.25" x2="370" y2="208.25" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="163.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="381" y="183.0">Same arm as Bruder 2021</text>
+<text class="nt" x="381" y="197.5">3 regulator inputs</text>
+<text class="nt" x="381" y="212.0">Ts 0.1 s</text>
+<line class="edge" x1="550" y1="208.25" x2="576" y2="208.25" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="163.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="587" y="183.0">16 trials × ~20 min =</text>
+<text class="nt" x="587" y="197.5">191,000 pairs</text>
+<text class="nt" x="587" y="212.0">ramp-and-hold, Tu 5–10 s</text>
+<text class="nt" x="587" y="226.5">2.5 s prediction on</text>
+<text class="nt" x="587" y="241.0">sinusoids</text>
+<line class="edge" x1="756" y1="208.25" x2="782" y2="208.25" marker-end="url(#ah)"/>
+<rect class="nd res" x="784" y="163.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="793" y="183.0">Prediction: Koopman 1.59 cm vs</text>
+<text class="nt" x="793" y="197.5">linear SS 3.63 cm</text>
+<text class="nt" x="793" y="212.0">Tracking: K-MPC 1.26 cm vs L-MPC</text>
+<text class="nt" x="793" y="226.5">2.45 cm</text>
+<line class="edge" x1="1006" y1="208.25" x2="1032" y2="208.25" marker-end="url(#ah)"/>
+<rect class="nd rel r-high" x="1034" y="163.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="1043" y="183.0">As Bruder 2021</text>
+<text class="nt" x="1043" y="197.5">degree-4 lift already gives 330</text>
+<text class="nt" x="1043" y="212.0">basis functions: 20 inputs need a</text>
+<text class="nt" x="1043" y="226.5">low-degree basis or reduced</text>
+<text class="nt" x="1043" y="241.0">inputs</text>
+<line class="edge" x1="148" y1="310.75" x2="174" y2="310.75" marker-end="url(#ah)"/>
+<rect class="pap base" x="176" y="265.5" width="168" height="90.5" rx="4"/>
+<text class="acc acc-base" x="185" y="283.5">COMPARED-AGAINST BASELINE</text>
+<text class="nt pt" x="185" y="298.0">Baseline inside Bruder:</text>
+<text class="nt pt" x="185" y="312.5">4th-order subspace model</text>
+<text class="nt pt" x="185" y="327.0">(2021); 4-D observer-</text>
+<text class="nt pt" x="185" y="341.5">canonical SS (2019)</text>
+<line class="edge" x1="148" y1="406.0" x2="174" y2="406.0" marker-end="url(#ah)"/>
+<rect class="pap base" x="176" y="368.0" width="168" height="76.0" rx="4"/>
+<text class="acc acc-base" x="185" y="386.0">COMPARED-AGAINST BASELINE</text>
+<text class="nt pt" x="185" y="400.5">Baseline inside Bruder</text>
+<text class="nt pt" x="185" y="415.0">2021: NARX neural</text>
+<text class="nt pt" x="185" y="429.5">network</text>
+<line class="edge" x1="148" y1="508.5" x2="174" y2="508.5" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="456.0" width="168" height="105.0" rx="4"/>
+<text class="acc acc-full" x="185" y="474.0">FULL TEXT</text>
+<text class="nt pt" x="185" y="488.5">Brunton, Proctor, Kutz</text>
+<text class="nt pt" x="185" y="503.0">2016: SINDy (PNAS) +</text>
+<text class="nt pt" x="185" y="517.5">SINDYc (arXiv)</text>
+<text class="nt pt" x="185" y="532.0">puts DMDc and Koopman in</text>
+<text class="nt pt" x="185" y="546.5">the same regression</text>
+<line class="edge" x1="344" y1="508.5" x2="370" y2="508.5" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="456.0" width="178" height="105.0" rx="4"/>
+<text class="nt" x="381" y="476.0">No robot</text>
+<text class="nt" x="381" y="490.5">forced Lotka–Volterra,</text>
+<text class="nt" x="381" y="505.0">Lorenz with forcing and</text>
+<text class="nt" x="381" y="519.5">feedback</text>
+<line class="edge" x1="550" y1="508.5" x2="576" y2="508.5" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="456.0" width="178" height="105.0" rx="4"/>
+<text class="nt" x="587" y="476.0">Simulated: 100 time units</text>
+<text class="nt" x="587" y="490.5">train + 100 validate</text>
+<text class="nt" x="587" y="505.0">(L–V); 20 units train</text>
+<text class="nt" x="587" y="519.5">(Lorenz)</text>
+<line class="edge" x1="756" y1="508.5" x2="782" y2="508.5" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="456.0" width="222" height="105.0" rx="4"/>
+<text class="nt" x="793" y="476.0">No error metrics tabulated</text>
+<text class="nt" x="793" y="490.5">SINDYc recovers L–V to machine</text>
+<text class="nt" x="793" y="505.0">precision without noise; SINDy</text>
+<text class="nt" x="793" y="519.5">without input unstable</text>
+<line class="edge" x1="1006" y1="508.5" x2="1032" y2="508.5" marker-end="url(#ah)"/>
+<rect class="nd rel r-part" x="1034" y="456.0" width="222" height="105.0" rx="4"/>
+<text class="nt" x="1043" y="476.0">A library linear in u could</text>
+<text class="nt" x="1043" y="490.5">recover ṗ = (u − p)/τ directly</text>
+<text class="nt" x="1043" y="505.0">awkward for full 20-input lifting</text>
+<text class="nt" x="1043" y="519.5">closed-loop data needs dither</text>
+<line class="edge" x1="148" y1="625.5" x2="174" y2="625.5" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="573.0" width="168" height="105.0" rx="4"/>
+<text class="acc acc-full" x="185" y="591.0">FULL TEXT</text>
+<text class="nt pt" x="185" y="605.5">Papageorgiou et al.</text>
+<text class="nt pt" x="185" y="620.0">2024, Control Eng.</text>
+<text class="nt pt" x="185" y="634.5">Practice</text>
+<line class="edge" x1="344" y1="625.5" x2="370" y2="625.5" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="573.0" width="178" height="105.0" rx="4"/>
+<text class="nt" x="381" y="593.0">205 mm continuum module</text>
+<text class="nt" x="381" y="607.5">cables + McKibben</text>
+<text class="nt" x="381" y="622.0">3 servo inputs (300–500</text>
+<text class="nt" x="381" y="636.5">counts), not pressures</text>
+<text class="nt" x="381" y="651.0">40 Hz</text>
+<line class="edge" x1="550" y1="625.5" x2="576" y2="625.5" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="573.0" width="178" height="105.0" rx="4"/>
+<text class="nt" x="587" y="593.0">652,000 samples, 80/20</text>
+<text class="nt" x="587" y="607.5">split</text>
+<text class="nt" x="587" y="622.0">full-range, multi-</text>
+<text class="nt" x="587" y="636.5">frequency excitation</text>
+<text class="nt" x="587" y="651.0">degree-2 polynomial</text>
+<text class="nt" x="587" y="665.5">library</text>
+<line class="edge" x1="756" y1="625.5" x2="782" y2="625.5" marker-end="url(#ah)"/>
+<rect class="nd res" x="784" y="573.0" width="222" height="105.0" rx="4"/>
+<text class="nt" x="793" y="593.0">Fit 83.7 / 85.1 / 94.7 % (x/y/z)</text>
+<text class="nt" x="793" y="607.5">Circle RMSE STSMC 0.94 / 0.88 /</text>
+<text class="nt" x="793" y="622.0">0.77 mm vs PI 2.31 / 2.29 / 1.23</text>
+<text class="nt" x="793" y="636.5">mm</text>
+<text class="nt" x="793" y="651.0">MAE &gt; RMSE oddity</text>
+<line class="edge" x1="1006" y1="625.5" x2="1032" y2="625.5" marker-end="url(#ah)"/>
+<rect class="nd rel r-part" x="1034" y="573.0" width="222" height="105.0" rx="4"/>
+<text class="nt" x="1043" y="593.0">First-order model, input enters</text>
+<text class="nt" x="1043" y="607.5">algebraically: no lag; needs</text>
+<text class="nt" x="1043" y="622.0">pressure states</text>
+<text class="nt" x="1043" y="636.5">quadratic library large at 20</text>
+<text class="nt" x="1043" y="651.0">inputs</text>
+<line class="edge" x1="148" y1="742.5" x2="174" y2="742.5" marker-end="url(#ah)"/>
+<rect class="pap abs" x="176" y="690.0" width="168" height="105.0" rx="4"/>
+<text class="acc acc-abs" x="185" y="708.0">ABSTRACT ONLY</text>
+<text class="nt pt" x="185" y="722.5">Qiao, Tao, Zhang 2024,</text>
+<text class="nt pt" x="185" y="737.0">IFAC-PapersOnLine</text>
+<text class="nt pt" x="185" y="751.5">(abstract + snippets)</text>
+<text class="nt pt" x="185" y="766.0">first-order LPV under</text>
+<text class="nt pt" x="185" y="780.5">PCC assumption</text>
+<line class="edge" x1="344" y1="742.5" x2="370" y2="742.5" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="690.0" width="178" height="105.0" rx="4"/>
+<text class="nt" x="381" y="710.0">This lab&#x27;s earlier fabric</text>
+<text class="nt" x="381" y="724.5">arm</text>
+<text class="nt" x="381" y="739.0">2 segments</text>
+<text class="nt" x="381" y="753.5">front/back held at 2 psi,</text>
+<text class="nt" x="381" y="768.0">left/right modulated</text>
+<line class="edge" x1="550" y1="742.5" x2="576" y2="742.5" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="690.0" width="178" height="105.0" rx="4"/>
+<text class="nt" x="587" y="710.0">Stiffness and damping</text>
+<text class="nt" x="587" y="724.5">fitted per set point by</text>
+<text class="nt" x="587" y="739.0">least squares, then</text>
+<text class="nt" x="587" y="753.5">polynomial fit</text>
+<text class="nt" x="587" y="768.0">amount not accessible</text>
+<line class="edge" x1="756" y1="742.5" x2="782" y2="742.5" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="690.0" width="222" height="105.0" rx="4"/>
+<text class="nt" x="793" y="710.0">RMSE reduced vs linear</text>
+<text class="nt" x="793" y="724.5">disturbance observer, averaged</text>
+<text class="nt" x="793" y="739.0">over 7 trials</text>
+<text class="nt" x="793" y="753.5">no numbers accessible</text>
+<line class="edge" x1="1006" y1="742.5" x2="1032" y2="742.5" marker-end="url(#ah)"/>
+<rect class="nd rel r-part" x="1034" y="690.0" width="222" height="105.0" rx="4"/>
+<text class="nt" x="1043" y="710.0">Lab&#x27;s hardware family</text>
+<text class="nt" x="1043" y="724.5">first-order LPV with pressure as</text>
+<text class="nt" x="1043" y="739.0">direct input conflicts with the</text>
+<text class="nt" x="1043" y="753.5">0.6 s lag</text>
+<line class="edge" x1="148" y1="845.0" x2="174" y2="845.0" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="807.0" width="168" height="76.0" rx="4"/>
+<text class="acc acc-full" x="185" y="825.0">FULL TEXT</text>
+<text class="nt pt" x="185" y="839.5">Same lab 2022, one-</text>
+<text class="nt pt" x="185" y="854.0">segment predecessor</text>
+<text class="nt pt" x="185" y="868.5">(PMC9612838)</text>
+<line class="edge" x1="344" y1="845.0" x2="370" y2="845.0" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="807.0" width="178" height="76.0" rx="4"/>
+<text class="nt" x="381" y="827.0">Fabric actuator, 1 segment</text>
+<text class="nt" x="381" y="841.5">3 ITV1050 regulators</text>
+<text class="nt" x="381" y="856.0">OptiTrack 120 Hz, 100 Hz</text>
+<text class="nt" x="381" y="870.5">loops</text>
+<line class="edge" x1="550" y1="845.0" x2="576" y2="845.0" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="807.0" width="178" height="76.0" rx="4"/>
+<text class="nt" x="587" y="827.0">Ten-sinusoid inputs</text>
+<text class="nt" x="587" y="841.5">0.001–0.1 Hz</text>
+<text class="nt" x="587" y="856.0">9 trials × 60 s</text>
+<text class="nt" x="587" y="870.5">lsqnonlin gray-box fit</text>
+<line class="edge" x1="756" y1="845.0" x2="782" y2="845.0" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="807.0" width="222" height="76.0" rx="4"/>
+<text class="nt" x="793" y="827.0">No accuracy numbers in our notes</text>
+<line class="edge" x1="1006" y1="845.0" x2="1032" y2="845.0" marker-end="url(#ah)"/>
+<rect class="nd rel r-part" x="1034" y="807.0" width="222" height="76.0" rx="4"/>
+<text class="nt" x="1043" y="827.0">Pressure dynamics not modelled</text>
+<text class="nt" x="1043" y="841.5">(listed as future work)</text>
+<text class="nt" x="1043" y="856.0">same regulators and sensing as</text>
+<text class="nt" x="1043" y="870.5">our lab</text>
+<line class="edge" x1="148" y1="940.25" x2="174" y2="940.25" marker-end="url(#ah)"/>
+<rect class="pap abs" x="176" y="895.0" width="168" height="90.5" rx="4"/>
+<text class="acc acc-abs" x="185" y="913.0">ABSTRACT ONLY</text>
+<text class="nt pt" x="185" y="927.5">Pilch et al. 2026,</text>
+<text class="nt pt" x="185" y="942.0">Mechatronics (abstract</text>
+<text class="nt pt" x="185" y="956.5">only)</text>
+<line class="edge" x1="344" y1="940.25" x2="370" y2="940.25" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="895.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="381" y="915.0">Inextensible manipulator,</text>
+<text class="nt" x="381" y="929.5">pneumatic network segments</text>
+<text class="nt" x="381" y="944.0">IMU state</text>
+<text class="nt" x="381" y="958.5">segment count not</text>
+<text class="nt" x="381" y="973.0">accessible</text>
+<line class="edge" x1="550" y1="940.25" x2="576" y2="940.25" marker-end="url(#ah)"/>
+<rect class="nd nonum" x="578" y="895.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="587" y="915.0">Not accessible</text>
+<line class="edge" x1="756" y1="940.25" x2="782" y2="940.25" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="895.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="793" y="915.0">&quot;Accurate control&quot; claimed</text>
+<text class="nt" x="793" y="929.5">no numbers accessible</text>
+<line class="edge" x1="1006" y1="940.25" x2="1032" y2="940.25" marker-end="url(#ah)"/>
+<rect class="nd rel r-high" x="1034" y="895.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="1043" y="915.0">Lag left to an external pressure</text>
+<text class="nt" x="1043" y="929.5">loop</text>
+<text class="nt" x="1043" y="944.0">mean-pressure offset on adjacent</text>
+<text class="nt" x="1043" y="958.5">networks matches our opposing</text>
+<text class="nt" x="1043" y="973.0">columns</text>
+<line class="edge" x1="148" y1="1035.5" x2="174" y2="1035.5" marker-end="url(#ah)"/>
+<rect class="pap none" x="176" y="997.5" width="168" height="76.0" rx="4"/>
+<text class="acc acc-none" x="185" y="1015.5">NOT ACCESSIBLE</text>
+<text class="nt pt" x="185" y="1030.0">Falkenhahn et al. 2015,</text>
+<text class="nt pt" x="185" y="1044.5">ICRA (not accessible)</text>
+<line class="edge" x1="344" y1="1035.5" x2="370" y2="1035.5" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="997.5" width="178" height="76.0" rx="4"/>
+<text class="nt" x="381" y="1017.5">Festo Bionic Handling</text>
+<text class="nt" x="381" y="1032.0">Assistant, pneumatic (from</text>
+<text class="nt" x="381" y="1046.5">project page)</text>
+<line class="edge" x1="550" y1="1035.5" x2="576" y2="1035.5" marker-end="url(#ah)"/>
+<rect class="nd nonum" x="578" y="997.5" width="178" height="76.0" rx="4"/>
+<text class="nt" x="587" y="1017.5">Not accessible</text>
+<line class="edge" x1="756" y1="1035.5" x2="782" y2="1035.5" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="997.5" width="222" height="76.0" rx="4"/>
+<text class="nt" x="793" y="1017.5">No numbers accessible</text>
+<text class="nt" x="793" y="1032.0">abstract summary from a search</text>
+<text class="nt" x="793" y="1046.5">engine, unverified</text>
+<line class="edge" x1="1006" y1="1035.5" x2="1032" y2="1035.5" marker-end="url(#ah)"/>
+<rect class="nd rel r-unk" x="1034" y="997.5" width="222" height="76.0" rx="4"/>
+<text class="nt" x="1043" y="1017.5">Lumped mass per section +</text>
+<text class="nt" x="1043" y="1032.0">feedback linearization + PD; how</text>
+<text class="nt" x="1043" y="1046.5">pneumatics were modelled is not</text>
+<text class="nt" x="1043" y="1061.0">accessible</text>
+<line class="edge" x1="148" y1="1123.5" x2="174" y2="1123.5" marker-end="url(#ah)"/>
+<rect class="pap abs" x="176" y="1085.5" width="168" height="76.0" rx="4"/>
+<text class="acc acc-abs" x="185" y="1103.5">ABSTRACT ONLY</text>
+<text class="nt pt" x="185" y="1118.0">Webster &amp; Jones 2010,</text>
+<text class="nt pt" x="185" y="1132.5">IJRR (abstract only)</text>
+<line class="edge" x1="344" y1="1123.5" x2="370" y2="1123.5" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="1085.5" width="178" height="76.0" rx="4"/>
+<text class="nt" x="381" y="1105.5">Review across constant-</text>
+<text class="nt" x="381" y="1120.0">curvature continuum robots</text>
+<line class="edge" x1="550" y1="1123.5" x2="576" y2="1123.5" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="1085.5" width="178" height="76.0" rx="4"/>
+<text class="nt" x="587" y="1105.5">n/a (review)</text>
+<line class="edge" x1="756" y1="1123.5" x2="782" y2="1123.5" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="1085.5" width="222" height="76.0" rx="4"/>
+<text class="nt" x="793" y="1105.5">No numbers (kinematics review)</text>
+<line class="edge" x1="1006" y1="1123.5" x2="1032" y2="1123.5" marker-end="url(#ah)"/>
+<rect class="nd rel r-part" x="1034" y="1085.5" width="222" height="76.0" rx="4"/>
+<text class="nt" x="1043" y="1105.5">Kinematics only, no lag</text>
+<text class="nt" x="1043" y="1120.0">one CC section per level, 2</text>
+<text class="nt" x="1043" y="1134.5">bending DOF from 4 columns; sim</text>
+<text class="nt" x="1043" y="1149.0">uses rigid links</text>
+<line class="edge" x1="148" y1="1218.75" x2="174" y2="1218.75" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="1173.5" width="168" height="90.5" rx="4"/>
+<text class="acc acc-full" x="185" y="1191.5">FULL TEXT</text>
+<text class="nt pt" x="185" y="1206.0">Zheng &amp; Burgner-Kahrs</text>
+<text class="nt pt" x="185" y="1220.5">2026, IJRR (arXiv v2)</text>
+<line class="edge" x1="344" y1="1218.75" x2="370" y2="1218.75" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="1173.5" width="178" height="90.5" rx="4"/>
+<text class="nt" x="381" y="1193.5">Tendon-driven steel rod,</text>
+<text class="nt" x="381" y="1208.0">600 mm</text>
+<text class="nt" x="381" y="1222.5">2 tendons</text>
+<text class="nt" x="381" y="1237.0">base F/T sensor, Vicon on</text>
+<text class="nt" x="381" y="1251.5">5 disks, 100 Hz</text>
+<line class="edge" x1="550" y1="1218.75" x2="576" y2="1218.75" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="1173.5" width="178" height="90.5" rx="4"/>
+<text class="nt" x="587" y="1193.5">Density and modulus</text>
+<text class="nt" x="587" y="1208.0">calibrated</text>
+<text class="nt" x="587" y="1222.5">free oscillation and</text>
+<text class="nt" x="587" y="1237.0">tendon-driven runs</text>
+<line class="edge" x1="756" y1="1218.75" x2="782" y2="1218.75" marker-end="url(#ah)"/>
+<rect class="nd res" x="784" y="1173.5" width="222" height="90.5" rx="4"/>
+<text class="nt" x="793" y="1193.5">Position error 0.9–1.9 % of</text>
+<text class="nt" x="793" y="1208.0">length</text>
+<text class="nt" x="793" y="1222.5">velocity 0.029–0.064 m/s</text>
+<text class="nt" x="793" y="1237.0">converges ≤ 2 s</text>
+<text class="nt" x="793" y="1251.5">rotation &quot;rad&quot; unit doubtful</text>
+<line class="edge" x1="1006" y1="1218.75" x2="1032" y2="1218.75" marker-end="url(#ah)"/>
+<rect class="nd rel r-low" x="1034" y="1173.5" width="222" height="90.5" rx="4"/>
+<text class="nt" x="1043" y="1193.5">Observer, not a plant model</text>
+<text class="nt" x="1043" y="1208.0">tendons, no pressure lag</text>
+<text class="nt" x="1043" y="1222.5">usable idea: tip pose feedback in</text>
+<text class="nt" x="1043" y="1237.0">an observer</text>
+<line class="edge" x1="148" y1="1321.25" x2="174" y2="1321.25" marker-end="url(#ah)"/>
+<rect class="pap none" x="176" y="1276.0" width="168" height="90.5" rx="4"/>
+<text class="acc acc-none" x="185" y="1294.0">NOT ACCESSIBLE</text>
+<text class="nt pt" x="185" y="1308.5">Fallahi et al. 2026,</text>
+<text class="nt pt" x="185" y="1323.0">Eur. J. Control (title +</text>
+<text class="nt pt" x="185" y="1337.5">snippet)</text>
+<line class="edge" x1="344" y1="1321.25" x2="370" y2="1321.25" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="1276.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="381" y="1296.0">Pneumatic soft</text>
+<text class="nt" x="381" y="1310.5">manipulator, details not</text>
+<text class="nt" x="381" y="1325.0">accessible</text>
+<text class="nt" x="381" y="1339.5">2024 predecessor: 3</text>
+<text class="nt" x="381" y="1354.0">chambers, ≤ 0.6 bar</text>
+<line class="edge" x1="550" y1="1321.25" x2="576" y2="1321.25" marker-end="url(#ah)"/>
+<rect class="nd nonum" x="578" y="1276.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="587" y="1296.0">Not accessible</text>
+<line class="edge" x1="756" y1="1321.25" x2="782" y2="1321.25" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="1276.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="793" y="1296.0">No numbers accessible</text>
+<text class="nt" x="793" y="1310.5">Cosserat basis inferred from the</text>
+<text class="nt" x="793" y="1325.0">predecessor, unverified</text>
+<line class="edge" x1="1006" y1="1321.25" x2="1032" y2="1321.25" marker-end="url(#ah)"/>
+<rect class="nd rel r-low" x="1034" y="1276.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="1043" y="1296.0">Quasi-static model clashes with</text>
+<text class="nt" x="1043" y="1310.5">the 0.6 s lag</text>
+<text class="nt" x="1043" y="1325.0">adaptive SMC for bounded</text>
+<text class="nt" x="1043" y="1339.5">uncertainty still transfers</text>
+<line class="edge" x1="148" y1="1423.75" x2="174" y2="1423.75" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="1378.5" width="168" height="90.5" rx="4"/>
+<text class="acc acc-full" x="185" y="1396.5">FULL TEXT</text>
+<text class="nt pt" x="185" y="1411.0">Hebbal Manjunath et al.</text>
+<text class="nt pt" x="185" y="1425.5">2026 (arXiv 2609.02157)</text>
+<line class="edge" x1="344" y1="1423.75" x2="370" y2="1423.75" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="1378.5" width="178" height="90.5" rx="4"/>
+<text class="nt" x="381" y="1398.5">This lab&#x27;s fabric arm</text>
+<text class="nt" x="381" y="1413.0">segments 2–4 driven (3</text>
+<text class="nt" x="381" y="1427.5">inputs) + passive 5-pouch</text>
+<text class="nt" x="381" y="1442.0">sensing column</text>
+<text class="nt" x="381" y="1456.5">100 Hz, OptiTrack</text>
+<line class="edge" x1="550" y1="1423.75" x2="576" y2="1423.75" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="1378.5" width="178" height="90.5" rx="4"/>
+<text class="nt" x="587" y="1398.5">36 trials × 200 s, 70/30</text>
+<text class="nt" x="587" y="1413.0">chronological split</text>
+<text class="nt" x="587" y="1427.5">0.1 Hz sinusoids, 10 s</text>
+<text class="nt" x="587" y="1442.0">triangles</text>
+<line class="edge" x1="756" y1="1423.75" x2="782" y2="1423.75" marker-end="url(#ah)"/>
+<rect class="nd res" x="784" y="1378.5" width="222" height="90.5" rx="4"/>
+<text class="nt" x="793" y="1398.5">Median NMSE: sealed 0.148 vs</text>
+<text class="nt" x="793" y="1413.0">coupled 0.842</text>
+<text class="nt" x="793" y="1427.5">two sensors: NMSE 0.169 (one:</text>
+<text class="nt" x="793" y="1442.0">0.985)</text>
+<line class="edge" x1="1006" y1="1423.75" x2="1032" y2="1423.75" marker-end="url(#ah)"/>
+<rect class="nd rel r-part" x="1034" y="1378.5" width="222" height="90.5" rx="4"/>
+<text class="nt" x="1043" y="1398.5">Pressures decode bending</text>
+<text class="nt" x="1043" y="1413.0">linearly: supports pressure-</text>
+<text class="nt" x="1043" y="1427.5">augmented states</text>
+<text class="nt" x="1043" y="1442.0">no lag or gain given; 3 inputs,</text>
+<text class="nt" x="1043" y="1456.5">not 20</text>
+<line class="edge" x1="148" y1="1526.25" x2="174" y2="1526.25" marker-end="url(#ah)"/>
+<rect class="pap full" x="176" y="1481.0" width="168" height="90.5" rx="4"/>
+<text class="acc acc-full" x="185" y="1499.0">FULL TEXT</text>
+<text class="nt pt" x="185" y="1513.5">Della Santina, Duriez,</text>
+<text class="nt pt" x="185" y="1528.0">Rus 2023, IEEE CSM</text>
+<line class="edge" x1="344" y1="1526.25" x2="370" y2="1526.25" marker-end="url(#ah)"/>
+<rect class="nd" x="372" y="1481.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="381" y="1501.0">Survey, no robot</text>
+<line class="edge" x1="550" y1="1526.25" x2="576" y2="1526.25" marker-end="url(#ah)"/>
+<rect class="nd" x="578" y="1481.0" width="178" height="90.5" rx="4"/>
+<text class="nt" x="587" y="1501.0">n/a (survey)</text>
+<line class="edge" x1="756" y1="1526.25" x2="782" y2="1526.25" marker-end="url(#ah)"/>
+<rect class="nd res nonum" x="784" y="1481.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="793" y="1501.0">No numbers (survey)</text>
+<line class="edge" x1="1006" y1="1526.25" x2="1032" y2="1526.25" marker-end="url(#ah)"/>
+<rect class="nd rel r-frame" x="1034" y="1481.0" width="222" height="90.5" rx="4"/>
+<text class="nt" x="1043" y="1501.0">Our sim is its eq. (2) rigid-link</text>
+<text class="nt" x="1043" y="1515.5">model + first-order actuator</text>
+<text class="nt" x="1043" y="1530.0">stage</text>
+<text class="nt" x="1043" y="1544.5">suggests two-timescale or</text>
+<text class="nt" x="1043" y="1559.0">backstepping design</text>
+<rect class="arm" x="1284" y="744.75" width="112" height="140" rx="6"/>
+<text class="armt b" x="1340.0" y="770.75" text-anchor="middle">Hanging pneumatic</text>
+<text class="armt b" x="1340.0" y="788.75" text-anchor="middle">arm (sim)</text>
+<text class="armt" x="1340.0" y="806.75" text-anchor="middle">20 pressure inputs</text>
+<text class="armt" x="1340.0" y="824.75" text-anchor="middle">4 columns × 5</text>
+<text class="armt" x="1340.0" y="842.75" text-anchor="middle">lag τ = 0.6 s</text>
+<text class="armt" x="1340.0" y="860.75" text-anchor="middle">PD RMSE 4.10 mm</text>
+<path class="reledge r-high" d="M1256,98.5 C1274,98.5 1270,768.1425686591276 1282,768.1425686591276"/>
+<path class="reledge r-high" d="M1256,208.25 C1274,208.25 1270,775.2346526655897 1282,775.2346526655897"/>
+<path class="reledge r-part" d="M1256,508.5 C1274,508.5 1270,794.6369143780291 1282,794.6369143780291"/>
+<path class="reledge r-part" d="M1256,625.5 C1274,625.5 1270,802.1974959612278 1282,802.1974959612278"/>
+<path class="reledge r-part" d="M1256,742.5 C1274,742.5 1270,809.7580775444264 1282,809.7580775444264"/>
+<path class="reledge r-part" d="M1256,845.0 C1274,845.0 1270,816.3816639741518 1282,816.3816639741518"/>
+<path class="reledge r-high" d="M1256,940.25 C1274,940.25 1270,822.5367528271405 1282,822.5367528271405"/>
+<path class="reledge r-unk" d="M1256,1035.5 C1274,1035.5 1270,828.6918416801293 1282,828.6918416801293"/>
+<path class="reledge r-part" d="M1256,1123.5 C1274,1123.5 1270,834.3784329563813 1282,834.3784329563813"/>
+<path class="reledge r-low" d="M1256,1218.75 C1274,1218.75 1270,840.53352180937 1282,840.53352180937"/>
+<path class="reledge r-low" d="M1256,1321.25 C1274,1321.25 1270,847.1571082390954 1282,847.1571082390954"/>
+<path class="reledge r-part" d="M1256,1423.75 C1274,1423.75 1270,853.7806946688206 1282,853.7806946688206"/>
+<path class="reledge r-frame" d="M1256,1526.25 C1274,1526.25 1270,860.4042810985461 1282,860.4042810985461"/>
+<path class="cmp" d="M176,121.6 L166,121.6 L166,310.75 L174,310.75" marker-end="url(#ahc)"/>
+<path class="cmp" d="M176,121.6 L158,121.6 L158,406.0 L174,406.0" marker-end="url(#ahc)"/>
+<path class="cmp" d="M176,228.16 L172,228.16 L172,310.75 L174,310.75" marker-end="url(#ahc)"/>
+</svg>
+    </div>
+    <figcaption>Read each row left to right. Paper border shows how much of the paper the research agents could read. Hatched nodes have no numbers we could access. Dashed magenta edges mark the baseline model a paper compared against; comparisons inside a paper are written "vs" in the result node. The relevance column and its coloured edge into "Our arm" are the research agents' judgement, not results from the papers. Scroll sideways on narrow screens.</figcaption>
+  </figure>
+
+  <div class="legend">
+    <div>
+      <h3>Access to the paper</h3>
+      <span class="key"><span class="sw full"></span>Full text read</span>
+      <span class="key"><span class="sw abs"></span>Abstract or snippets only</span>
+      <span class="key"><span class="sw none"></span>Not accessible (title or metadata)</span>
+      <span class="key"><span class="sw base"></span>Baseline model inside another paper</span>
+    </div>
+    <div>
+      <h3>Results and edges</h3>
+      <span class="key"><span class="sw nonum"></span>No numbers accessible</span>
+      <span class="key"><span class="ln"></span>Uses / leads to</span>
+      <span class="key"><span class="ln cmp"></span>Compared against (baseline)</span>
+    </div>
+    <div>
+      <h3>Relevance to our arm (judgement)</h3>
+      <span class="key"><span class="sw high"></span>High: same class of plant or plan</span>
+      <span class="key"><span class="sw part"></span>Partial: usable with a lag state or input reduction</span>
+      <span class="key"><span class="sw low"></span>Low: different physics or ignores the lag</span>
+      <span class="key"><span class="sw frame"></span>Framework, or not enough known</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <h2>Reported numbers</h2>
+    <p>Every number below appears in the research agents' notes. Rows with no number say so rather than leave a gap.</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Paper</th><th>Method</th><th>Robot · inputs</th><th>Metric</th><th>Result</th><th>Compared against</th><th>Access</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="7">Koopman / EDMD</td></tr>
+        <tr><td class="p">Bruder 2021</td><td>Linear Koopman (EDMD, LASSO, N = 36, 1 delay)</td><td>Hanging McKibben arm · 3 regulators</td><td>Avg model error over one sinusoid period</td><td class="num">1.92 cm</td><td class="num">Subspace 4.74 cm · NARX 3.18 cm</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Bruder 2021</td><td>Nonlinear Koopman (N = 35)</td><td>same</td><td>same</td><td class="num">1.61 cm</td><td class="num">as above</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Bruder 2021</td><td>K-MPC (12 Hz, 2 s horizon)</td><td>same</td><td>Avg tracking error, 3 tasks</td><td class="num">0.46 cm</td><td class="num">L-MPC 3.45 cm</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Bruder 2021</td><td>K-NMPC + local feedback · open loop</td><td>same</td><td>same</td><td class="num">0.40 cm · 0.96 cm</td><td class="num">L-MPC 3.45 cm</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Bruder 2021</td><td colspan="3">Repeatability under identical inputs (standard deviation)</td><td class="num">0.215 cm</td><td>—</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Bruder 2019</td><td>Linear Koopman (N = 330, degree 4)</td><td>same arm · 3 regulators</td><td>Avg prediction error, 2.5 s horizon</td><td class="num">1.59 cm</td><td class="num">Linear SS 3.63 cm</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Bruder 2019</td><td>K-MPC (10 Hz, 2.5 s horizon)</td><td>same</td><td>Avg tracking error</td><td class="num">1.26 cm</td><td class="num">L-MPC 2.45 cm</td><td><span class="pill full">full</span></td></tr>
+        <tr class="group"><td colspan="7">SINDy / SINDYc</td></tr>
+        <tr><td class="p">Brunton 2016</td><td>SINDYc</td><td>No robot (Lotka–Volterra, Lorenz)</td><td>—</td><td>No error metrics tabulated</td><td>SINDy without input (unstable)</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Papageorgiou 2024</td><td>SINDYc model, degree-2 library</td><td>Cable + McKibben module · 3 servo inputs</td><td>Fit = (1 − γ)·100 %, x / y / z</td><td class="num">83.7 / 85.1 / 94.7 %</td><td>—</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Papageorgiou 2024</td><td>Super-twisting SMC</td><td>same</td><td>RMSE, circle r = 35 mm, x / y / z</td><td class="num">0.94 / 0.88 / 0.77 mm</td><td class="num">PI 2.31 / 2.29 / 1.23 mm</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Papageorgiou 2024</td><td>Super-twisting SMC</td><td>same</td><td>RMSE, infinity sign</td><td class="num">2.89 / 2.97 / 2.46 mm</td><td class="num">PI 5.85 / 5.33 / 11.97 mm</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Papageorgiou 2024</td><td>Super-twisting SMC</td><td>same</td><td>RMSE, triangle</td><td class="num">1.01 / 1.40 / 1.22 mm</td><td class="num">PI 1.43 / 1.57 / 1.18 mm</td><td><span class="pill full">full</span></td></tr>
+        <tr><td></td><td colspan="6" class="cav">The paper's "MAE" column is larger than its RMSE (circle STSMC 3.87 / 2.42 / 2.37 mm), which cannot happen for mean absolute error; it is probably maximum error. The text's "approximately 3 mm" positioning claim may refer to it.</td></tr>
+        <tr class="group"><td colspan="7">Gray-box Lagrangian / LPV</td></tr>
+        <tr><td class="p">Qiao 2024</td><td>First-order LPV (PCC) + FNDOB + SMC</td><td>Lab's 2-segment fabric arm · 2 modulated columns</td><td>RMSE over 7 trials</td><td>Reduced on all states; no numbers accessible</td><td>Linear disturbance observer</td><td><span class="pill abs">abstract</span></td></tr>
+        <tr><td class="p">Lab 2022</td><td>Rigid-arm gray-box, lsqnonlin + SMC/NDOB</td><td>1-segment fabric actuator · 3 regulators</td><td>—</td><td>No numbers in our notes</td><td>—</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Pilch 2026</td><td>Euler–Lagrange + identified spring moment; FF + PID</td><td>Pneumatic network segments · IMU</td><td>—</td><td>No numbers accessible</td><td>—</td><td><span class="pill abs">abstract</span></td></tr>
+        <tr><td class="p">Falkenhahn 2015</td><td>Lumped mass, feedback linearization, FF + PD</td><td>Festo BHA (pneumatic)</td><td>—</td><td>No numbers accessible</td><td>—</td><td><span class="pill none">none</span></td></tr>
+        <tr class="group"><td colspan="7">PCC kinematics · Cosserat rod</td></tr>
+        <tr><td class="p">Webster &amp; Jones 2010</td><td>Constant-curvature kinematics review</td><td>Many continuum robots</td><td>—</td><td>No numbers (review)</td><td>—</td><td><span class="pill abs">abstract</span></td></tr>
+        <tr><td class="p">Zheng 2026</td><td>Cosserat boundary observers</td><td>Tendon-driven steel rod · 2 tendons</td><td>Avg position error, % of 600 mm length</td><td class="num">Tip-PD 0.9 · Combined 1.0 · Tip-D 1.7 · Base 1.9 %</td><td>Each other</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Zheng 2026</td><td>same</td><td>same</td><td>Avg velocity error</td><td class="num">0.029 – 0.064 m/s</td><td>Each other</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Zheng 2026</td><td>same</td><td>same</td><td>Convergence time · real-time factor at 30 Hz</td><td class="num">≤ 1.5 s (base), ≤ 2 s · 1.00 – 1.52</td><td>—</td><td><span class="pill full">full</span></td></tr>
+        <tr><td></td><td colspan="6" class="cav">Rotation errors are printed as 2.7 / 2.5 / 1.4 / 2.1 "rad", an implausible unit; check the published IJRR version before using them. The IJRR version may also differ from the arXiv v2 that was read.</td></tr>
+        <tr><td class="p">Fallahi 2026</td><td>Adaptive SMC, quasi-static (Cosserat basis inferred)</td><td>Pneumatic manipulator</td><td>—</td><td>No numbers accessible</td><td>—</td><td><span class="pill none">none</span></td></tr>
+        <tr class="group"><td colspan="7">Reservoir / linear readout · Survey</td></tr>
+        <tr><td class="p">Hebbal Manjunath 2026</td><td>Ridge readout of bending angle from 0.2 s of delayed pressures</td><td>Lab's fabric arm · 3 driven segments + passive column</td><td>Median NMSE (lower is better)</td><td class="num">Sealed 0.148</td><td class="num">Coupled manifold 0.842 (p = 7.6×10⁻⁶)</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Hebbal Manjunath 2026</td><td>same, sensor subsets (sealed)</td><td>same</td><td>NMSE with 1 / 2 / 3 sensors</td><td class="num">0.985 / 0.169 / 0.139</td><td>—</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Hebbal Manjunath 2026</td><td>same</td><td>same</td><td>Memory proxy, 40 lags = 0.4 s</td><td class="num">Sealed 22.9 ± 6.5</td><td class="num">Coupled 5.1 ± 5.1</td><td><span class="pill full">full</span></td></tr>
+        <tr><td class="p">Della Santina 2023</td><td>Survey of model-based control</td><td>—</td><td>—</td><td>No numbers (survey)</td><td>—</td><td><span class="pill full">full</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="col">
+  <h2>What the map says about our arm</h2>
+  <ul>
+    <li><strong>No accessible paper identifies a pressure lag like ours.</strong> Bruder absorbs it in one delay term, Papageorgiou feeds servo counts straight in, the lab's 2022 paper leaves pressure dynamics as future work, Fallahi's title says quasi-static, and Pilch hands it to a separate pressure controller. Della Santina's survey names actuator dynamics as an open challenge. For Falkenhahn and Qiao 2024 it is not accessible. A 0.6 s lag at 100 Hz is 60 samples, so every data-driven option needs measured pouch pressures as states, many delays, or downsampling.</li>
+    <li><strong>No paper has 20 independent inputs.</strong> Where the notes give an input count, it is 2 or 3 actuated channels (Zheng uses 2 tendons); Pilch and Falkenhahn's counts are not accessible. Library and lifting methods (SINDYc, Koopman) grow quickly with input count, so we would reduce inputs first, for example to differential column commands.</li>
+    <li><strong>The only paired comparison of a lifted model against a linear state-space model is Bruder's,</strong> on a strongly nonlinear foam-skinned arm. Our simulator is close to linear at this scale (see the modelling-options report), so the size of that gap on our plant is unknown.</li>
+    <li><strong>The lab's own papers carry no usable accuracy numbers in our notes.</strong> Qiao 2024 numbers were not accessible, and the 2022 notes record no accuracy.</li>
+  </ul>
+</section>
+
+<section class="col">
+  <h2>Caveats kept from the notes</h2>
+  <ul>
+    <li>Falkenhahn 2015: everything beyond metadata comes from a search-engine paraphrase of the abstract and the group's project page; unverified.</li>
+    <li>Fallahi 2026: only the title and one snippet were readable. That it builds on the authors' 2024 Cosserat model is inferred from its reference list.</li>
+    <li>Qiao 2024 and Pilch 2026: abstract (plus snippets for Qiao). How Qiao handled pressure dynamics is not accessible.</li>
+    <li>Papageorgiou 2024: validation reads like free-run simulation but the paper does not say so explicitly. Its robot is cable- and McKibben-driven with servo inputs, not pressure-regulated.</li>
+    <li>Hebbal Manjunath 2026 and Qiao 2024 describe configurations of this lab's arm that differ from the 20 individually regulated pouches in the course slides, and the 2026 paper numbers P1 at the tip, opposite to our simulator.</li>
+    <li>Bruder: one-period free-run error (2021) and 2.5 s-horizon prediction error (2019) are different metrics, so 1.92 cm and 1.59 cm are not directly comparable either.</li>
+  </ul>
+</section>
+
+<footer class="col">
+  <p>Sources: research-agent notes of 7 October 2026 (session transcript), <code>docs/reports/modeling-options.html</code>, <code>docs/references.md</code>, <code>docs/hardware.md</code>. Our arm's figures come from <code>docs/simulator.md</code> and <code>scripts/run_baseline.py</code>.</p>
+</footer>
+</div>

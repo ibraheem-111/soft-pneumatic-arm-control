@@ -1,0 +1,565 @@
+<title>Spring–Damper Arm Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: lecture notes. One reading column for the argument; figures and the live chain break wider. Teal = elastic/dissipative elements, orange = pneumatic input. */
+:root {
+  --bg: #f4f6f7;
+  --panel: #ffffff;
+  --fg: #1d2428;
+  --muted: #5d6b72;
+  --rule: #d2dade;
+  --spring: #0e7468;
+  --spring-tint: #e1f1ee;
+  --drive: #b4541a;
+  --drive-tint: #f8ebe0;
+  --font-display: "Source Serif 4", Georgia, serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171a; --panel: #192125; --fg: #e2e9eb; --muted: #94a4aa; --rule: #34434a;
+    --spring: #4cc3b0; --spring-tint: #16332f; --drive: #ec9a62; --drive-tint: #3a2618; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171a; --panel: #192125; --fg: #e2e9eb; --muted: #94a4aa; --rule: #34434a;
+  --spring: #4cc3b0; --spring-tint: #16332f; --drive: #ec9a62; --drive-tint: #3a2618; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.65; margin: 0; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 72px; display: grid; gap: 44px; }
+.col { max-width: 70ch; display: grid; gap: 14px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4.5vw, 44px); line-height: 1.12; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 25px; margin: 0; text-wrap: balance; }
+h3 { font-size: 15px; font-weight: 600; margin: 0; }
+p { margin: 0; }
+section { display: grid; gap: 16px; min-width: 0; }
+.eq { font-family: var(--font-mono); font-size: 14.5px; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 14px 16px; overflow-x: auto; white-space: pre; line-height: 1.7; }
+.eq .c { color: var(--muted); }
+.lede { font-size: 18px; }
+.callout { border-left: 3px solid var(--spring); padding-left: 14px; }
+figure { margin: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; height: auto; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 85ch; }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.lab { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 760px) { .lab { grid-template-columns: 1fr; } }
+.controls { display: grid; gap: 12px; font-size: 14px; }
+.ctl { display: grid; gap: 4px; }
+.ctl label { display: flex; justify-content: space-between; gap: 8px; }
+.ctl output { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+input[type=range] { width: 100%; accent-color: var(--spring); }
+select, button { font: inherit; font-size: 14px; }
+select { padding: 4px 6px; border: 1px solid var(--rule); border-radius: 4px; background: var(--panel); color: var(--fg); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+button { border: 1px solid var(--rule); background: var(--panel); color: var(--fg); padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+button.primary { background: var(--drive); color: var(--panel); border-color: var(--drive); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--spring); outline-offset: 2px; }
+.viz { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 520px) { .viz { grid-template-columns: 1fr; } }
+canvas { width: 100%; display: block; background: var(--bg); border-radius: 4px; }
+#arm { height: 460px; } #tipplot { height: 220px; } #pplot { height: 170px; }
+.modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.modes button { font-family: var(--font-mono); font-size: 12.5px; padding: 4px 8px; }
+.small { font-size: 13px; color: var(--muted); }
+table { border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 600; }
+.tablewrap { overflow-x: auto; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header class="col">
+    <span class="eyebrow">Lecture notes · modelling a hanging pneumatic arm</span>
+    <h1>Yes, it is a chain of springs and dampers driven through a lag</h1>
+    <p class="lede">A soft arm looks continuous, but for control we only need the few motions that the inputs excite and the tip sensor sees. Lump each pouch level into a rigid link, put a spring and a damper at every joint, add gravity, and feed the joints through a first-order pneumatic lag. That gives a model you can derive on paper, linearize, and break into independent mass–spring–dampers.</p>
+  </header>
+
+  <!-- 1. Equivalent mechanism -->
+  <section>
+    <div class="col">
+      <h2>1. The equivalent mechanism</h2>
+      <p>Replace each of the n pouch levels with a rigid link of length ℓ and mass m. Each link connects to the one above through a joint with three motions: two bends (θx, θy) and one stretch (e). Every motion has a spring and a damper across it. That pairing is a Kelvin–Voigt element: the spring stores elastic energy in the fabric and the damper dissipates it.</p>
+    </div>
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 900 520" style="min-width:640px" role="img" aria-label="Equivalent mechanism: a mount at the top, then a vertical chain of rigid links. At each joint a torsional spring and a rotary damper resist bending, an axial spring and damper resist stretch, and an opposing pair of pouch pressures applies a bending moment. To the right, the pressure command passes through a first-order lag before it reaches the joints.">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--drive)"/></marker>
+          </defs>
+          <!-- mount -->
+          <rect x="120" y="30" width="200" height="14" fill="var(--rule)" stroke="currentColor"/>
+          <g stroke="currentColor"><line x1="130" y1="30" x2="142" y2="18"/><line x1="160" y1="30" x2="172" y2="18"/><line x1="190" y1="30" x2="202" y2="18"/><line x1="220" y1="30" x2="232" y2="18"/><line x1="250" y1="30" x2="262" y2="18"/><line x1="280" y1="30" x2="292" y2="18"/><line x1="310" y1="30" x2="322" y2="18"/></g>
+          <text x="340" y="42" font-size="12" fill="var(--muted)">mount (fixed)</text>
+
+          <!-- chain, slightly bent: joints at y=60,150,240,330,420 -->
+          <g stroke="currentColor" stroke-width="7" stroke-linecap="round">
+            <line x1="220" y1="60" x2="226" y2="148"/>
+            <line x1="226" y1="152" x2="240" y2="238"/>
+            <line x1="240" y1="242" x2="262" y2="328"/>
+            <line x1="262" y1="332" x2="292" y2="418"/>
+            <line x1="292" y1="422" x2="328" y2="500"/>
+          </g>
+          <!-- joints -->
+          <g fill="var(--panel)" stroke="currentColor" stroke-width="2">
+            <circle cx="220" cy="56" r="8"/><circle cx="226" cy="150" r="8"/><circle cx="240" cy="240" r="8"/><circle cx="262" cy="330" r="8"/><circle cx="292" cy="420" r="8"/>
+          </g>
+          <circle cx="330" cy="504" r="7" fill="currentColor"/>
+          <text x="344" y="508" font-size="12" fill="currentColor">tip</text>
+          <!-- torsional springs (spiral arcs) at each joint, left side -->
+          <g fill="none" stroke="var(--spring)" stroke-width="1.8">
+            <path d="M206 56 a14 14 0 1 1 28 0 a10 10 0 1 1 -20 0 a6 6 0 1 1 12 0"/>
+            <path d="M212 150 a14 14 0 1 1 28 0 a10 10 0 1 1 -20 0 a6 6 0 1 1 12 0"/>
+            <path d="M226 240 a14 14 0 1 1 28 0 a10 10 0 1 1 -20 0 a6 6 0 1 1 12 0"/>
+            <path d="M248 330 a14 14 0 1 1 28 0 a10 10 0 1 1 -20 0 a6 6 0 1 1 12 0"/>
+            <path d="M278 420 a14 14 0 1 1 28 0 a10 10 0 1 1 -20 0 a6 6 0 1 1 12 0"/>
+          </g>
+          <!-- callouts on joint 2 -->
+          <line x1="205" y1="150" x2="120" y2="150" stroke="var(--muted)"/>
+          <text x="112" y="146" text-anchor="end" font-size="12.5" fill="var(--spring)">k_b, c_b</text>
+          <text x="112" y="162" text-anchor="end" font-size="11.5" fill="var(--muted)">bending spring + damper</text>
+          <text x="112" y="176" text-anchor="end" font-size="11.5" fill="var(--muted)">(two of them: θx, θy)</text>
+
+          <!-- axial spring-damper drawn beside link 3 -->
+          <g transform="translate(150 246)" stroke="var(--spring)" fill="none" stroke-width="1.6">
+            <polyline points="0,0 0,10 -8,16 8,24 -8,32 8,40 -8,48 0,54 0,80"/>
+            <line x1="22" y1="0" x2="22" y2="30"/>
+            <rect x="14" y="30" width="16" height="22" fill="var(--spring-tint)"/>
+            <line x1="17" y1="44" x2="27" y2="44"/>
+            <line x1="22" y1="44" x2="22" y2="80"/>
+            <line x1="0" y1="0" x2="22" y2="0"/><line x1="0" y1="80" x2="22" y2="80"/>
+          </g>
+          <text x="112" y="286" text-anchor="end" font-size="12.5" fill="var(--spring)">k_a, c_a</text>
+          <text x="112" y="302" text-anchor="end" font-size="11.5" fill="var(--muted)">stretch spring + damper</text>
+          <line x1="184" y1="286" x2="244" y2="286" stroke="var(--muted)" stroke-dasharray="3 3"/>
+
+          <!-- link mass label -->
+          <text x="246" y="200" font-size="12.5" fill="currentColor">m, ℓ</text>
+          <text x="246" y="214" font-size="11" fill="var(--muted)">rigid link</text>
+
+          <!-- gravity -->
+          <line x1="70" y1="400" x2="70" y2="460" stroke="currentColor" stroke-width="1.6" marker-end="url(#a1)"/>
+          <text x="80" y="436" font-size="12.5" fill="currentColor">g</text>
+
+          <!-- pouch moment pair at level 4 -->
+          <line x1="300" y1="360" x2="352" y2="360" stroke="var(--drive)" stroke-width="2" marker-start="url(#a2)"/>
+          <line x1="246" y1="392" x2="300" y2="392" stroke="var(--drive)" stroke-width="2" marker-end="url(#a2)"/>
+          <text x="360" y="356" font-size="12.5" fill="var(--drive)">pᵢ (one side)</text>
+          <text x="360" y="372" font-size="12.5" fill="var(--drive)">pⱼ (opposite side)</text>
+          <text x="360" y="392" font-size="11.5" fill="var(--muted)">moment ∝ r·(pᵢ − pⱼ)</text>
+          <text x="360" y="406" font-size="11.5" fill="var(--muted)">stretch ∝ pᵢ + pⱼ + …</text>
+
+          <!-- lag block -->
+          <rect x="560" y="110" width="170" height="80" rx="6" fill="var(--drive-tint)" stroke="var(--drive)" stroke-width="1.6"/>
+          <text x="645" y="140" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">Pneumatic lag</text>
+          <text x="645" y="162" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="currentColor">τ ṗ = −p + u</text>
+          <text x="645" y="180" text-anchor="middle" font-size="11.5" fill="var(--muted)">one per pouch</text>
+          <line x1="800" y1="150" x2="732" y2="150" stroke="currentColor" stroke-width="1.6" marker-end="url(#a1)"/>
+          <text x="808" y="146" font-size="13" font-family="IBM Plex Mono, monospace" fill="currentColor">u</text>
+          <text x="808" y="162" font-size="11" fill="var(--muted)">command</text>
+          <path d="M560 150 L470 150 L470 360 L420 360" fill="none" stroke="var(--drive)" stroke-width="1.6" marker-end="url(#a2)"/>
+          <text x="478" y="250" font-size="12.5" fill="var(--drive)">p reaches</text>
+          <text x="478" y="266" font-size="12.5" fill="var(--drive)">the joints</text>
+
+          <!-- generalized coordinates box -->
+          <rect x="560" y="300" width="300" height="150" rx="6" fill="none" stroke="var(--rule)"/>
+          <text x="576" y="326" font-size="13" font-weight="600" fill="currentColor">Per level i</text>
+          <text x="576" y="350" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">θxᵢ, θyᵢ  bends  (k_b, c_b)</text>
+          <text x="576" y="372" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">eᵢ        stretch (k_a, c_a)</text>
+          <text x="576" y="394" font-family="IBM Plex Mono, monospace" font-size="12.5" fill="currentColor">pᵢ        4 pouch pressures</text>
+          <text x="576" y="424" font-size="12" fill="var(--muted)">n levels → 3n coordinates,</text>
+          <text x="576" y="440" font-size="12" fill="var(--muted)">6n mechanical states + 4n lag states</text>
+        </svg>
+      </div>
+      <figcaption>The model in one picture. Teal elements store and dissipate energy; orange is the only way energy comes in. The lag sits between the command and the mechanism, so the arm never sees the command directly, only its filtered version.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 2. Derivation -->
+  <section>
+    <div class="col">
+      <h2>2. Writing it down: Euler–Lagrange</h2>
+      <p>Collect the coordinates as q = [θx₁, θy₁, e₁, …, θxₙ, θyₙ, eₙ]. Write the energies, the dissipation and the work done by pressure, and the equations follow mechanically.</p>
+    </div>
+    <div class="eq"><span class="c">kinetic</span>      T = ½ q̇ᵀ M(q) q̇                        <span class="c">M from link masses and the chain geometry</span>
+<span class="c">elastic</span>      V_e = ½ Σᵢ [ k_b (θxᵢ² + θyᵢ²) + k_a eᵢ² ]
+<span class="c">gravity</span>      V_g = −g Σᵢ mᵢ zᵢ(q)                   <span class="c">z measured downward from the mount</span>
+<span class="c">dissipation</span>  R = ½ Σᵢ [ c_b (θ̇xᵢ² + θ̇yᵢ²) + c_a ėᵢ² ]
+<span class="c">input work</span>   δW = (S p)ᵀ δq                         <span class="c">S maps pouch pressures to joint moments and axial forces</span>
+
+d/dt(∂T/∂q̇) − ∂T/∂q + ∂R/∂q̇ + ∂(V_e + V_g)/∂q = S p
+
+<b>M(q) q̈ + C(q, q̇) q̇ + D q̇ + K q + g(q) = S p</b>      <span class="c">mechanics</span>
+<b>τ ṗ = −p + u</b>                                        <span class="c">pneumatics</span></div>
+    <div class="col">
+      <p>Each term has a plain physical meaning. M is inertia, which couples the levels: moving a level near the mount drags everything below it. C collects the centrifugal and Coriolis terms. D and K are the dampers and springs, and they are diagonal in these coordinates. g(q) is gravity. S is a fixed geometric matrix: at each level, the difference between opposite pouches makes a bending moment (moment arm r), and their sum makes an axial force.</p>
+      <p>Look at S closely. Four pouches per level produce only three generalized forces: two moments and one axial force. So one combination of pressures per level does nothing to the mechanics. That is a modelling fact you can see before touching any data.</p>
+    </div>
+  </section>
+
+  <!-- 3. Linearize -->
+  <section>
+    <div class="col">
+      <h2>3. Linearize about the hanging pose</h2>
+      <p>At small deflections about the straight-down equilibrium, the cos and sin terms in M and g go to first order and C drops out. Gravity contributes a stiffness K_g. For a hanging arm it is positive definite, because a pendulum hanging down is pulled back toward the vertical. An upright arm would get −K_g instead, which is why upright soft arms buckle and hanging ones do not.</p>
+    </div>
+    <div class="eq">M₀ q̈ + D q̇ + (K + K_g) q = S p
+τ ṗ = −p + u
+
+<span class="c">small angles decouple the three directions:</span>
+  x-bending chain (n DOF)  ·  y-bending chain (n DOF)  ·  axial chain (n DOF)
+
+<span class="c">tip, planar, small angles:</span>   x_tip ≈ ℓ Σᵢ (n − i + 1) θxᵢ</div>
+    <div class="col">
+      <p>The tip formula explains a fact that surprises students: a pouch next to the mount moves the tip more than one at the tip. A bend at level 1 swings all n links below it, while a bend at level n swings only the last one. The leverage ratio is n : 1 geometrically, reduced somewhat by how the springs share the load.</p>
+    </div>
+  </section>
+
+  <!-- 4. Modal -->
+  <section>
+    <div class="col">
+      <h2>4. Modes: the chain is a sum of single spring–dampers</h2>
+      <p>Solve the generalized eigenproblem (K + K_g) φⱼ = ωⱼ² M₀ φⱼ and change coordinates to q = Φ η. If the damping is close to proportional, every mode decouples into its own second-order system, still driven through the lag:</p>
+    </div>
+    <div class="eq">η̈ⱼ + 2 ζⱼ ωⱼ η̇ⱼ + ωⱼ² ηⱼ = φⱼᵀ S p          j = 1 … n per bending plane
+
+<span class="c">keep only the first mode, one plane:</span>
+
+               b
+G(s) = ─────────────────────────────          (third order: lag × one mass–spring–damper)
+        (τ s + 1)(s² + 2ζω s + ω²)</div>
+    <div class="col callout">
+      <p>So the answer to your question is yes, at three levels of fidelity. At the coarsest, one mass–spring–damper per bending axis behind a lag, which is three parameters plus τ and a gain. At the next level, the n-link chain, which is the same thing with n modes. Higher modes are stiffer and are hard to excite through a 0.6 s-type lag, so they rarely matter for tip tracking. The lab below lets you see each of these claims.</p>
+    </div>
+  </section>
+
+  <!-- 5. Lab -->
+  <section>
+    <div class="col">
+      <h2>5. Try it: a planar five-link spring–damper chain</h2>
+      <p>This is the model above in one bending plane: five rigid links with point masses, a torsional spring and damper at each joint, gravity, and a first-order pressure lag. It integrates the full nonlinear equations live. The numbers are illustrative orders of magnitude, not identified values.</p>
+    </div>
+    <figure>
+      <div class="lab">
+        <div class="controls">
+          <div class="ctl">
+            <label for="dp">Pressure difference step Δp <output id="dpo"></output></label>
+            <input id="dp" type="range" min="-6" max="6" step="0.5" value="4">
+          </div>
+          <div class="ctl">
+            <label for="where">Applied at</label>
+            <select id="where">
+              <option value="all">all five levels</option>
+              <option value="base">level 1 only (mount)</option>
+              <option value="tip">level 5 only (tip)</option>
+            </select>
+          </div>
+          <div class="ctl">
+            <label for="k">Joint stiffness k_b <output id="ko"></output></label>
+            <input id="k" type="range" min="0.1" max="1.5" step="0.05" value="0.4">
+          </div>
+          <div class="ctl">
+            <label for="c">Joint damping c_b <output id="co"></output></label>
+            <input id="c" type="range" min="0.002" max="0.3" step="0.002" value="0.02">
+          </div>
+          <div class="ctl">
+            <label for="tau">Pneumatic lag τ <output id="tauo"></output></label>
+            <input id="tau" type="range" min="0.02" max="1.5" step="0.02" value="0.6">
+          </div>
+          <div class="ctl">
+            <label for="ex">Draw deflection ×</label>
+            <select id="ex"><option value="1">1 (true scale)</option><option value="3" selected>3</option><option value="6">6</option></select>
+          </div>
+          <div class="btns">
+            <button id="step" class="primary" type="button">Apply step</button>
+            <button id="rel" type="button">Release to 0</button>
+            <button id="reset" type="button">Reset</button>
+          </div>
+          <div class="ctl">
+            <h3>Free vibration: pluck one mode</h3>
+            <div class="modes" id="modes"></div>
+            <p class="small">Linearized natural frequencies of this chain (springs + gravity). Plucking sets the inputs to zero and starts the chain in that mode shape.</p>
+          </div>
+        </div>
+        <div class="viz">
+          <canvas id="arm" aria-label="Animated hanging five-link chain"></canvas>
+          <div style="display:grid; gap:10px; min-width:0">
+            <canvas id="tipplot" aria-label="Tip displacement over the last ten seconds"></canvas>
+            <canvas id="pplot" aria-label="Command and lagged pressure over the last ten seconds"></canvas>
+          </div>
+        </div>
+      </div>
+      <figcaption>Things to try. Set τ near 0.02 s and the response is a lightly damped oscillation: the chain's first mode. Set τ back to 0.6 s and the same chain looks almost first-order, because the lag filters out the oscillation before it starts. Compare "level 1 only" with "level 5 only" to see the leverage effect. Pluck mode 3 or 5 and watch how fast those die out compared with mode 1.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 6. Hierarchy -->
+  <section>
+    <div class="col">
+      <h2>6. Which spring–damper model to use</h2>
+    </div>
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 960 300" style="min-width:720px" role="img" aria-label="Three fidelity levels side by side: one lumped mass-spring-damper per axis behind a lag; an n-link chain with springs and dampers at every joint; and a continuous rod. Each step to the right adds states and parameters.">
+          <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+          <!-- A: single MSD -->
+          <text x="150" y="26" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">A · one mode per axis</text>
+          <rect x="40" y="60" width="14" height="140" fill="var(--rule)" stroke="currentColor"/>
+          <g fill="none" stroke="var(--spring)" stroke-width="1.8">
+            <polyline points="54,100 70,100 78,90 94,110 110,90 126,110 134,100 160,100"/>
+            <line x1="54" y1="160" x2="96" y2="160"/><rect x="96" y="150" width="30" height="20" fill="var(--spring-tint)"/><line x1="110" y1="160" x2="160" y2="160"/>
+          </g>
+          <rect x="160" y="80" width="60" height="100" rx="4" fill="var(--panel)" stroke="currentColor" stroke-width="1.6"/>
+          <text x="190" y="135" text-anchor="middle" font-size="13" fill="currentColor">m_eff</text>
+          <line x1="250" y1="130" x2="224" y2="130" stroke="var(--drive)" stroke-width="2" marker-end="url(#a3)"/>
+          <text x="256" y="126" font-size="12" fill="var(--drive)">b·p</text>
+          <text x="150" y="226" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">3 states / axis</text>
+          <text x="150" y="246" text-anchor="middle" font-size="12" fill="var(--muted)">x, ẋ, p  ·  τ, ω, ζ, b</text>
+          <text x="150" y="266" text-anchor="middle" font-size="12" fill="var(--muted)">gray-box fit from steps</text>
+
+          <line x1="320" y1="150" x2="350" y2="150" stroke="var(--muted)" marker-end="url(#a3)"/>
+
+          <!-- B: chain -->
+          <text x="480" y="26" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">B · n-link chain</text>
+          <rect x="420" y="44" width="120" height="10" fill="var(--rule)" stroke="currentColor"/>
+          <g stroke="currentColor" stroke-width="6" stroke-linecap="round">
+            <line x1="480" y1="58" x2="483" y2="94"/><line x1="483" y1="100" x2="490" y2="136"/><line x1="490" y1="142" x2="501" y2="178"/><line x1="501" y1="184" x2="516" y2="200"/>
+          </g>
+          <g fill="var(--panel)" stroke="var(--spring)" stroke-width="2"><circle cx="480" cy="56" r="6"/><circle cx="483" cy="97" r="6"/><circle cx="490" cy="139" r="6"/><circle cx="501" cy="181" r="6"/></g>
+          <text x="480" y="226" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">6n + 4n states</text>
+          <text x="480" y="246" text-anchor="middle" font-size="12" fill="var(--muted)">k, c per joint, masses, S, τ</text>
+          <text x="480" y="266" text-anchor="middle" font-size="12" fill="var(--muted)">Lagrangian, then fit k, c</text>
+
+          <line x1="620" y1="150" x2="650" y2="150" stroke="var(--muted)" marker-end="url(#a3)"/>
+
+          <!-- C: continuum -->
+          <text x="810" y="26" text-anchor="middle" font-size="14" font-weight="600" fill="currentColor">C · continuous rod</text>
+          <rect x="750" y="44" width="120" height="10" fill="var(--rule)" stroke="currentColor"/>
+          <path d="M810 56 C 812 110, 822 160, 850 200" fill="none" stroke="var(--spring)" stroke-width="8" stroke-linecap="round"/>
+          <text x="810" y="226" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">PDE in arc length s</text>
+          <text x="810" y="246" text-anchor="middle" font-size="12" fill="var(--muted)">EI(s), distributed damping</text>
+          <text x="810" y="266" text-anchor="middle" font-size="12" fill="var(--muted)">B is its discretization</text>
+        </svg>
+      </div>
+      <figcaption>Each step right adds states and parameters to identify. B is just C discretized at the pouch levels, and A is B truncated to its first mode. For tip tracking, A or a two-mode version of B is usually enough; C earns its keep only when the shape along the arm matters.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 7. Limits -->
+  <section>
+    <div class="col">
+      <h2>7. Where a linear spring–damper picture breaks</h2>
+      <p>These are the effects that make a real fabric arm differ from the clean model. Each has a standard fix that keeps the spring–damper skeleton.</p>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Effect</th><th>What you would see</th><th>Fix that keeps the structure</th></tr></thead>
+        <tbody>
+          <tr><td>Viscoelastic fabric</td><td>Slow creep after a step; hysteresis loops between loading and unloading</td><td>Replace Kelvin–Voigt with a standard linear solid (spring in parallel with a spring–damper in series). It adds one internal state per joint.</td></tr>
+          <tr><td>Pressure-dependent stiffness</td><td>The arm gets stiffer as the mean pressure rises; ω and gain shift with the operating point</td><td>Make k a function of mean pressure, k(p̄), and schedule the linear model on p̄ (an LPV model).</td></tr>
+          <tr><td>Large deflections</td><td>Gain drops at the edges of the workspace</td><td>Keep the nonlinear M(q) and g(q) instead of the linearized model.</td></tr>
+          <tr><td>Pressure can only push</td><td>Saturation at 0 and at the regulator limit</td><td>Bias every pouch and work in differences, and put the bounds into the controller (MPC or anti-windup).</td></tr>
+          <tr><td>Regulator dynamics are not first order</td><td>Rate limits, a dead time, asymmetric fill and vent</td><td>Add a delay or a second-order regulator model in front of the lag.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <p><b>What to identify, in order:</b> τ from a pressure step, with the pressure sensors alone. Then ω, ζ and the gain b from a tip step, using the measured pressure as the input. Then decide, from the residual, whether the second mode or any of the effects above earn a place in the model.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const N = 5, L = 0.06, m = 0.07, g = 9.81, a = 0.0036; // illustrative: link length m, mass kg, moment per psi N·m/psi
+  const S = []; for (let i = 0; i < N; i++) S[i] = m * (N - i);
+  let k = 0.4, c = 0.02, tau = 0.6;
+  let phi = new Float64Array(N), w = new Float64Array(N);
+  let p = new Float64Array(N), u = new Float64Array(N);
+  let t = 0; const hist = []; const H = 10;
+  const $ = id => document.getElementById(id);
+
+  function solve(A, b) {
+    const n = b.length, M = A.map((r, i) => [...r, b[i]]);
+    for (let i = 0; i < n; i++) {
+      let piv = i; for (let r = i + 1; r < n; r++) if (Math.abs(M[r][i]) > Math.abs(M[piv][i])) piv = r;
+      [M[i], M[piv]] = [M[piv], M[i]];
+      for (let r = i + 1; r < n; r++) { const f = M[r][i] / M[i][i]; for (let cc = i; cc <= n; cc++) M[r][cc] -= f * M[i][cc]; }
+    }
+    const x = new Array(n).fill(0);
+    for (let i = n - 1; i >= 0; i--) { let s = M[i][n]; for (let cc = i + 1; cc < n; cc++) s -= M[i][cc] * x[cc]; x[i] = s / M[i][i]; }
+    return x;
+  }
+  function rel(v) { const r = new Array(N); for (let i = 0; i < N; i++) r[i] = v[i] - (i ? v[i - 1] : 0); return r; }
+  function TtT(f) { const q = new Array(N).fill(0); for (let i = 0; i < N; i++) { q[i] += f[i]; if (i) q[i - 1] -= f[i]; } return q; }
+
+  function accel() {
+    const A = [], b = new Array(N);
+    for (let i = 0; i < N; i++) { A[i] = []; for (let j = 0; j < N; j++) A[i][j] = L * L * S[Math.max(i, j)] * Math.cos(phi[i] - phi[j]); }
+    const th = rel(phi), thd = rel(w), joint = new Array(N);
+    for (let i = 0; i < N; i++) joint[i] = a * p[i] - k * th[i] - c * thd[i];
+    const Q = TtT(joint);
+    for (let i = 0; i < N; i++) {
+      let h = 0; for (let j = 0; j < N; j++) h += L * L * S[Math.max(i, j)] * Math.sin(phi[i] - phi[j]) * w[j] * w[j];
+      b[i] = Q[i] - h - g * L * S[i] * Math.sin(phi[i]);
+    }
+    return solve(A, b);
+  }
+  function tipx() { let x = 0; for (let i = 0; i < N; i++) x += L * Math.sin(phi[i]); return x; }
+
+  function step(dt) {
+    for (let i = 0; i < N; i++) p[i] += dt * (u[i] - p[i]) / tau;
+    const acc = accel();
+    for (let i = 0; i < N; i++) { w[i] += dt * acc[i]; phi[i] += dt * w[i]; }
+    t += dt;
+  }
+
+  // linear modes: M0 v = lambda^-1 ... solve (K) v = w^2 M0 v via Cholesky + Jacobi
+  function modes() {
+    const M0 = [], K = [];
+    for (let i = 0; i < N; i++) { M0[i] = []; K[i] = []; for (let j = 0; j < N; j++) { M0[i][j] = L * L * S[Math.max(i, j)]; K[i][j] = 0; } }
+    for (let i = 0; i < N; i++) {          // elastic k T^T T in absolute coords
+      K[i][i] += k; if (i + 1 < N) { K[i][i] += k; K[i][i + 1] -= k; K[i + 1][i] -= k; }
+      K[i][i] += g * L * S[i];
+    }
+    const Lc = Array.from({ length: N }, () => new Array(N).fill(0));
+    for (let i = 0; i < N; i++) for (let j = 0; j <= i; j++) {
+      let s = M0[i][j]; for (let r = 0; r < j; r++) s -= Lc[i][r] * Lc[j][r];
+      Lc[i][j] = i === j ? Math.sqrt(s) : s / Lc[j][j];
+    }
+    const inv = Array.from({ length: N }, (_, i) => { const e = new Array(N).fill(0); e[i] = 1;
+      const y = new Array(N); for (let r = 0; r < N; r++) { let s = e[r]; for (let cc = 0; cc < r; cc++) s -= Lc[r][cc] * y[cc]; y[r] = s / Lc[r][r]; } return y; });
+    const Li = Array.from({ length: N }, (_, r) => inv.map(col => col[r])); // Li = L^{-1}
+    const tmp = Li.map(row => K[0].map((_, j) => row.reduce((s, v, r) => s + v * K[r][j], 0)));
+    let B = tmp.map(row => Li.map(lrow => row.reduce((s, v, r) => s + v * lrow[r], 0)));
+    let V = Array.from({ length: N }, (_, i) => Array.from({ length: N }, (_, j) => (i === j ? 1 : 0)));
+    for (let sweep = 0; sweep < 60; sweep++) for (let pI = 0; pI < N; pI++) for (let q = pI + 1; q < N; q++) {
+      if (Math.abs(B[pI][q]) < 1e-14) continue;
+      const th = 0.5 * Math.atan2(2 * B[pI][q], B[q][q] - B[pI][pI]), cs = Math.cos(th), sn = Math.sin(th);
+      for (let r = 0; r < N; r++) { const x = B[r][pI], y = B[r][q]; B[r][pI] = cs * x - sn * y; B[r][q] = sn * x + cs * y; }
+      for (let r = 0; r < N; r++) { const x = B[pI][r], y = B[q][r]; B[pI][r] = cs * x - sn * y; B[q][r] = sn * x + cs * y; }
+      for (let r = 0; r < N; r++) { const x = V[r][pI], y = V[r][q]; V[r][pI] = cs * x - sn * y; V[r][q] = sn * x + cs * y; }
+    }
+    const out = [];
+    for (let j = 0; j < N; j++) {
+      const z = V.map(r => r[j]); const v = new Array(N); // phi = L^{-T} z
+      for (let r = N - 1; r >= 0; r--) { let s = z[r]; for (let cc = r + 1; cc < N; cc++) s -= Lc[cc][r] * v[cc]; v[r] = s / Lc[r][r]; }
+      out.push({ w: Math.sqrt(Math.max(B[j][j], 0)), v });
+    }
+    return out.sort((x, y) => x.w - y.w);
+  }
+  function renderModes() {
+    const ms = modes(), box = $("modes"); box.innerHTML = "";
+    ms.forEach((md, j) => {
+      const b = document.createElement("button"); b.type = "button";
+      b.textContent = `mode ${j + 1} · ${(md.w / (2 * Math.PI)).toFixed(2)} Hz`;
+      b.addEventListener("click", () => {
+        const th = rel(md.v); const s = 0.12 / Math.max(...th.map(Math.abs));
+        for (let i = 0; i < N; i++) { phi[i] = md.v[i] * s; w[i] = 0; p[i] = 0; u[i] = 0; }
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function setU(val) {
+    const where = $("where").value;
+    for (let i = 0; i < N; i++) u[i] = (where === "all" || (where === "base" && i === 0) || (where === "tip" && i === N - 1)) ? val : 0;
+  }
+  function readParams() {
+    k = +$("k").value; c = +$("c").value; tau = +$("tau").value;
+    $("dpo").textContent = (+$("dp").value).toFixed(1) + " psi";
+    $("ko").textContent = k.toFixed(2) + " N·m/rad";
+    $("co").textContent = c.toFixed(3) + " N·m·s/rad";
+    $("tauo").textContent = tau.toFixed(2) + " s";
+  }
+  ["k", "c", "tau", "dp"].forEach(id => $(id).addEventListener("input", () => { readParams(); if (id === "k") renderModes(); }));
+  $("step").addEventListener("click", () => setU(+$("dp").value));
+  $("rel").addEventListener("click", () => setU(0));
+  $("reset").addEventListener("click", () => { phi.fill(0); w.fill(0); p.fill(0); u.fill(0); hist.length = 0; t = 0; });
+
+  function fit(cv) {
+    const r = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * r) || cv.height !== Math.round(h * r)) { cv.width = Math.round(w * r); cv.height = Math.round(h * r); }
+    const x = cv.getContext("2d"); x.setTransform(r, 0, 0, r, 0, 0); return [x, w, h];
+  }
+  function col(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function drawArm() {
+    const [x, W, Hh] = fit($("arm"));
+    x.clearRect(0, 0, W, Hh);
+    const fg = col("--fg"), sp = col("--spring"), dr = col("--drive"), mu = col("--muted"), rule = col("--rule");
+    const ex = +$("ex").value, sc = (Hh - 90) / (N * L);
+    let X = W / 2, Y = 40;
+    x.fillStyle = rule; x.fillRect(W / 2 - 70, 26, 140, 12); x.strokeStyle = fg; x.strokeRect(W / 2 - 70, 26, 140, 12);
+    x.strokeStyle = mu; x.setLineDash([4, 4]); x.beginPath(); x.moveTo(W / 2, 40); x.lineTo(W / 2, Hh - 20); x.stroke(); x.setLineDash([]);
+    const th = rel(phi);
+    for (let i = 0; i < N; i++) {
+      const ang = phi[i] * ex, nx = X + sc * L * Math.sin(ang), ny = Y + sc * L * Math.cos(ang);
+      x.strokeStyle = fg; x.lineWidth = 8; x.lineCap = "round"; x.beginPath(); x.moveTo(X, Y); x.lineTo(nx, ny); x.stroke();
+      // joint: spring ring whose arc shows joint bend
+      x.lineWidth = 2; x.fillStyle = col("--panel"); x.beginPath(); x.arc(X, Y, 10, 0, 2 * Math.PI); x.fill();
+      x.strokeStyle = sp; x.stroke();
+      x.lineWidth = 3; x.beginPath(); x.arc(X, Y, 16, Math.PI / 2, Math.PI / 2 - th[i] * ex * 4, th[i] > 0); x.stroke();
+      // pressure arrow
+      if (Math.abs(p[i]) > 0.05) {
+        const len = 6 * p[i], my = (Y + ny) / 2, mx = (X + nx) / 2;
+        x.strokeStyle = dr; x.fillStyle = dr; x.lineWidth = 2; x.beginPath(); x.moveTo(mx, my); x.lineTo(mx + len, my); x.stroke();
+        x.beginPath(); const s = Math.sign(len); x.moveTo(mx + len, my); x.lineTo(mx + len - 7 * s, my - 4); x.lineTo(mx + len - 7 * s, my + 4); x.fill();
+      }
+      X = nx; Y = ny;
+    }
+    x.fillStyle = fg; x.beginPath(); x.arc(X, Y, 7, 0, 2 * Math.PI); x.fill();
+    x.fillStyle = mu; x.font = "13px IBM Plex Mono, monospace"; x.textAlign = "center";
+    x.fillText(`tip x = ${(tipx() * 1000).toFixed(1)} mm`, W / 2, Hh - 8);
+  }
+
+  function plot(id, series, yLabel, colors, fixedRange) {
+    const [x, W, Hh] = fit($(id)), pad = { l: 54, r: 12, t: 14, b: 26 };
+    x.clearRect(0, 0, W, Hh);
+    const mu = col("--muted"), rule = col("--rule");
+    const t1 = Math.max(t, H), t0 = t1 - H;
+    let lo = Infinity, hi = -Infinity;
+    for (const s of series) for (const pt of hist) { const v = s(pt); if (v < lo) lo = v; if (v > hi) hi = v; }
+    if (fixedRange) { lo = Math.min(lo, fixedRange[0]); hi = Math.max(hi, fixedRange[1]); }
+    if (!isFinite(lo)) { lo = -1; hi = 1; }
+    const span = Math.max(hi - lo, 1e-3); lo -= span * 0.1; hi += span * 0.1;
+    const X = tt => pad.l + (tt - t0) / H * (W - pad.l - pad.r), Y = v => pad.t + (hi - v) / (hi - lo) * (Hh - pad.t - pad.b);
+    x.strokeStyle = rule; x.lineWidth = 1; x.font = "11px IBM Plex Mono, monospace"; x.fillStyle = mu; x.textAlign = "right";
+    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; x.beginPath(); x.moveTo(pad.l, Y(v)); x.lineTo(W - pad.r, Y(v)); x.stroke(); x.fillText(v.toFixed(1), pad.l - 6, Y(v) + 4); }
+    x.textAlign = "center";
+    for (let s = Math.ceil(t0); s <= t1; s += 2) x.fillText(s + " s", X(s), Hh - 6);
+    x.textAlign = "left"; x.fillText(yLabel, pad.l + 4, pad.t + 12);
+    series.forEach((s, si) => {
+      x.strokeStyle = colors[si]; x.lineWidth = 2; x.beginPath();
+      hist.forEach((pt, i) => { const xx = X(pt.t), yy = Y(s(pt)); i ? x.lineTo(xx, yy) : x.moveTo(xx, yy); });
+      x.stroke();
+    });
+  }
+
+  let last = null, acc = 0;
+  function frame(ts) {
+    if (last === null) last = ts;
+    let dtw = Math.min((ts - last) / 1000, 0.05); last = ts; acc += dtw;
+    const dt = 0.0005;
+    while (acc >= dt) { step(dt); acc -= dt; }
+    hist.push({ t, x: tipx() * 1000, u: u.reduce((s, v) => s + v, 0) / N, p: p.reduce((s, v) => s + v, 0) / N, u0: Math.max(...u.map(Math.abs)) ? u.find(v => v !== 0) || 0 : 0, p0: p[$("where").value === "tip" ? N - 1 : 0] });
+    while (hist.length && hist[0].t < t - H) hist.shift();
+    drawArm();
+    plot("tipplot", [pt => pt.x], "tip x (mm)", [col("--fg")], [-1, 1]);
+    plot("pplot", [pt => pt.u0, pt => pt.p0], "command u (grey), lagged p (orange), psi", [col("--muted"), col("--drive")], [-1, 1]);
+    requestAnimationFrame(frame);
+  }
+
+  readParams(); renderModes();
+  // open in a working state: a step already applied to all levels
+  setU(+$("dp").value);
+  requestAnimationFrame(frame);
+})();
+</script>

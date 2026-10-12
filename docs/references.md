@@ -38,11 +38,20 @@ access works for the paywalled ones).
    First-order LPV model under PCC + fast nonlinear disturbance observer + SMC on a
    **two-segment** fabric arm (front/back columns held at 2 psi, left/right
    modulated), so an earlier robot than ours. Stiffness and damping were identified
-   per set point by least squares, then fitted with polynomials. How it handles
-   pressure dynamics, and its licence, are unverified: only the abstract and search
-   snippets were readable (2026-10-07). The lab's 2022 one-segment paper (PMC9612838)
-   says pressure dynamics were not modelled. Either way our simulator's τ = 0.6 s lag
-   must be modelled.
+   per set point by least squares, then fitted with polynomials. Read in full
+   (2026-10-12, PDF pages viewed): licence CC BY-NC-ND. State q = [θ₁, L₁, θ₂, L₂]
+   (PCC bending angle and arc length per segment, from wire encoders), not tip
+   position. Inertia, Coriolis and gravity are lumped into a disturbance d, giving the
+   first-order (massless) model q̇ = A(ρ)q + B(ρ)u + d with A = −diag(kᵢ/cᵢ), kᵢ, cᵢ
+   quadratic in a pressure-derived scheduling variable ρ (eq. 2, 17). SMC surface
+   σ = e (relative degree 1), adaptive switching gain; NDOB with gain
+   l₁ + 2l₂|q| (eqs. 6–8) supplies d̂ in u = −c(−q̇_d + aq + λσ + η sat(σ) + d̂).
+   Input u is a torque/force; Fig. 2 has an inner loop (torque/force controller →
+   pressure controller) that is **assumed fast enough to neglect**, so pressure
+   dynamics are not modelled. Experiments at 40 Hz, θ_d = 0.35 sin²(2πt/30), seven
+   trials. Our simulator's τ = 0.6 s lag (plus the 0.5 s delay on the calibrated
+   plant) is not fast relative to a 0.1 Hz task, so that assumption needs checking
+   here.
 
 ## Further papers from our notes
 

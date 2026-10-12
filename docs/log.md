@@ -3,6 +3,42 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-12
+
+- Ported Nikoletta's SMC notebook to `scripts/smc_reduced_model.py`; it reproduces
+  her table exactly on `make_calibrated_sim` + `CircularTrackingTask` (PD 500/20:
+  9.94 mm; SMC λ=5, K=0.2, φ=0.02: 4.37 mm). Her one-mode model uses joint springs
+  only; the hanging chain's gravity stiffness (0.83→0.09 N·m/rad from mount to tip,
+  vs 0.42 spring) makes the true static gain 1.80 mm/psi, not 7.74. With gravity
+  added and her gains, SMC gets worse (10.63 mm), so the result rests on the
+  robust feedback, not model accuracy; the lag and 0.5 s delay are unmodelled.
+  Her controller uses absolute tip position while the settled tip is at x −4.96 mm;
+  using the deviation from the settled tip gives 4.20 mm (λ=5) and 3.70 mm (λ=8).
+- The notebook's segment allocator (shared by her PD and SMC) uses each column's
+  torque axis (−sin φ, cos φ) as the tip direction, rotating x and y by 90°: +1 psi
+  of Δp_x moved the tip −2.07 mm in y (static test, `make_calibrated_sim` seed 0).
+  Allocating along the measured tip directions (S2 +y, S3 −x, S4 −y) and flipping
+  b's sign (`--fix-allocator`): PD 500/20 9.94 → 4.08 mm; SMC λ=5 4.37 → 3.20 mm,
+  λ=8 2.53 mm; with `--deviation` 3.13 / 2.45 mm. Phase lags turn positive, which
+  explains the negative lags. With gravity in the model it is still worse (11.16 mm).
+  Every "max error" is 7.00 mm because the circle starts 7 mm from the settled tip.
+  Step-by-step derivation page: `docs/reports/smc-model-derivation.html`.
+- Read Qiao, Tao & Zhang 2024 in full (the paper Nikoletta's SMC follows): first-
+  order LPV in configuration space q = [θ, L] per segment, gravity/inertia lumped into
+  a disturbance estimated by an NDOB, σ = e, adaptive η, input torque/force with an
+  inner pressure loop assumed fast (Fig. 2). Updated `references.md` (licence CC
+  BY-NC-ND, pressure dynamics not modelled: both now verified) and `modeling-plan.md`.
+  Her notebook departs from it: second order, tip space, constant K, no observer, so
+  the omitted gravity is uncompensated. Added a comparison section to
+  `docs/reports/smc-model-derivation.html`.
+- Found the package's evaluation harness (`soft_robotic_arm.evaluation`, defaults
+  to `make_calibrated_sim`, 3 inputs). Documented in `simulator.md`; which
+  benchmark is graded is open.
+- Forward kinematics of the sim checked in closed form against MuJoCo (max error
+  1e-15 over 200 random poses); static pressure→tip map is 2×20, rank 2, x/y
+  decoupled, 0.562 (P1) to 0.241 (P5) mm/psi; min-norm IK reached targets within
+  0.001 mm in the sim. Scratch only, not yet a script.
+
 ## 2026-10-07
 
 - Literature review of modelling / identification methods for the report (paper

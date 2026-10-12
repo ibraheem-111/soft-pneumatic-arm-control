@@ -41,6 +41,30 @@ The coursework uses `make_sim()`. It passes an explicit `ArmConfig`, so it does
 | Regulator gain / bias | 1 / 0 | per-segment fitted gain and bias |
 | Pneumatic lag τ | 0.6 s | 0.6 s |
 
+### The package's own evaluation harness
+
+`soft_robotic_arm.evaluation` (in 0.4.2, docstring "evaluation for student
+controllers") defines `evaluate_controller(controller, task=, sim=)`. Read in
+`evaluation.py` at `c92931d`:
+
+- Default plant is `make_calibrated_sim(control_hz=100, seed=0)` when `sim` is not
+  given, so the controller commands **3 values (S2–S4)**, not `(4, 5)`.
+- `CircularTrackingTask()`: settle 5 s at 4.5 psi on S2–S4; the settled tip becomes
+  the circle centre (`home`); then 30 s tracking a 7 mm circle at 0.1 Hz, starting
+  on the −x side. Commands clipped to `min(9, cfg.p_max)`.
+- Controller protocol is `compute(t, obs, ref) -> (3,)`, with `ref` the x, y, z
+  target for that step (no reference velocity). This differs from the notebook's
+  `compute(t, obs) -> (4, 5)` plus `reference(t)`.
+- Metrics: RMSE and max of the lateral (x-y norm) error over the whole 30 s;
+  effort = RMS of command minus baseline; phase lag = cross-correlation peak of
+  ref y vs tip y only, within ±5 s, positive when the tip lags.
+- On this plant the settled tip is at x −4.96 mm, y −0.09 mm (not at 0, 0), so a
+  controller using absolute `tip_pos` carries that offset
+  (`scripts/smc_reduced_model.py`).
+
+Which benchmark is graded (this harness or the `make_sim()` random-trajectory PD
+baseline in AGENTS.md) is an open question; ask the professor.
+
 ## Signal path for one `sim.step(command)` (100 Hz)
 
 ```
@@ -157,6 +181,8 @@ XML alone has no actuators. Loaded on its own (e.g.
 - `uv run python scripts/view_arm.py --dump-xml soft_arm.xml` — write the MJCF.
 - `uv run python scripts/draw_kinematics.py` — regenerate the kinematic diagram.
 - `uv run python scripts/run_baseline.py` — reproduce the 4.10 mm PD baseline.
+- `uv run python scripts/smc_reduced_model.py [--sweep] [--gravity]` — port of the
+  partner's reduced-model SMC notebook, scored with the package harness above.
 - `uv run python scripts/plant_model.py` — linear state-space model of the open-loop
   plant, validated against the sim, with controllability/observability tests (see
   `modeling-plan.md`).

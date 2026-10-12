@@ -1,0 +1,307 @@
+<title>Three Arm Models Compared</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: wide comparison page. Three model columns share one colour each throughout: notebook = teal, spring–damper page = violet, paper = ochre. Status chips use a separate semantic set. */
+:root {
+  --bg: #f6f6f3;
+  --surface: #ffffff;
+  --fg: #1c2124;
+  --muted: #5d676c;
+  --rule: #d8dcd9;
+  --m1: #1f6f7a;
+  --m1-soft: #e2f0f1;
+  --m2: #6a4c9c;
+  --m2-soft: #eee8f6;
+  --m3: #9a6a12;
+  --m3-soft: #f7efdc;
+  --sim: #3a4248;
+  --keep: #2e6a40;
+  --keep-soft: #e3f0e6;
+  --lump: #93590a;
+  --lump-soft: #f8eedd;
+  --drop: #8e2f2f;
+  --drop-soft: #f5e4e2;
+  --na: #6b7479;
+  --na-soft: #eceeee;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121618; --surface: #1a2023; --fg: #e3e8ea; --muted: #9aa6ab; --rule: #2e383c;
+    --m1: #6cc3cc; --m1-soft: #17302f; --m2: #b39ae0; --m2-soft: #2a2238; --m3: #e2b55e; --m3-soft: #33291a;
+    --sim: #c9d1d5; --keep: #82c595; --keep-soft: #1c2e22; --lump: #e3a54c; --lump-soft: #33281a;
+    --drop: #e48f8f; --drop-soft: #362022; --na: #a3acb0; --na-soft: #242b2e; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121618; --surface: #1a2023; --fg: #e3e8ea; --muted: #9aa6ab; --rule: #2e383c;
+  --m1: #6cc3cc; --m1-soft: #17302f; --m2: #b39ae0; --m2-soft: #2a2238; --m3: #e2b55e; --m3-soft: #33291a;
+  --sim: #c9d1d5; --keep: #82c595; --keep-soft: #1c2e22; --lump: #e3a54c; --lump-soft: #33281a;
+  --drop: #e48f8f; --drop-soft: #362022; --na: #a3acb0; --na-soft: #242b2e; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 18px; padding-block: 40px 90px; display: grid; gap: 48px; }
+header { display: grid; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1, h2 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 42px); }
+h2 { font-size: 26px; }
+h3 { font: 600 16px/1.35 var(--body); margin: 0; }
+p, ul { margin: 0; max-width: 74ch; }
+ul { padding-left: 1.25em; display: grid; gap: 6px; }
+section { display: grid; gap: 16px; min-width: 0; }
+code { font-family: var(--mono); font-size: .88em; }
+.meta { color: var(--muted); font-size: 14px; }
+.lede { font-size: 18px; max-width: 78ch; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--c); border-radius: 6px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card .who { font: 500 11px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--c); }
+.card h3 { font-family: var(--display); font-size: 21px; font-weight: 600; }
+.card .eqn { overflow-x: auto; overflow-y: hidden; }
+.card dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 14px; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; font-variant-numeric: tabular-nums; }
+.c1 { --c: var(--m1); } .c2 { --c: var(--m2); } .c3 { --c: var(--m3); }
+
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 8px 12px; text-align: left; vertical-align: top; }
+thead th { font-size: 13px; position: sticky; top: 0; background: var(--surface); }
+tbody tr:last-child td { border-bottom: 0; }
+th.rowh { font-weight: 600; color: var(--muted); white-space: nowrap; font-size: 13px; }
+th.h1 { color: var(--m1); } th.h2 { color: var(--m2); } th.h3 { color: var(--m3); }
+.ledger td { text-align: center; }
+.ledger th.term { text-align: center; font-size: 12px; font-weight: 600; color: var(--muted); }
+.chip { display: inline-block; font: 500 11.5px/1.5 var(--mono); padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+.k { background: var(--keep-soft); color: var(--keep); }
+.l { background: var(--lump-soft); color: var(--lump); }
+.d { background: var(--drop-soft); color: var(--drop); }
+.n { background: var(--na-soft); color: var(--na); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); align-items: center; }
+
+figure { margin: 0; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; min-width: 0; }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 680px; height: auto; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 86ch; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.box { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+mjx-container[display="true"] { margin: .4em 0 !important; }
+</style>
+<script>
+window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] }, svg: { fontCache: "global" } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soft pneumatic arm · modelling for control · side by side</div>
+  <h1>Three Arm Models Compared</h1>
+  <p class="lede">All three models start from the same rigid-chain Lagrangian, \(M\ddot q + C\dot q + D\dot q + Kq + g(q) = S\,p\), with the pressure entering through a pneumatic actuator. They differ in which terms they keep, which they hand to an observer, and which they drop. That choice sets each model's order, its poles and what controller it can support.</p>
+  <p class="meta">Models compared: (1) Nikoletta's reduced model in <code>SMC_Controller_withoutdisturbanceobserver.ipynb</code>, ported as <code>scripts/smc_reduced_model.py</code>. (2) The "Spring–Damper Arm Model" page, <code>docs/reports/spring-damper-model.html</code>, whose own numbers are illustrative; here it is evaluated with our simulator's parameters. (3) Qiao, Tao &amp; Zhang, IFAC-PapersOnLine 58(28) 516–521, 2024, read in full. Numbers marked "sim" are calculated from <code>build_arm_xml(ArmConfig())</code> for the x-bending chain about the straight hang.</p>
+</header>
+
+<!-- term ledger -->
+<section>
+  <h2>What each model does with each term</h2>
+  <div class="tbl">
+    <table class="ledger">
+      <thead>
+        <tr><th></th>
+          <th class="term">Inertia<br>\(M\ddot q\)</th><th class="term">Coriolis<br>\(C\dot q\)</th><th class="term">Gravity<br>\(g(q)\)</th><th class="term">Springs<br>\(Kq\)</th><th class="term">Damping<br>\(D\dot q\)</th><th class="term">Pressure lag<br>\(\tau\dot p = u - p\)</th><th class="term">Transport delay<br>0.5 s</th><th class="term">Pressure-scheduled<br>\(k(\rho), c(\rho)\)</th><th class="term">Disturbance<br>estimate \(\hat d\)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><th class="rowh h1">Notebook</th>
+          <td><span class="chip k">kept, 1 mode</span></td><td><span class="chip d">dropped</span></td><td><span class="chip d">dropped</span></td><td><span class="chip k">kept</span></td><td><span class="chip k">kept</span></td><td><span class="chip d">dropped</span></td><td><span class="chip d">dropped</span></td><td><span class="chip d">constant</span></td><td><span class="chip d">none</span></td></tr>
+        <tr><th class="rowh h2">Spring–damper page</th>
+          <td><span class="chip k">kept</span></td><td><span class="chip k">kept, then linearized</span></td><td><span class="chip k">kept as \(K_g\)</span></td><td><span class="chip k">kept</span></td><td><span class="chip k">kept</span></td><td><span class="chip k">kept</span></td><td><span class="chip n">listed as a fix</span></td><td><span class="chip n">listed as a fix</span></td><td><span class="chip n">not addressed</span></td></tr>
+        <tr><th class="rowh h3">Qiao, Tao &amp; Zhang</th>
+          <td><span class="chip l">lumped into d</span></td><td><span class="chip l">lumped into d</span></td><td><span class="chip l">lumped into d</span></td><td><span class="chip k">kept</span></td><td><span class="chip k">kept</span></td><td><span class="chip d">inner loop assumed fast</span></td><td><span class="chip n">not considered</span></td><td><span class="chip k">core of the model</span></td><td><span class="chip k">NDOB</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="legend"><span><span class="chip k">kept</span> in the model</span><span><span class="chip l">lumped</span> into a disturbance the observer estimates</span><span><span class="chip d">dropped</span> with nothing compensating</span><span><span class="chip n">grey</span> mentioned but not part of the model</span></div>
+  <p>Read down the gravity column and the difference is clear. The notebook and the paper both leave gravity out of the model, but only the paper has something, the observer, that is meant to absorb it. The spring–damper page is the only model that keeps the lag, the term that dominates our simulator.</p>
+</section>
+
+<!-- three cards -->
+<section>
+  <h2>The three models, written out</h2>
+  <div class="cards">
+    <div class="card c1">
+      <div class="who">Model 1 · Notebook</div>
+      <h3>One mass–spring–damper at the tip</h3>
+      <div class="eqn">\[ \ddot x + c\,\dot x + k\,x = b\,\Delta p \]</div>
+      <p>From the springs-only chain \(M\ddot\theta + D\dot\theta + K\theta = g\mathbf 1\Delta p\): take the generalized eigenproblem, keep mode 0, and project onto the tip with the kinematic Jacobian \(L\). The input is the pressure difference, assumed to act instantly.</p>
+      <div class="eqn">\[ G_1(s) = \frac{-0.0820}{s^2 + 9.231\,s + 10.602} \]</div>
+      <dl>
+        <dt>State</dt><dd>tip \(x, \dot x\) per axis</dd>
+        <dt>Order</dt><dd>2 per axis</dd>
+        <dt>Relative degree</dt><dd>2</dd>
+        <dt>Poles</dt><dd>−7.887, −1.344 s⁻¹ (ζ = 1.42)</dd>
+        <dt>Static gain</dt><dd>−7.74 mm/psi</dd>
+        <dt>Parameters from</dt><dd>MuJoCo joint springs and dampers</dd>
+      </dl>
+    </div>
+    <div class="card c2">
+      <div class="who">Model 2 · Spring–damper page, model A</div>
+      <h3>One mode with gravity, behind the lag</h3>
+      <div class="eqn">\[ \ddot\eta + 2\zeta\omega\,\dot\eta + \omega^2\eta = \varphi^{\mathsf T} S\,p, \quad \tau\dot p = u - p \]</div>
+      <p>The same chain with gravity stiffness \(K + K_g\) and the pneumatic lag in the plant. Keep the first mode. The input is the pressure <em>command</em>, so the model is third order.</p>
+      <div class="eqn">\[ G_2(s) = \frac{-0.0790}{(0.6\,s + 1)(s^2 + 9.409\,s + 51.451)} \]</div>
+      <dl>
+        <dt>State</dt><dd>\(x, \dot x, p\) per axis</dd>
+        <dt>Order</dt><dd>3 per axis</dd>
+        <dt>Relative degree</dt><dd>3 (plus delay if added)</dd>
+        <dt>Poles (sim)</dt><dd>−1.667; −4.704 ± 5.415j (ζ = 0.66)</dd>
+        <dt>Static gain (sim)</dt><dd>−1.54 mm/psi (one mode), −1.80 (all modes)</dd>
+        <dt>Parameters from</dt><dd>to be identified: τ, then ω, ζ, b from steps</dd>
+      </dl>
+    </div>
+    <div class="card c3">
+      <div class="who">Model 3 · Qiao, Tao &amp; Zhang 2024</div>
+      <h3>First-order LPV plus a lumped disturbance</h3>
+      <div class="eqn">\[ \dot q = A(\rho)\,q + B(\rho)\,u + d, \quad A = -\operatorname{diag}\!\Big(\tfrac{k_i(\rho)}{c_i(\rho)}\Big) \]</div>
+      <p>The arm is light, so inertia, Coriolis and gravity go into \(d\), leaving a massless spring–damper per configuration variable \(q = [\theta_j, L_j]\). \(k, c\) are quadratic in a pressure-derived \(\rho\). The input is a torque or force through an inner pressure loop assumed fast.</p>
+      <div class="eqn">\[ G_3(s) = \frac{1/c_i}{s + k_i/c_i} \;\;\text{per state, plus } d \]</div>
+      <dl>
+        <dt>State</dt><dd>\(\theta_j, L_j\) per segment (wire encoders)</dd>
+        <dt>Order</dt><dd>1 per state</dd>
+        <dt>Relative degree</dt><dd>1</dd>
+        <dt>Pole (sim, joint constants)</dt><dd>\(-k_\theta/d_\theta = -1.149\) s⁻¹ on every hinge</dd>
+        <dt>Static gain (sim)</dt><dd>−8.11 mm/psi from the model part; gravity sits in \(d\)</dd>
+        <dt>Parameters from</dt><dd>experiments at 5 pressure set points, least squares</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- pole strip chart -->
+<section>
+  <h2>Where the poles land</h2>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 720 390" role="img" aria-label="Pole locations on the real axis for five rows: notebook model, spring-damper page model A, the paper's form with joint constants, the paper's massless form with gravity stiffness, and the simulator's linearized chain with lag. Complex pairs are labelled with their imaginary parts. A dashed line marks the task frequency, 0.63 rad/s.">
+      <!-- axis: x = 660 + 60*re, re from -9 to 0 -->
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--muted)" text-anchor="middle">
+        <line x1="120" y1="340" x2="672" y2="340" stroke="currentColor" stroke-width="1"/>
+        <g stroke="var(--rule)" stroke-width="1">
+          <line x1="120" y1="30" x2="120" y2="340"/><line x1="180" y1="30" x2="180" y2="340"/><line x1="240" y1="30" x2="240" y2="340"/><line x1="300" y1="30" x2="300" y2="340"/><line x1="360" y1="30" x2="360" y2="340"/><line x1="420" y1="30" x2="420" y2="340"/><line x1="480" y1="30" x2="480" y2="340"/><line x1="540" y1="30" x2="540" y2="340"/><line x1="600" y1="30" x2="600" y2="340"/><line x1="660" y1="30" x2="660" y2="340"/>
+        </g>
+        <text x="120" y="356">−9</text><text x="180" y="356">−8</text><text x="240" y="356">−7</text><text x="300" y="356">−6</text><text x="360" y="356">−5</text><text x="420" y="356">−4</text><text x="480" y="356">−3</text><text x="540" y="356">−2</text><text x="600" y="356">−1</text><text x="660" y="356">0</text>
+        <text x="396" y="378" fill="currentColor">Re(s)  [s⁻¹]</text>
+      </g>
+      <!-- task frequency -->
+      <line x1="622.3" y1="30" x2="622.3" y2="340" stroke="currentColor" stroke-dasharray="4 4" stroke-width="1"/>
+      <text x="626" y="24" font-size="11" fill="currentColor">task 0.63</text>
+
+      <!-- row labels -->
+      <g font-size="12.5" font-weight="600">
+        <text x="12" y="64" fill="var(--m1)">Notebook</text>
+        <text x="12" y="124" fill="var(--m2)">Spring–damper A</text>
+        <text x="12" y="178" fill="var(--m3)">Paper, joint</text><text x="12" y="193" fill="var(--m3)">constants</text>
+        <text x="12" y="238" fill="var(--m3)">Paper form, k</text><text x="12" y="253" fill="var(--m3)">incl. gravity</text>
+        <text x="12" y="304" fill="var(--sim)">Simulator</text><text x="12" y="319" fill="var(--sim)">chain + lag</text>
+      </g>
+      <g stroke="var(--rule)" stroke-width="1"><line x1="120" y1="60" x2="660" y2="60"/><line x1="120" y1="120" x2="660" y2="120"/><line x1="120" y1="182" x2="660" y2="182"/><line x1="120" y1="242" x2="660" y2="242"/><line x1="120" y1="306" x2="660" y2="306"/></g>
+
+      <!-- notebook: -7.887, -1.344 -->
+      <g fill="var(--m1)">
+        <circle cx="186.8" cy="60" r="6"/><circle cx="579.4" cy="60" r="6"/>
+      </g>
+      <g font-size="11" fill="var(--m1)" text-anchor="middle"><text x="186.8" y="46">−7.89</text><text x="579.4" y="46">−1.34</text></g>
+
+      <!-- page A: -4.704 ± 5.415j, -1.667 (lag) -->
+      <g fill="var(--m2)">
+        <polygon points="377.8,113 384.8,125 370.8,125"/><polygon points="560,113 567,125 553,125"/>
+      </g>
+      <g font-size="11" fill="var(--m2)" text-anchor="middle"><text x="377.8" y="106">−4.70 ± 5.42j</text><text x="560" y="106">−1.67 lag</text></g>
+
+      <!-- paper joint constants: -1.149 x5 -->
+      <rect x="585.1" y="176" width="12" height="12" fill="var(--m3)"/>
+      <text x="591.1" y="168" font-size="11" fill="var(--m3)" text-anchor="middle">−1.15 (×5)</text>
+
+      <!-- paper form with gravity stiffness: -5.617 dominant; -1.801 -1.424 -1.316 -1.250 small -->
+      <rect x="317" y="236" width="12" height="12" fill="var(--m3)"/>
+      <g fill="none" stroke="var(--m3)" stroke-width="1.4"><rect x="548.9" y="239" width="6" height="6"/><rect x="571.6" y="239" width="6" height="6"/><rect x="578" y="239" width="6" height="6"/><rect x="582" y="239" width="6" height="6"/></g>
+      <g font-size="11" fill="var(--m3)" text-anchor="middle"><text x="323" y="228">−5.62 (89 % of gain)</text><text x="567" y="228">−1.80 … −1.25</text></g>
+
+      <!-- simulator: -4.621 ± 5.520j, -1.810 -1.425 -1.317 -1.250, lag -1.667 -->
+      <g fill="none" stroke="var(--sim)" stroke-width="1.6">
+        <circle cx="382.7" cy="306" r="6"/>
+        <circle cx="551.4" cy="306" r="3.5"/><circle cx="574.5" cy="306" r="3.5"/><circle cx="581" cy="306" r="3.5"/><circle cx="585" cy="306" r="3.5"/>
+      </g>
+      <path d="M554,300 l12,12 M566,300 l-12,12" stroke="var(--sim)" stroke-width="1.6"/>
+      <g font-size="11" fill="var(--sim)" text-anchor="middle"><text x="382.7" y="292">−4.62 ± 5.52j</text><text x="567" y="292">lag × and −1.81 … −1.25</text><text x="567" y="330">+ 0.5 s delay (calibrated plant)</text></g>
+    </svg>
+    </div>
+    <figcaption>Real parts of each model's poles for one bending axis, evaluated with the simulator's parameters. Complex pairs are labelled with their imaginary part. Everything to the left of the dashed line is faster than the 0.1 Hz task (0.63 rad/s). Two things stand out. First, the paper's massless form with gravity included reproduces the simulator chain's four slow real poles at −1.80, −1.42, −1.32 and −1.25 exactly, so inertia adds only the complex pair. Second, the notebook's model has neither the complex pair nor the lag pole at −1.67. The bottom row is the 5-hinge chain with springs, gravity and the 0.6 s lag. The very fast axial and higher-mode poles below −300 s⁻¹ are off the chart.</figcaption>
+  </figure>
+</section>
+
+<!-- detailed table -->
+<section>
+  <h2>Side by side</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th></th><th class="h1">Notebook</th><th class="h2">Spring–damper page</th><th class="h3">Qiao, Tao &amp; Zhang 2024</th></tr></thead>
+      <tbody>
+        <tr><th class="rowh">Purpose</th><td>Plant model for an SMC on the scored task</td><td>Teaching page on modelling; no controller</td><td>Control paper: SMC + disturbance observer, with a stability proof and experiments</td></tr>
+        <tr><th class="rowh">Robot</th><td>Simulator chain, 5 levels, 3 driven segments</td><td>Generic n-level hanging arm</td><td>Two-segment fabric arm; front/back held at 2 psi, left/right modulated</td></tr>
+        <tr><th class="rowh">Coordinates</th><td>Tip x, y (modal projection)</td><td>Joint angles and stretch per level, θx, θy, e (3n)</td><td>PCC bending angle and arc length per segment</td></tr>
+        <tr><th class="rowh">Measured signal</th><td>Tip position, from motion capture</td><td>Pressure sensors and tip</td><td>Wire encoders, giving configuration directly</td></tr>
+        <tr><th class="rowh">Mechanics order</th><td>2nd (one mode)</td><td>2nd per mode; n modes per plane</td><td>1st (massless)</td></tr>
+        <tr><th class="rowh">Gravity</th><td>Omitted, uncompensated</td><td>Positive-definite stiffness \(K_g\)</td><td>In \(d\), estimated by the observer</td></tr>
+        <tr><th class="rowh">Actuator</th><td>Instant</td><td>First-order lag per pouch, in the plant</td><td>Inner pressure loop assumed fast</td></tr>
+        <tr><th class="rowh">Damping assumption</th><td>Proportional; exact here, since \(D = 0.871\,K\)</td><td>"Close to proportional"; not exact once gravity is in</td><td>Not needed: \(A\) is diagonal</td></tr>
+        <tr><th class="rowh">Parameter source</th><td>Simulator joint constants</td><td>Step tests: τ from pressure, then ω, ζ, b from the tip</td><td>Least squares at 5 set points, quadratic fit in pressure</td></tr>
+        <tr><th class="rowh">Uncertainty</th><td>Constant switching gain \(K\)</td><td>Not addressed</td><td>Lumped \(d\), NDOB with gain \(l_1 + 2l_2|q|\), adaptive \(\eta\)</td></tr>
+        <tr><th class="rowh">Sliding surface it supports</th><td>\(s = \dot e + \lambda e\)</td><td>Needs a cascade or a higher-order surface (relative degree 3)</td><td>\(\sigma = e\)</td></tr>
+        <tr><th class="rowh">Validation reported</th><td>Tracking on the scored task: SMC 4.37 mm, or 3.20 mm with the allocator corrected (measured)</td><td>None (illustrative numbers)</td><td>LPV vs constant-parameter model, RMSE as printed: θ₁ 0.585 → 0.564 rad, L₁ 0.021 → 0.0012 m, θ₂ 0.0471 → 0.0401 rad, L₂ 0.0021 → 0.0011 m</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- strengths and risks -->
+<section>
+  <h2>What each gets right, and where it fails on our plant</h2>
+  <div class="two">
+    <div class="box" style="border-top:4px solid var(--m1)">
+      <h3 style="color:var(--m1)">Notebook</h3>
+      <ul>
+        <li><b>Right:</b> an exact modal derivation from the simulator, the correct kinematic Jacobian, and mode selection by static tip gain.</li>
+        <li><b>Fails:</b> gravity stiffness is missing (static gain 7.74 vs 1.80 mm/psi), the lag and delay are missing (relative degree 2 vs 3 plus dead time), and nothing estimates what is missing.</li>
+      </ul>
+    </div>
+    <div class="box" style="border-top:4px solid var(--m2)">
+      <h3 style="color:var(--m2)">Spring–damper page</h3>
+      <ul>
+        <li><b>Right:</b> it keeps the two terms that dominate our simulator, gravity and the lag. It also notes that 4 pouches per level make only 3 forces, and that hanging makes \(K_g\) stabilizing.</li>
+        <li><b>Fails:</b> it gives no treatment of uncertainty and no controller. The delay and the pressure-dependent stiffness appear only as later fixes. Its interactive parameters are illustrative: with our simulator's values the first mode has ζ = 0.66, not "lightly damped".</li>
+      </ul>
+    </div>
+    <div class="box" style="border-top:4px solid var(--m3)">
+      <h3 style="color:var(--m3)">Qiao, Tao &amp; Zhang</h3>
+      <ul>
+        <li><b>Right:</b> it keeps the model deliberately small, puts the error where an observer can estimate it, schedules the stiffness on pressure, and proves exponential convergence of the error.</li>
+        <li><b>Fails here:</b> it assumes the actuator is fast. Our 0.6 s lag costs 20.7° of phase at 0.1 Hz, and the delay another 18° (calculated). The paper does not consider a dead time. Its state also needs configuration sensing that motion capture of the tip alone does not give.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Reading them together</h2>
+  <p>The three models are not competitors so much as answers to different questions. The spring–damper page asks what the plant <em>is</em>, the paper asks how to <em>control</em> it despite a crude model, and the notebook sits between them without the observer that would make the paper's simplifications safe. The pole chart suggests the outline of a combined model. It would keep the paper's first-order structure and its observer, use an effective stiffness that includes gravity (its slow poles then match the simulator exactly), and add the lag and delay the page keeps. That combination has not been built or tested. It is a direction, not a result.</p>
+  <p class="meta">Sources: the notebook port and measurements in <code>scripts/smc_reduced_model.py</code>; the model derivation in <code>docs/reports/smc-model-derivation.html</code>; the spring–damper page as found in <code>docs/reports/spring-damper-model.html</code> (author: another assistant, not reviewed for its interactive code); the paper's eqs. 1–17 and Fig. 2. Simulator pole and gain values came from short scratch calculations on <code>build_arm_xml(ArmConfig())</code>, not yet a repository script.</p>
+</section>
+
+</div>
