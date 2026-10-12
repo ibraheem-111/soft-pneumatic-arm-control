@@ -107,7 +107,7 @@ that run (soft-robotic-arm 0.4.2, 2026-10-07).
   appears in ë). Two standard fixes:
   - **Cascade (preferred).** SMC on the mechanical part with pressure as a virtual
     input, plus an inner loop that drives measured pouch pressure to the SMC's
-    demand (lag inverse + feedback). This is the structure Qiao et al. assumed; here
+    demand (lag inverse + feedback). Whether Qiao et al. used this structure is unverified (full text not read); here
     the inner loop must be built deliberately.
   - **Higher-order surface** s = ë + λ₁ė + λ₀e, with states estimated from the
     identified model.

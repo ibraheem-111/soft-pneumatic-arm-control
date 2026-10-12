@@ -30,14 +30,19 @@ access works for the paywalled ones).
 3. D. Papageorgiou, G. Þ. Sigurðardóttir, E. Falotico, S. Tolu, "Sliding-mode control
    of a soft robot based on data-driven sparse identification," *Control Engineering
    Practice* 144, 105836, 2024. <https://doi.org/10.1016/j.conengprac.2023.105836> —
-   SINDy model + SMC, the closest template for "identify, then SMC".
+   SINDy model + SMC, the closest template for "identify, then SMC". Note the robot is
+   cable/McKibben-driven with servo-count inputs, and the model has no actuator lag.
 4. Z. Qiao, W. Tao, W. Zhang, "Nonlinear disturbance observer with sliding mode
    control for a fabric soft robotic arm," *IFAC-PapersOnLine* 58(28), 516–521, 2024.
    <https://doi.org/10.1016/j.ifacol.2025.01.098> — **the robot's own lab** (ASU).
-   First-order LPV model + fast nonlinear disturbance observer + SMC on a two-segment
-   fabric arm. Assumes the inner pressure loop is fast enough to ignore — not true in
-   our simulator (τ = 0.6 s), so the lag must be modelled. Open access
-   (CC BY-NC-ND).
+   First-order LPV model under PCC + fast nonlinear disturbance observer + SMC on a
+   **two-segment** fabric arm (front/back columns held at 2 psi, left/right
+   modulated), so an earlier robot than ours. Stiffness and damping were identified
+   per set point by least squares, then fitted with polynomials. How it handles
+   pressure dynamics, and its licence, are unverified: only the abstract and search
+   snippets were readable (2026-10-07). The lab's 2022 one-segment paper (PMC9612838)
+   says pressure dynamics were not modelled. Either way our simulator's τ = 0.6 s lag
+   must be modelled.
 
 ## Further papers from our notes
 

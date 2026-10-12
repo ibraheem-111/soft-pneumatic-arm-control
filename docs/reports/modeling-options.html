@@ -1,0 +1,430 @@
+<title>Pouch Arm Modelling Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; a technical report with a method catalogue, comparison table and paper notes. */
+:root {
+  --bg: #f6f7f8;
+  --surface: #ffffff;
+  --fg: #1b2228;
+  --muted: #5a6670;
+  --rule: #d9dee2;
+  --accent: #1f6f8b;      /* regulator-tubing blue */
+  --accent-soft: #e3eff3;
+  --warn: #9a5b00;
+  --warn-soft: #fbf0dd;
+  --ok: #2d6a3e;
+  --ok-soft: #e4f1e7;
+  --no: #8f2d2d;
+  --no-soft: #f6e4e4;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121619; --surface: #1a2025; --fg: #e3e8eb; --muted: #9aa6ae; --rule: #2e373e;
+    --accent: #6cb6d0; --accent-soft: #1c3038; --warn: #e2a64a; --warn-soft: #33281a;
+    --ok: #7fc492; --ok-soft: #1c2e22; --no: #e08b8b; --no-soft: #352022; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121619; --surface: #1a2025; --fg: #e3e8eb; --muted: #9aa6ae; --rule: #2e373e;
+  --accent: #6cb6d0; --accent-soft: #1c3038; --warn: #e2a64a; --warn-soft: #33281a;
+  --ok: #7fc492; --ok-soft: #1c2e22; --no: #e08b8b; --no-soft: #352022; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+.wrap { max-width: 860px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 80px; display: grid; gap: 48px; }
+header { display: grid; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 28px; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 42px); }
+h2 { font-size: 27px; }
+h3 { font-size: 20px; }
+p, ul, ol { margin: 0; max-width: 68ch; }
+ul, ol { padding-left: 1.2em; display: grid; gap: 6px; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code, .mono { font-family: var(--mono); font-size: .88em; }
+.meta { color: var(--muted); font-size: 14px; }
+section { display: grid; gap: 16px; }
+nav ol { columns: 2; column-gap: 32px; display: block; font-size: 15px; }
+nav li { margin-bottom: 4px; }
+@media (max-width: 560px) { nav ol { columns: 1; } }
+.note { border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; padding: 16px 18px; display: grid; gap: 8px; }
+.note.warn { background: var(--warn-soft); border-color: transparent; }
+.note.warn strong:first-child { color: var(--warn); }
+.chain { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px; }
+.chain svg { display: block; min-width: 640px; width: 100%; height: auto; }
+.chain text { font-family: var(--mono); font-size: 12px; fill: var(--fg); }
+.chain .sub { fill: var(--muted); font-size: 11px; }
+.chain rect { fill: var(--accent-soft); stroke: var(--accent); }
+.chain path { stroke: var(--muted); fill: none; }
+.chain .head { fill: var(--muted); stroke: none; }
+.family { display: grid; gap: 14px; }
+.method { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 18px 20px; display: grid; gap: 10px; }
+.method h3 { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.tag { font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+dl { display: grid; grid-template-columns: 9.5em 1fr; gap: 6px 16px; margin: 0; font-size: 15px; }
+dt { color: var(--muted); }
+dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { dl { grid-template-columns: 1fr; } dt { margin-top: 6px; } }
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 820px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--rule); }
+th { font: 500 12px/1.3 var(--mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
+tbody tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; }
+.pill { display: inline-block; font: 500 12px/1.5 var(--mono); padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+.y { background: var(--ok-soft); color: var(--ok); }
+.p { background: var(--warn-soft); color: var(--warn); }
+.n { background: var(--no-soft); color: var(--no); }
+.papers { display: grid; gap: 14px; }
+.paper { border-top: 1px solid var(--rule); padding-top: 14px; display: grid; gap: 6px; }
+.paper .cite { font-size: 14px; color: var(--muted); }
+.access { font: 500 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .05em; }
+.num { font-variant-numeric: tabular-nums; }
+footer { border-top: 1px solid var(--rule); padding-top: 20px; color: var(--muted); font-size: 14px; display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">RAS556 · Soft pneumatic arm · Modelling review</div>
+  <h1>Pouch Arm Modelling Options</h1>
+  <p>Analytical and data-driven ways to build a model of the plant (the 20 pouch pressure commands in, the tip position out), on the real robot or in the MuJoCo simulator. It reviews the papers in <code>docs/references.md</code> and lists what each method would need from us. It deliberately makes no selection; section 7 lists the questions that decide it.</p>
+  <p class="meta">7 October 2026 · Simulator <code>soft-robotic-arm</code> 0.4.2 (upstream commit <code>c92931d</code>) · Repo <code>ibraheem-111/soft-pneumatic-arm-control</code></p>
+</header>
+
+<nav aria-label="Contents">
+  <ol>
+    <li><a href="#plant">What the model has to capture</a></li>
+    <li><a href="#data">What data we can get</a></li>
+    <li><a href="#analytical">Analytical methods</a></li>
+    <li><a href="#datadriven">Data-driven methods</a></li>
+    <li><a href="#compare">Side-by-side comparison</a></li>
+    <li><a href="#papers">Paper notes</a></li>
+    <li><a href="#decide">Questions before selecting</a></li>
+    <li><a href="#corrections">Corrections found during review</a></li>
+  </ol>
+</nav>
+
+<section id="plant">
+  <h2>1. What the model has to capture</h2>
+  <p>The simulator implements this signal chain, read from its source and checked by running it:</p>
+  <div class="chain" role="img" aria-label="Signal chain: 20 pouch commands, first-order pneumatic lag with tau 0.6 s, linear pressure to joint moments and axial forces, 15-DOF spring-damper chain with gravity, tip position.">
+    <svg viewBox="0 0 860 120" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto"><path class="head" d="M0,0 L8,4 L0,8 z"/></marker></defs>
+      <rect x="4" y="30" width="140" height="58" rx="5"/>
+      <text x="74" y="55" text-anchor="middle">u: 20 commands</text>
+      <text class="sub" x="74" y="73" text-anchor="middle">psi, 0–9, 100 Hz</text>
+      <path d="M144,59 L176,59" marker-end="url(#ah)"/>
+      <rect x="178" y="30" width="150" height="58" rx="5"/>
+      <text x="253" y="55" text-anchor="middle">pneumatic lag</text>
+      <text class="sub" x="253" y="73" text-anchor="middle">1st order, τ = 0.6 s</text>
+      <path d="M328,59 L360,59" marker-end="url(#ah)"/>
+      <rect x="362" y="30" width="150" height="58" rx="5"/>
+      <text x="437" y="55" text-anchor="middle">pressure → force</text>
+      <text class="sub" x="437" y="73" text-anchor="middle">linear, per level</text>
+      <path d="M512,59 L544,59" marker-end="url(#ah)"/>
+      <rect x="546" y="30" width="160" height="58" rx="5"/>
+      <text x="626" y="55" text-anchor="middle">15-DOF chain</text>
+      <text class="sub" x="626" y="73" text-anchor="middle">springs, dampers, gravity</text>
+      <path d="M706,59 L738,59" marker-end="url(#ah)"/>
+      <rect x="740" y="30" width="116" height="58" rx="5"/>
+      <text x="798" y="55" text-anchor="middle">y: tip x, y</text>
+      <text class="sub" x="798" y="73" text-anchor="middle">OptiTrack</text>
+      <text class="sub" x="253" y="108" text-anchor="middle">measured: pouch pressure sensors</text>
+    </svg>
+  </div>
+  <ul>
+    <li><strong>The lag is as slow as the mechanics.</strong> τ = 0.6 s (corner ≈ 0.27 Hz) is comparable to the slowest mechanical poles (about −1.25 s⁻¹, i.e. 0.8 s), so it can't be neglected. The order from command to tip is at least 3 per axis: 1 lag state plus about 2 mechanical states.</li>
+    <li><strong>20 inputs act as about 15 directions.</strong> Opposing columns cancel in bending, so the commands reduce to 10 bending moments (x and y at 5 levels) plus 5 axial forces.</li>
+    <li><strong>The simulator is nearly linear at this scale.</strong> A linearization about 4.5 psi matched the nonlinear simulator to 0.1 % (tip error 0.004 mm RMS against 4.33 mm of motion) for opposing columns driven over 0–9 psi (<code>scripts/plant_model.py</code>). That check reads the simulator's internal state, so it serves only as an answer key, not as a modelling method.</li>
+    <li><strong>The real arm is described as nonlinear.</strong> The lab's own 2026 paper calls the hardware "strongly nonlinear, hysteretic, and configuration-dependent". A method chosen only because the simulator is linear may not transfer.</li>
+  </ul>
+</section>
+
+<section id="data">
+  <h2>2. What data we can get</h2>
+  <dl>
+    <dt>Simulator</dt>
+    <dd>Any experiment we like, at about 11× real time. Tip position and velocity, plus the 20 pouch pressure sensors (curvature coupling plus noise σ = 0.002 psi). The tip sensors are noise-free, so add measurement noise for realism. <code>p_actual</code> and the joint state <code>q</code> are also exposed but don't exist on hardware.</dd>
+    <dt>Real robot, existing</dt>
+    <dd>36 recorded runs (upstream <code>main</code> branch, <code>data/_data_extract/</code>): axial, circular and triangular waveforms at <strong>0.1 Hz</strong>, 1–10 psi. Signals: segment-level commands, pouch pressures, OptiTrack at about 50 Hz. The lab fitted the simulator to these runs. At 0.1 Hz the excitation sits well below the 0.27 Hz lag corner, so these runs show the static gain and slow behaviour but say little about the dynamics.</dd>
+    <dt>Real robot, new</dt>
+    <dd>Only if the lab gives us time on the arm. Its configuration is unclear: see section 8.</dd>
+  </dl>
+</section>
+
+<section id="analytical" class="family">
+  <h2>3. Analytical (physics-based) methods</h2>
+  <p>Write the equations from mechanics, then estimate a small set of physical parameters from experiments. All of these still need data; what differs is how much structure is fixed in advance.</p>
+
+  <div class="method">
+    <h3>A1 · Low-order gray-box <span class="tag">lag + mass–spring–damper</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Per bending axis: a first-order lag on pressure, then a second-order mechanical response, G(s) = K ωₙ² / ((τs + 1)(s² + 2ζωₙs + ωₙ²)). The lag can be fitted on its own from the measured pouch pressures.</dd>
+      <dt>Parameters</dt><dd>τ, gain K, ωₙ, ζ per axis, plus how each pouch level maps to each axis.</dd>
+      <dt>Experiments</dt><dd>Steps and multisines on opposing-column differences. Fitting by prediction-error or output-error least squares.</dd>
+      <dt>In the papers</dt><dd>The lab's 2022 one-segment work fitted a rigid-arm model M θ̈ + C θ̇ + G + Kθ + Dθ̇ = αR(ψ)p with <code>lsqnonlin</code> on ten-sinusoid inputs (0.001–0.1 Hz). It did not model pressure dynamics.</dd>
+      <dt>Strengths</dt><dd>Few parameters, physically meaningful, a direct transfer function or state-space model for linear control and SMC.</dd>
+      <dt>Limits</dt><dd>Assumes the response is dominated by one mechanical mode. In the simulator, the Hankel singular values (1, 0.24, 0.09, 0.04 per axis) suggest a few more states matter.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>A2 · Piecewise constant curvature + Euler–Lagrange <span class="tag">PCC</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Each section bends as a circular arc; the configuration is a bending angle and plane (and length) per section; M(q)q̈ + C q̇ + G(q) + D q̇ + K q = A(q) p.</dd>
+      <dt>Parameters</dt><dd>Stiffness and damping per section, pressure-to-moment gain; geometry from the drawings.</dd>
+      <dt>In the papers</dt><dd>Pilch et al. 2026: Euler–Lagrange with an experimentally identified spring-moment model that depends on curvature, orientation and pressure; IMU state; linearized around the reference for feedforward plus PID; an external pressure controller realizes the pressures. Qiao et al. 2024 (same lab, earlier two-segment arm): PCC reduced to a first-order LPV model. Falkenhahn et al. 2015: lumped mass per section with feedback linearization (paper not accessible).</dd>
+      <dt>Strengths</dt><dd>Standard in the continuum-robot literature; interpretable; extends to nonlinear control.</dd>
+      <dt>Limits</dt><dd>The bending-plane parametrization has singularities at straight configurations (Della Santina survey), which is exactly where a hanging arm rests. The simulator is 5 rigid links, not arcs, so PCC will not match it exactly. Pressure dynamics must be added separately.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>A3 · Rigid-link chain with fitted parameters <span class="tag">pseudo-rigid body</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Links joined by spring–damper joints, which the survey calls "a standard rigid robot with parallel elasticity". This is the simulator's own structure: 5 levels × (1 slide + 2 hinges).</dd>
+      <dt>In the papers / lab</dt><dd>The lab calibrated the simulator this way: bounded differential evolution, fitted on 6 of the 36 real runs, validated on all 36. Mechanics replay gave 3.03 mm lateral RMSE, and the full end-to-end replay 3.34 mm.</dd>
+      <dt>Strengths</dt><dd>Proven on this exact robot; captures gravity and geometry; plugs into MuJoCo.</dd>
+      <dt>Limits</dt><dd>Fitting it in simulation would just recover the parameters the simulator was built from. It is a high-order nonlinear model (50 states with the lag), so controllers need a reduced version. Global optimization is slow.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>A4 · Cosserat rod <span class="tag">continuum PDE</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Partial differential equations for pose, strain and internal wrench along the arm's length.</dd>
+      <dt>In the papers</dt><dd>Zheng and Burgner-Kahrs 2026 use full Cosserat dynamics for a state observer on a tendon-driven steel rod (position error 0.9–1.9 % of length). Fallahi et al. 2026 likely build on their 2024 Cosserat model of a 3-chamber pneumatic arm (quasi-static, simulation-only SMC); that link is inferred, not verified.</dd>
+      <dt>Strengths</dt><dd>The most faithful continuum mechanics.</dd>
+      <dt>Limits</dt><dd>The survey calls it "hard to use directly for control". Our fabric arm has no clear backbone, and the pressure-to-wrench map would itself need identifying. Very high effort for a course project.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>A5 · Finite elements + model order reduction <span class="tag">FEM / MOR</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>A volumetric mesh of the fabric and pouches, then a projection to a few dozen modes (POD or modal analysis).</dd>
+      <dt>Available</dt><dd>The upstream repo has a separate SOFA simulation (<code>soft-arm-sofa/</code>) that includes SOFA's ModelOrderReduction plugin.</dd>
+      <dt>Limits</dt><dd>The survey lists nonlinear K(q), non-constant damping and actuation, and up to hundreds of thousands of states before reduction. It models a different simulator from the one the course uses, and the effort is very high.</dd>
+    </dl>
+  </div>
+</section>
+
+<section id="datadriven" class="family">
+  <h2>4. Data-driven methods</h2>
+  <p>Choose a model class, then fit it to input/output records (commands in; pressures and tip position out). They work the same way on the simulator and on hardware, provided the excitation is rich enough.</p>
+
+  <div class="method">
+    <h3>D1 · Linear transfer-function models <span class="tag">ARX · ARMAX · OE · PEM</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Difference equations A(q)y = B(q)u + noise model. ARX is plain least squares. Output-error and prediction-error fits minimize free-run simulation error, which is the metric that matters here.</dd>
+      <dt>Experiments</dt><dd>PRBS or multisine on differential inputs around a bias, 0.02–3 Hz. Order chosen by validation error or AIC.</dd>
+      <dt>Strengths</dt><dd>The textbook course method (Ljung). Fast, with mature tools: MATLAB System Identification Toolbox, <code>sippy</code>, or plain NumPy for ARX.</dd>
+      <dt>Limits</dt><dd>Linear only. With 20 inputs the parameter count grows quickly unless the inputs are first reduced to differentials.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>D2 · Subspace state-space identification <span class="tag">N4SID · MOESP</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Gives (A, B, C, D) directly from block-Hankel matrices of the data. The model order is read off the singular values.</dd>
+      <dt>In the papers</dt><dd>Bruder et al. used a 4th-order subspace model as their linear baseline: 4.74 cm average prediction error (T-RO 2021) and 3.63 cm (2019), against 1.6–1.9 cm for Koopman, on a McKibben arm with a foam skin.</dd>
+      <dt>Strengths</dt><dd>Handles multi-input, multi-output systems naturally. The output plugs straight into LQR, LQG, MPC or an observer.</dd>
+      <dt>Limits</dt><dd>Linear. Bruder's comparison shows the gap on a strongly nonlinear arm. How large the gap is for ours is unknown.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>D3 · Frequency-domain identification <span class="tag">multisine · FRF</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Estimate the frequency response at the excited frequencies, then fit a rational transfer function.</dd>
+      <dt>Strengths</dt><dd>You see the lag corner, the mechanical modes and the x–y coupling before committing to an order. Odd-multisine designs (Pintelon and Schoukens) also measure how much the response departs from linear, which is useful given the real arm's reported nonlinearity.</dd>
+      <dt>Limits</dt><dd>Needs periodic, steady-state experiments. Each input channel needs its own experiment or orthogonal multisines.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>D4 · Linear parameter-varying models <span class="tag">LPV</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>A family of linear models whose coefficients depend on a scheduling variable such as bias pressure or bend angle.</dd>
+      <dt>In the papers</dt><dd>Qiao et al. 2024 (same lab): "The stiffness and damping coefficients were identified at each set point independently, followed by the application of a linear least squares method"; a first-order polynomial fit "results in degraded predictive accuracy". Used with SMC and a fast nonlinear disturbance observer.</dd>
+      <dt>Strengths</dt><dd>Captures operating-point dependence while staying linear in form; the lab already uses it.</dd>
+      <dt>Limits</dt><dd>Worth the effort only if the gains really change across operating points, which needs testing. Their model is first order, with no pressure lag.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>D5 · Sparse identification with control <span class="tag">SINDYc</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>ẋ = Ξ Θ(x, u): sparse regression over a library of candidate terms (polynomials, trigonometric functions, cross terms between state and input). The result is short, readable equations.</dd>
+      <dt>In the papers</dt><dd>Papageorgiou et al. 2024, on a cable- and McKibben-driven module with servo inputs: first-order model in tip position, polynomials up to degree 2, 652,000 samples. Fit 83.7–94.7 % per axis. Super-twisting SMC gave 0.77–0.94 mm RMSE on a 35 mm circle, against 1.23–2.31 mm for PI.</dd>
+      <dt>Strengths</dt><dd>An interpretable nonlinear model in a form ready for SMC, and the closest published "identify, then SMC" template.</dd>
+      <dt>Limits</dt><dd>Needs derivatives of noisy data. The library grows rapidly with 20 inputs. Their model has no actuator lag; ours would need pressure states, or the measured pressure as the input. Closed-loop data makes the regression ill-conditioned (Brunton et al.).</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>D6 · Koopman operator / EDMD <span class="tag">lifted linear</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Lift the state (with delays) through basis functions, then fit a linear model in the lifted space: z⁺ = Az + Bu, x = Cz. Linear MPC then becomes a convex quadratic program.</dd>
+      <dt>In the papers</dt><dd>Bruder et al. 2021, hanging 2-section pneumatic arm, 3 inputs: 45,103 snapshot pairs, 36 degree-2 basis functions, one delay. Linear Koopman 1.92 cm prediction error against 4.74 cm for a subspace model; K-MPC tracking 0.46 cm against 3.45 cm for linear MPC.</dd>
+      <dt>Strengths</dt><dd>Captures nonlinearity while keeping linear-control tools. The robot class is closest to ours.</dd>
+      <dt>Limits</dt><dd>Choosing the basis is an art, and its size grows fast (330 functions at degree 4 in the 2019 paper). One delay can't represent a 0.6 s lag at 100 Hz (60 samples): it needs measured pressures in the state, many delays, or downsampling. Less natural for SMC than an explicit ODE.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>D7 · Neural-network models <span class="tag">NARX · LSTM</span></h3>
+    <dl>
+      <dt>In the papers</dt><dd>Bruder's NARX baseline had 3.18 cm error, between the linear and Koopman models. The survey groups learned models with MPC and RL.</dd>
+      <dt>Strengths</dt><dd>Flexible; no structure needed.</dd>
+      <dt>Limits</dt><dd>Needs a lot of data, is opaque, and is hard to use for SMC design or stability proofs.</dd>
+    </dl>
+  </div>
+
+  <div class="method">
+    <h3>D8 · Hybrid: physics or linear model + learned residual <span class="tag">gray-box + GP / NN</span></h3>
+    <dl>
+      <dt>Structure</dt><dd>Keep a simple model (A1 or D2) and learn only its prediction error with a Gaussian process or a small network.</dd>
+      <dt>Strengths</dt><dd>Keeps the interpretable core, and the residual size is a direct measure of model uncertainty, which is what an SMC switching gain or disturbance observer needs.</dd>
+      <dt>Limits</dt><dd>Not demonstrated in the papers reviewed here. Two layers to validate.</dd>
+    </dl>
+  </div>
+
+  <div class="note">
+    <strong>Related but not a plant model: physical reservoir computing.</strong>
+    <p>Hebbal Manjunath et al. 2026 (the simulator's author) decode the arm's bending angle from delayed pouch pressures with a linear ridge readout. Sealed pouches gave median NMSE 0.148, against 0.842 with a shared manifold, and two sensors carry most of the information. The work supports using pouch pressures as extra measurements (for observers or augmented states), but it gives no lag, gain or dynamics.</p>
+  </div>
+</section>
+
+<section id="compare">
+  <h2>5. Side-by-side comparison</h2>
+  <p class="meta">The ratings are our assessment for this robot and project, not results from the papers. "Hardware" means feasible with the sensors the lab has (pouch pressures, OptiTrack).</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th>Method</th><th>Hardware</th><th>0.6 s lag</th><th>20 inputs</th><th>Model form for control</th><th>Interpretable</th><th>Data / effort</th><th>Closest evidence</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>A1 Low-order gray-box</td><td><span class="pill y">yes</span></td><td><span class="pill y">explicit</span></td><td><span class="pill p">via differentials</span></td><td>TF / small state-space</td><td><span class="pill y">high</span></td><td>low / low</td><td>Lab 2022 grey-box fit</td></tr>
+      <tr><td>A2 PCC + Euler–Lagrange</td><td><span class="pill y">yes</span></td><td><span class="pill p">add a state</span></td><td><span class="pill p">per section</span></td><td>Nonlinear ODE</td><td><span class="pill y">high</span></td><td>medium / high</td><td>Pilch 2026; Qiao 2024</td></tr>
+      <tr><td>A3 Rigid-link chain fit</td><td><span class="pill y">yes</span></td><td><span class="pill y">explicit</span></td><td><span class="pill y">all</span></td><td>15-DOF nonlinear, needs reduction</td><td><span class="pill y">high</span></td><td>medium / high</td><td>Lab's sim calibration, 3.0 mm</td></tr>
+      <tr><td>A4 Cosserat rod</td><td><span class="pill p">hard</span></td><td><span class="pill p">add a model</span></td><td><span class="pill p">via wrench map</span></td><td>PDE</td><td><span class="pill y">high</span></td><td>high / very high</td><td>Zheng 2026 (steel rod)</td></tr>
+      <tr><td>A5 FEM + MOR</td><td><span class="pill n">no</span></td><td><span class="pill p">add a model</span></td><td><span class="pill y">all</span></td><td>Reduced nonlinear</td><td><span class="pill p">medium</span></td><td>high / very high</td><td>SOFA model upstream</td></tr>
+      <tr><td>D1 ARX / OE / PEM</td><td><span class="pill y">yes</span></td><td><span class="pill y">via order</span></td><td><span class="pill p">via differentials</span></td><td>Transfer function</td><td><span class="pill p">medium</span></td><td>low / low</td><td>Course standard</td></tr>
+      <tr><td>D2 Subspace (N4SID)</td><td><span class="pill y">yes</span></td><td><span class="pill y">via order</span></td><td><span class="pill y">MIMO</span></td><td>State-space</td><td><span class="pill p">medium</span></td><td>low / low</td><td>Bruder baseline, 4.74 cm</td></tr>
+      <tr><td>D3 Frequency-domain</td><td><span class="pill y">yes</span></td><td><span class="pill y">visible</span></td><td><span class="pill p">per channel</span></td><td>Transfer function</td><td><span class="pill y">high</span></td><td>medium / low</td><td>Pintelon and Schoukens</td></tr>
+      <tr><td>D4 LPV</td><td><span class="pill y">yes</span></td><td><span class="pill p">add a state</span></td><td><span class="pill p">via differentials</span></td><td>Scheduled linear</td><td><span class="pill y">high</span></td><td>medium / medium</td><td>Qiao 2024 (same lab)</td></tr>
+      <tr><td>D5 SINDYc</td><td><span class="pill y">yes</span></td><td><span class="pill p">pressure state</span></td><td><span class="pill n">library grows</span></td><td>Sparse nonlinear ODE</td><td><span class="pill y">high</span></td><td>high / medium</td><td>Papageorgiou 2024</td></tr>
+      <tr><td>D6 Koopman / EDMD</td><td><span class="pill y">yes</span></td><td><span class="pill p">needs pressures or delays</span></td><td><span class="pill p">lift grows</span></td><td>Lifted linear</td><td><span class="pill p">low</span></td><td>high / medium</td><td>Bruder 2021, 1.92 cm</td></tr>
+      <tr><td>D7 NARX / LSTM</td><td><span class="pill y">yes</span></td><td><span class="pill y">learned</span></td><td><span class="pill y">all</span></td><td>Black box</td><td><span class="pill n">low</span></td><td>very high / medium</td><td>Bruder NARX, 3.18 cm</td></tr>
+      <tr><td>D8 Hybrid residual</td><td><span class="pill y">yes</span></td><td><span class="pill y">in base model</span></td><td><span class="pill p">base-dependent</span></td><td>Base model + bound</td><td><span class="pill p">medium</span></td><td>medium / medium</td><td>None reviewed</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="meta">The errors quoted from Bruder (cm) and Papageorgiou (mm) are on different robots and metrics; they show ranking within a paper, not comparable numbers across papers.</p>
+</section>
+
+<section id="papers">
+  <h2>6. Paper notes</h2>
+  <p>Read by two research agents on 7 October 2026. The access level is stated for each paper, and nothing marked "abstract" or "not accessible" should be cited for details beyond what is quoted here.</p>
+  <div class="papers">
+    <div class="paper">
+      <div class="access">Abstract only</div>
+      <h3>Pilch, Menrad, Beger, Sawodny · 2026</h3>
+      <div class="cite">Dynamic modeling and control of an inextensible pneumatically actuated soft continuum manipulator. <em>Mechatronics</em> 115, 103462.</div>
+      <p>Euler–Lagrange model with an experimentally identified spring-moment model (curvature, orientation and pressure dependent); state from IMUs in azimuth/zenith angles. Pressures come from a linear map of target moments, plus a mean-pressure offset, and are realized by "an external, model-free pressure controller". Linearized about the reference for feedforward plus PID. No numbers were accessible.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Title and one snippet only</div>
+      <h3>Fallahi, Zareinejad, Rezaei, Ghafarirad, Talebi · 2026</h3>
+      <div class="cite">Adaptive sliding mode control for quasi-static position tracking of a pneumatic soft manipulator. <em>European Journal of Control</em> 91, 101548.</div>
+      <p>Closed access. The title gives adaptive SMC under model uncertainty, for quasi-static tracking. The authors' 2024 predecessor uses a Cosserat rod model of a 3-chamber pneumatic arm, with SMC tested only in simulation; that the 2026 paper builds on it is likely but unverified. A quasi-static model would not capture our 0.6 s lag.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Full text</div>
+      <h3>Papageorgiou, Sigurðardóttir, Falotico, Tolu · 2024</h3>
+      <div class="cite">Sliding-mode control of a soft robot based on data-driven sparse identification. <em>Control Engineering Practice</em> 144, 105836.</div>
+      <p>Cable- and McKibben-driven module; inputs are servo commands (300–500 counts), not pressures. SINDYc with a first-order model in tip position, polynomials up to degree 2 (trigonometric terms discarded), 652,000 samples, 80/20 split, fit 83.7 % (x), 85.1 % (y), 94.7 % (z). Cascade super-twisting SMC with feedback linearization and an adaptive input inversion, proved UGAS. Circle RMSE 0.94/0.88/0.77 mm against PI 2.31/2.29/1.23 mm. Its "MAE" column exceeds RMSE, so it is probably maximum error.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Abstract + snippets; 2022 predecessor in full</div>
+      <h3>Qiao, Tao, Zhang · 2024</h3>
+      <div class="cite">Nonlinear disturbance observer with sliding mode control for a fabric soft robotic arm. <em>IFAC-PapersOnLine</em> 58(28), 516–521.</div>
+      <p>Same lab, <strong>two-segment</strong> arm: front/back columns held at 2 psi, left/right modulated. First-order LPV model under PCC, coefficients identified per set point by least squares, then polynomial fits. Fast nonlinear disturbance observer plus SMC, proved asymptotically stable; RMSE reduced over 7 trials (numbers not accessible). The 2022 one-segment paper used SMC ITV1050 regulators, OptiTrack at 120 Hz and 100 Hz control, and a <code>lsqnonlin</code> grey-box fit; it states that pressure dynamics were not modelled.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Full text</div>
+      <h3>Bruder, Fu, Gillespie, Remy, Vasudevan · 2021 (and 2019 conference version)</h3>
+      <div class="cite">Data-driven control of soft robots using Koopman operator theory. <em>IEEE T-RO</em> 37(3). · arXiv:1902.02827.</div>
+      <p>Hanging 2-section McKibben arm with a foam skin, 3 regulator inputs, laser-dot tip measurement, Ts = 0.083 s. EDMD with LASSO, degree-2 monomials (N = 36) and one delay; random ramp-and-hold excitation; held-out sinusoid validation. Prediction error: linear Koopman 1.92 cm, nonlinear Koopman 1.61 cm, subspace 4.74 cm, NARX 3.18 cm. Tracking: K-MPC 0.46 cm against linear MPC 3.45 cm. Pneumatics were not modelled explicitly.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Full text</div>
+      <h3>Brunton, Proctor, Kutz · 2016</h3>
+      <div class="cite">SINDy (PNAS 113) and SINDYc (arXiv:1605.06682).</div>
+      <p>Sparse regression over a library including state–input cross terms; derivatives by total-variation regularization; sparsity chosen at the Pareto knee or by cross-validation. Shows that DMDc and Koopman-with-inputs fit the same regression framework. Warns that feedback-only data (u = k(x)) makes the regression ill-conditioned, so inject dither. Examples are Lotka–Volterra and Lorenz; no robots.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Full text</div>
+      <h3>Hebbal Manjunath, Wang, Li, Zhang · 2026</h3>
+      <div class="cite">Towards effective physical reservoir computing with a pneumatic soft robot. arXiv:2609.02157.</div>
+      <p>This lab's arm: Segments 2–4 driven (u ∈ ℝ³), Segment 1 a passive 5-pouch sensing column. 100 Hz; OptiTrack. Same 36-run, 0.1 Hz data family. Linear ridge readout of bending angle from 0.2 s of delayed pressures. Notes that pneumatic transmission low-pass filters the response at higher frequencies. Numbers pouches P1 at the end effector.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Full text</div>
+      <h3>Della Santina, Duriez, Rus · 2023</h3>
+      <div class="cite">Model-based control of soft robots: a survey. <em>IEEE Control Systems Magazine</em> 43(3).</div>
+      <p>All finite-dimensional models share M(q)q̈ + C q̇ + G + D q̇ + K = A(q)τ. Taxonomy: rigid-part-dominant, Cosserat, piecewise constant strain (PCC, rigid-link), functional bases, FEM, order reduction, learning. Distinguishes simulation models (accurate) from control models (low-dimensional). Actuator dynamics: a coupled actuator equation, handled by singular perturbation or backstepping. Lists robust SMC under robust methods.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Full text (arXiv v2)</div>
+      <h3>Zheng, Burgner-Kahrs · 2026</h3>
+      <div class="cite">Estimating dynamic soft continuum robot states from boundaries. <em>IJRR</em>.</div>
+      <p>Cosserat-rod boundary observers using base wrench or tip velocity; tendon-driven steel rod; position error 0.9–1.9 % of length. The practical lesson for us is tip feedback in an observer; the finite-dimensional equivalent is a Luenberger observer or EKF on whichever model we identify.</p>
+    </div>
+    <div class="paper">
+      <div class="access">Abstract / not accessible</div>
+      <h3>Webster and Jones · 2010; Falkenhahn et al. · 2015</h3>
+      <div class="cite">Constant-curvature kinematics review (<em>IJRR</em> 29). · Model-based feedforward via feedback linearization (ICRA 2015).</div>
+      <p>Webster: PCC splits into a robot-specific map (actuators to arc parameters) and a general map (arcs to pose). Falkenhahn: only metadata could be read; the survey cites it as a purely feedforward dynamic controller with one lumped mass per section. Get both through the library before citing details.</p>
+    </div>
+  </div>
+</section>
+
+<section id="decide">
+  <h2>7. Questions before selecting</h2>
+  <p>The comparison doesn't single out one method until these are answered:</p>
+  <ol>
+    <li><strong>Simulator only, or must it transfer to the real arm?</strong> In simulation the plant is nearly linear, which favours A1, D1–D3. A real arm described as hysteretic and configuration-dependent would favour D4–D6 or D8.</li>
+    <li><strong>Which real configuration?</strong> 20 independent pouches, or 3 driven segments plus a sealed column (section 8). This decides how many inputs the model has.</li>
+    <li><strong>What will the model be used for?</strong> SMC wants explicit equations and a known relative degree (A1, A2, D4, D5). MPC is happy with any state-space or lifted-linear model (D2, D6).</li>
+    <li><strong>What does the course expect?</strong> Identification from input/output data (D1–D3), or a physics derivation (A1–A2)? Interpretability matters for the written report.</li>
+    <li><strong>How much time?</strong> D1–D3 and A1 take days; D5, D6 and A2 take weeks; A4 and A5 are beyond the course.</li>
+  </ol>
+</section>
+
+<section id="corrections">
+  <h2>8. Corrections found during review</h2>
+  <div class="note warn">
+    <strong>Real-arm configuration conflict.</strong>
+    <p>The lab's 2026 paper and the upstream calibration describe 3 driven segments plus a sealed sensing column; the lab slides describe 20 individually regulated pouches. Both papers number P1 at the end effector, while our simulator puts P1 at the mount. Recorded as an open question in <code>docs/hardware.md</code>.</p>
+  </div>
+  <ul>
+    <li>Qiao et al. 2024 used a <strong>two-segment</strong> arm, not ours. The claims in our references that it "assumes the inner pressure loop is fast enough to ignore", and its licence, are unverified; <code>docs/references.md</code> is corrected.</li>
+    <li>Papageorgiou et al. 2024 is cable- and McKibben-driven with servo inputs, not pressure-regulated; noted in references.</li>
+    <li>The lab's existing real data is at 0.1 Hz only, below the lag corner, so it cannot identify the fast dynamics.</li>
+  </ul>
+</section>
+
+<footer>
+  <div>Sources: papers listed in <code>docs/references.md</code>; simulator source <code>Jeevan-HM/Soft-Robotic-Arm</code>, branch <code>simulation</code>, commit <code>c92931d</code>; calibration provenance in <code>soft_robotic_arm/data/calibration.json</code>.</div>
+  <div>Simulator numbers come from <code>uv run python scripts/plant_model.py</code>. Ratings in section 5 are the authors' assessment.</div>
+</footer>
+</div>

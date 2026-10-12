@@ -20,7 +20,13 @@ for simulation work; the disagreement is noted below.
   controller validation.
 - Actuator design paper:
   [Nguyen & Zhang, Sci. Rep. 2020](https://www.nature.com/articles/s41598-020-65003-2).
-  Robot paper: [Qiao, Tao & Zhang, IFAC-PapersOnLine 2024](https://doi.org/10.1016/j.ifacol.2025.01.098).
+  Earlier two-segment robot from the same lab: [Qiao, Tao & Zhang, IFAC-PapersOnLine 2024](https://doi.org/10.1016/j.ifacol.2025.01.098).
+- **Open question: which configuration is the real arm in now?** The lab's
+  reservoir-computing paper (Hebbal Manjunath et al., arXiv:2609.02157) and the
+  upstream calibration both describe 3 driven segments (S2–S4, one command each) plus
+  Segment 1 as a sealed passive sensing column; that paper numbers P1 at the
+  end effector (opposite to our sim). The slides describe 20 independently regulated
+  pouches. Ask the lab before planning hardware experiments.
 
 ## Electronics
 

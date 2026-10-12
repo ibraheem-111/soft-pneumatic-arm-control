@@ -5,6 +5,14 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-07
 
+- Literature review of modelling / identification methods for the report (paper
+  notes summarized there). Corrections: Qiao 2024 used a two-segment arm and its
+  pressure-loop assumption is unverified; Papageorgiou 2024 is cable/McKibben-driven.
+  Real-arm configuration conflict (3 driven segments + sealed column vs 20 pouches)
+  added to `hardware.md` open questions. Lab's real data: 36 runs at 0.1 Hz in
+  upstream `main` `data/_data_extract/`, used for the sim calibration (bounded
+  differential evolution; 3.0 mm lateral RMSE mechanics replay).
+
 - Built the ground-truth linear plant model (`scripts/plant_model.py`, 50 states,
   continuous time, about 4.5 psi). Matches the nonlinear sim to 0.1 % over the
   full 0–9 psi range. Controllable 50/50; observable 16/50 from tip x, y, 40/50
