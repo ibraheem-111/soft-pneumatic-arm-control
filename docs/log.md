@@ -3,6 +3,18 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-14
+
+- `notebooks/SMC_NDOSMC_delay_aware.ipynb`: Nikoletta's notebook (Sections 1-11
+  unchanged) plus Sections 12-17 that run in Colab with only `soft-robotic-arm`
+  installed: corrected allocator, the identified task-space model as an embedded
+  parameter dict (from `docs/figures/task_space_model.json`, LTI), and the paper SMC,
+  NDOSMC and delay-aware NDOSMC. Run headlessly (video cells stubbed): it reproduces
+  9.94 / 4.08 / 4.37 / 3.20 / 1.46 / 2.84 / 1.21 mm, identical to the scripts.
+- `scripts/render_runs.py` renders the scored run of the four best controllers as a
+  2x2 video (3-D view + top-down tip trace) into `videos/` (git-ignored); the rendered
+  runs reproduce the harness RMSEs exactly.
+
 ## 2026-10-12
 
 - Qiao/Tao/Zhang SMC (eq. 5) and NDOSMC (eqs. 6-8, 12, 14) implemented in task space
