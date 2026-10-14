@@ -5,6 +5,19 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-12
 
+- Frequency-domain identification (D3), steps 0–3, `scripts/sysid_frf.py` (branch
+  `sysid-frf`). Two differential channels (S1−S3, S2−S4, all levels) on `make_sim` at
+  4.5 psi: static tip gain 1.8102 mm/psi per channel, cross gain 0.0000, ±2 psi
+  responses exactly antisymmetric; matches the 50-state answer key. Lag alone gives
+  t63 0.60 s; tip t63 0.81 s. Pressure sensors read the differential pressure 0.5 %
+  low because the curvature offsets of opposing columns add (−0.0099 psi on 2 psi).
+  Odd random-phase multisine (f0 0.02 Hz, 57 lines to 2.98 Hz, crest factor 2.46,
+  ±2 psi): noise-free tip is periodic after one period (change 1e-16); no even-order
+  distortion; odd-order distortion −105.5 dB at 2 psi, −117.5 dB at 1 psi (12 dB per
+  halving, i.e. cubic). With 0.1 mm tip noise the detection lines sit at −24 dB (noise
+  floor), median SNR 34.9 dB. Open: only 6 excited lines lie below the 0.27 Hz lag
+  corner; a longer period or log-spaced lines would sample the slow dynamics better.
+
 - Ported Nikoletta's SMC notebook to `scripts/smc_reduced_model.py`; it reproduces
   her table exactly on `make_calibrated_sim` + `CircularTrackingTask` (PD 500/20:
   9.94 mm; SMC λ=5, K=0.2, φ=0.02: 4.37 mm). Her one-mode model uses joint springs
