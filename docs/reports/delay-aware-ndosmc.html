@@ -1,0 +1,365 @@
+<title>Delay-Aware NDOSMC Explained</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>window.MathJax={tex:{inlineMath:[["\\(","\\)"]],displayMath:[["\\[","\\]"]]},svg:{fontCache:"global"}};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+<style>
+/* Layout: explainer. Analogy first, then the block diagram, then one row per step pairing the equation (left) with plain words (right). Accent violet = the controller's own parts; ochre = the arm (plant). */
+:root {
+  --bg: #f6f6f3; --surface: #ffffff; --fg: #1c2124; --muted: #5d676c; --rule: #d8dcd9;
+  --ctl: #6a4c9c; --ctl-soft: #eee8f6; --plant: #9a6a12; --plant-soft: #f7efdc;
+  --ok: #2e6a40; --warn: #93590a; --warn-soft: #f8eedd;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121618; --surface: #1a2023; --fg: #e3e8ea; --muted: #9aa6ab; --rule: #2e383c;
+    --ctl: #b39ae0; --ctl-soft: #2a2238; --plant: #e2b55e; --plant-soft: #33291a;
+    --ok: #82c595; --warn: #e3a54c; --warn-soft: #33281a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121618; --surface: #1a2023; --fg: #e3e8ea; --muted: #9aa6ab; --rule: #2e383c;
+  --ctl: #b39ae0; --ctl-soft: #2a2238; --plant: #e2b55e; --plant-soft: #33291a;
+  --ok: #82c595; --warn: #e3a54c; --warn-soft: #33281a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16.5px/1.62 var(--body); }
+.wrap { max-width: 1000px; margin: 0 auto; padding-inline: 18px; padding-block: 40px 90px; display: grid; gap: 46px; }
+header { display: grid; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 26px; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1, h2 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 5vw, 42px); }
+h2 { font-size: 26px; }
+h3 { font: 600 16px/1.35 var(--body); margin: 0; }
+p, ul, ol { margin: 0; max-width: 72ch; }
+ul, ol { padding-left: 1.25em; display: grid; gap: 6px; }
+section { display: grid; gap: 16px; min-width: 0; }
+code { font-family: var(--mono); font-size: .88em; overflow-wrap: anywhere; }
+.wrap > * { min-width: 0; }
+h1, h2, p, li { overflow-wrap: break-word; }
+.meta { color: var(--muted); font-size: 14px; }
+.lede { font-size: 18px; max-width: 76ch; }
+.analogy { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--plant); border-radius: 6px; padding: 18px 22px; display: grid; gap: 10px; }
+.analogy ol li::marker { color: var(--ctl); font-weight: 600; }
+figure { margin: 0; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 14px; min-width: 0; }
+figure .scroll { overflow-x: auto; }
+figure svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--fg); }
+figcaption { color: var(--muted); font-size: 14px; max-width: 86ch; }
+.steps { display: grid; gap: 14px; }
+.step { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+@media (max-width: 760px) { .step { grid-template-columns: minmax(0, 1fr); } }
+.step .math { padding: 14px 18px; border-right: 1px solid var(--rule); display: grid; gap: 6px; align-content: start; min-width: 0; }
+@media (max-width: 760px) { .step .math { border-right: 0; border-bottom: 1px solid var(--rule); } }
+.step .words { padding: 14px 18px; display: grid; gap: 6px; align-content: start; background: var(--ctl-soft); }
+.step.plant .words { background: var(--plant-soft); }
+.step .tag { font: 600 13px/1.3 var(--mono); color: var(--ctl); }
+.step.plant .tag { color: var(--plant); }
+.eqn { overflow-x: auto; overflow-y: hidden; }
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; width: 100%; }
+th, td { border-bottom: 1px solid var(--rule); padding: 7px 12px; text-align: left; vertical-align: top; }
+th { font-size: 13px; color: var(--muted); font-weight: 600; }
+td.n { text-align: right; font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+.box { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; display: grid; gap: 8px; min-width: 0; }
+.box.warn { background: var(--warn-soft); border-color: transparent; border-left: 4px solid var(--warn); }
+.box.ok { border-left: 4px solid var(--ok); }
+mjx-container[display="true"] { margin: .35em 0 !important; }
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Soft pneumatic arm · controller explainer · make_calibrated_sim</div>
+  <h1>Delay-Aware NDOSMC Explained</h1>
+  <p class="lede">This controller tracked the scored 7 mm circle to about 0.1 mm once past the start. Here it is written out step by step, each equation next to what it means. It is Qiao, Tao &amp; Zhang's sliding-mode controller with a disturbance observer, extended so that it knows about the half-second the arm takes to respond.</p>
+  <p class="meta">Code: <code>DelayAwareNDOSMC</code> in <code>scripts/ndosmc.py</code> and Section 14 of <code>notebooks/SMC_NDOSMC_delay_aware.ipynb</code>. Model: <code>docs/reports/task-space-model.html</code>. Results: <code>docs/reports/controller-comparison.html</code>.</p>
+</header>
+
+<section>
+  <h2>The problem, and the shower analogy</h2>
+  <p>A pressure command does not reach the arm straight away. It waits 0.5 s in the regulator and tubing, and then the pressure creeps in with a 0.6 s time constant. Only after that does the arm bend, which it does quickly.</p>
+  <div class="analogy">
+    <p>It is like a shower with a long pipe. Turn the hot tap and nothing happens for half a second; then the temperature drifts in. React only to how warm the water feels <em>now</em> and you keep over-turning the tap, so the temperature swings back and forth. Someone who knows the shower does four things instead:</p>
+    <ol>
+      <li><b>Remembers</b> how much they have already turned the tap. That hot water is on its way. <span class="meta">(steps ①–②)</span></li>
+      <li><b>Aims</b> at the temperature they will want by the time it arrives. <span class="meta">(③)</span></li>
+      <li><b>Nudges the tap a little extra</b> at first, because the heat comes in slowly. <span class="meta">(⑧)</span></li>
+      <li><b>Fine-tunes</b> whatever still feels off. <span class="meta">(④–⑥)</span></li>
+    </ol>
+    <p>The controller does exactly these four things.</p>
+  </div>
+</section>
+
+<section>
+  <h2>What it reads, and what it sends</h2>
+  <div class="two">
+    <div class="box">
+      <h3>Reads, every 10 ms</h3>
+      <ul>
+        <li><b>Tip position</b> from motion capture (<code>obs["tip_pos"]</code>), and the settled tip once, as "home".</li>
+        <li><b>The reference</b> the evaluation hands it for this step.</li>
+        <li>Its own past commands, which it keeps for the internal copy.</li>
+      </ul>
+      <p class="meta">It does not use velocity, the pressure sensors, joint angles, true pressures or any simulator parameter. Its model (T, τ, g, a, H) was identified beforehand from tip and pressure-sensor data only, with noise added, on seeds other than the scored one.</p>
+    </div>
+    <div class="box">
+      <h3>Sends: 3 pressures</h3>
+      <p>One absolute pressure each for segments S2, S3 and S4, in 0–9 psi. That is all the calibrated plant accepts: S1 is a sealed reservoir and each segment's five pouches share one regulator. A 20-pouch version for <code>make_sim()</code> would need a different allocation (⑦) and that plant has no 0.5 s dead time, so step ② would shrink to the lag alone.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>How the pieces connect</h2>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 980 420" role="img" aria-label="Block diagram. Top row, controller: the reference r goes through a preview block to give r tilde, which is compared with the predicted tip X tilde to form sigma. The SMC law turns sigma into v, mixing H inverse turns v into desired pressures, and a lag inverse turns those into the command u. The command goes down to the arm: a 0.5 s dead time, a 0.6 s pressure lag and the mechanics, giving the measured tip X. The command also drives an internal copy of the arm with no delay, giving X hat now, and a delayed copy giving X hat 0.5 s ago. The predictor adds X plus X hat now minus X hat delayed to give X tilde. A disturbance observer uses X tilde to feed d hat into the SMC law.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        <marker id="arc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ctl)"/></marker>
+        <marker id="arp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--plant)"/></marker>
+      </defs>
+      <g font-family="IBM Plex Sans, system-ui, sans-serif" font-size="13" fill="currentColor">
+      <!-- frames -->
+      <rect x="40" y="18" width="925" height="262" rx="8" fill="none" stroke="var(--ctl)" stroke-dasharray="6 5"/>
+      <text x="52" y="34" font-size="11" font-family="IBM Plex Mono, monospace" fill="var(--ctl)">CONTROLLER (runs at 100 Hz)</text>
+      <rect x="450" y="305" width="515" height="90" rx="8" fill="none" stroke="var(--plant)" stroke-dasharray="6 5"/>
+      <text x="462" y="411" font-size="11" font-family="IBM Plex Mono, monospace" fill="var(--plant)">THE ARM (identified model M2)</text>
+
+      <!-- row 1 -->
+      <text x="4" y="74">r(t)</text>
+      <line x1="30" y1="70" x2="58" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <rect x="60" y="45" width="130" height="50" rx="5" fill="var(--ctl-soft)" stroke="var(--ctl)"/>
+      <text x="125" y="66" text-anchor="middle" font-weight="600">③ aim ahead</text>
+      <text x="125" y="84" text-anchor="middle" font-size="12">r + Tṙ + ½T²r̈</text>
+      <line x1="190" y1="70" x2="227" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="198" y="62" font-size="12">r̃</text><text x="219" y="84" font-size="13">−</text>
+      <circle cx="245" cy="70" r="16" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+      <text x="245" y="75" text-anchor="middle" font-size="14">Σ</text>
+      <text x="236" y="112" font-size="13">+</text>
+      <line x1="261" y1="70" x2="298" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="272" y="62" font-size="12">σ ④</text>
+      <rect x="300" y="45" width="140" height="50" rx="5" fill="var(--ctl-soft)" stroke="var(--ctl)"/>
+      <text x="370" y="66" text-anchor="middle" font-weight="600">⑥ SMC law</text>
+      <text x="370" y="84" text-anchor="middle" font-size="12">error shrinks at rate λ</text>
+      <line x1="440" y1="70" x2="473" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="452" y="62" font-size="12">v</text>
+      <rect x="475" y="45" width="100" height="50" rx="5" fill="var(--ctl-soft)" stroke="var(--ctl)"/>
+      <text x="525" y="66" text-anchor="middle" font-weight="600">⑦ mix</text>
+      <text x="525" y="84" text-anchor="middle" font-size="12">H⁻¹</text>
+      <line x1="575" y1="70" x2="608" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="580" y="62" font-size="12">p_des</text>
+      <rect x="610" y="45" width="140" height="50" rx="5" fill="var(--ctl-soft)" stroke="var(--ctl)"/>
+      <text x="680" y="66" text-anchor="middle" font-weight="600">⑧ beat the lag</text>
+      <text x="680" y="84" text-anchor="middle" font-size="12">(p + τṗ)/g, clip 0–9</text>
+      <line x1="750" y1="70" x2="930" y2="70" stroke="currentColor" stroke-width="1.6"/>
+      <text x="860" y="62" font-weight="600">u (psi)</text>
+      <path d="M930,70 L930,350 L902,350" fill="none" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar)"/>
+      <circle cx="820" cy="70" r="3.5" fill="currentColor"/>
+      <path d="M820,70 L820,205 L802,205" fill="none" stroke="var(--ctl)" stroke-width="1.4" marker-end="url(#arc)"/>
+
+      <!-- row 2: internal model, delayed copy, predictor sum, observer -->
+      <rect x="640" y="180" width="160" height="50" rx="5" fill="var(--ctl-soft)" stroke="var(--ctl)"/>
+      <text x="720" y="200" text-anchor="middle" font-weight="600">① internal copy</text>
+      <text x="720" y="218" text-anchor="middle" font-size="12">lag + arm, no delay</text>
+      <line x1="640" y1="205" x2="602" y2="205" stroke="var(--ctl)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <circle cx="620" cy="205" r="3.5" fill="var(--ctl)"/>
+      <text x="604" y="196" font-size="12" fill="var(--ctl)">X̂(t)</text>
+      <rect x="470" y="180" width="130" height="50" rx="5" fill="var(--ctl-soft)" stroke="var(--ctl)"/>
+      <text x="535" y="200" text-anchor="middle" font-weight="600">remember</text>
+      <text x="535" y="218" text-anchor="middle" font-size="12">delay copy by 0.5 s</text>
+      <line x1="470" y1="205" x2="358" y2="205" stroke="var(--ctl)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <text x="380" y="197" font-size="12" fill="var(--ctl)">X̂(t−T)</text><text x="362" y="222" font-size="13">−</text>
+      <path d="M620,205 L620,252 L340,252 L340,223" fill="none" stroke="var(--ctl)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <text x="468" y="246" font-size="12" fill="var(--ctl)">X̂(t): motion already on its way</text><text x="346" y="242" font-size="13">+</text>
+      <circle cx="340" cy="205" r="16" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+      <text x="340" y="210" text-anchor="middle" font-size="14">Σ</text>
+      <text x="316" y="196" font-size="13">+</text>
+      <path d="M340,189 L340,130 L245,130 L245,88" fill="none" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar)"/>
+      <text x="350" y="160" font-size="12" font-weight="600">X̃ ≈ X(t + 0.5 s)</text>
+      <text x="350" y="174" font-size="11" fill="var(--muted)">② predictor</text>
+      <circle cx="340" cy="140" r="3.5" fill="currentColor"/>
+      <line x1="340" y1="140" x2="378" y2="140" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+      <rect x="380" y="120" width="140" height="40" rx="5" fill="var(--ctl-soft)" stroke="var(--ctl)"/>
+      <text x="450" y="137" text-anchor="middle" font-weight="600" font-size="12.5">⑤ observer</text>
+      <text x="450" y="152" text-anchor="middle" font-size="11.5">estimates d̂</text>
+      <line x1="430" y1="120" x2="430" y2="97" stroke="var(--ctl)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <text x="436" y="112" font-size="12" fill="var(--ctl)">d̂</text>
+
+      <!-- row 3: plant, right to left -->
+      <rect x="780" y="325" width="120" height="50" rx="5" fill="var(--plant-soft)" stroke="var(--plant)"/>
+      <text x="840" y="346" text-anchor="middle" font-weight="600">wait</text>
+      <text x="840" y="364" text-anchor="middle" font-size="12">dead time 0.5 s</text>
+      <line x1="780" y1="350" x2="752" y2="350" stroke="var(--plant)" stroke-width="1.4" marker-end="url(#arp)"/>
+      <rect x="620" y="325" width="130" height="50" rx="5" fill="var(--plant-soft)" stroke="var(--plant)"/>
+      <text x="685" y="346" text-anchor="middle" font-weight="600">pressure creeps</text>
+      <text x="685" y="364" text-anchor="middle" font-size="12">lag τ = 0.6 s</text>
+      <line x1="620" y1="350" x2="592" y2="350" stroke="var(--plant)" stroke-width="1.4" marker-end="url(#arp)"/>
+      <rect x="460" y="325" width="130" height="50" rx="5" fill="var(--plant-soft)" stroke="var(--plant)"/>
+      <text x="525" y="346" text-anchor="middle" font-weight="600">arm bends</text>
+      <text x="525" y="364" text-anchor="middle" font-size="12">a ≈ 4.7 s⁻¹, H</text>
+      <path d="M460,350 L300,350 L300,205 L322,205" fill="none" stroke="var(--plant)" stroke-width="1.6" marker-end="url(#arp)"/>
+      <text x="320" y="342" font-size="12" font-weight="600" fill="var(--plant)">X(t), measured tip (mocap)</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>Violet is computed inside the controller; ochre is the arm. The arm's response to u comes back 0.5 s late. The internal copy (①) shows what u does immediately, and "remember" holds the copy's value from 0.5 s ago. Adding the measured tip and the motion that is still on its way gives the predicted tip X̃ (②). The control law works on X̃ against a target that is also shifted 0.5 s ahead (③). The measured X(t) also brings in everything the copy gets wrong, so model errors still reach the controller, half a second late.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Step by step: the equation and what it means</h2>
+  <p class="meta">Per axis \(i \in \{x, y, z\}\). \(X\) is the tip position minus the settled pose (mm), \(u\) the three segment commands (psi), \(T = 0.5\) s, \(\tau = 0.6\) s, regulator gains \(g = (1.12, 1.10, 1.16)\), \(a = (4.77, 4.70, 15.5)\ \mathrm{s^{-1}}\). All of these were identified from sensor data.</p>
+  <div class="steps">
+    <div class="step plant">
+      <div class="math">
+        <div class="tag">Model of the arm (M2)</div>
+        <div class="eqn">\[ \tau\,\dot{\bar p}_j = -\bar p_j + \big(u_j(t-T) - 4.5\big),\qquad \Delta p_j = g_j\,\bar p_j \]</div>
+        <div class="eqn">\[ \dot X_i = -a_i X_i + a_i (H\,\Delta p)_i + d_i \]</div>
+      </div>
+      <div class="words">
+        <p>The command first waits \(T\), then the pressure rises toward it with a lag \(\tau\). The pressure bends the arm, which on its own springs back toward rest at rate \(a\). \(H\) says how each segment's pressure moves x, y and z. \(d\) is everything the model leaves out: residual inertia, Coriolis, the sealed reservoir's slow leak.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">① Internal copy, no delay</div>
+        <div class="eqn">\[ \tau\,\dot{\hat p} = -\hat p + g\,\big(u(t) - 4.5\big),\qquad \dot{\hat X} = -a\hat X + aH\hat p \]</div>
+      </div>
+      <div class="words">
+        <p>A small simulator of the arm runs inside the controller, but it feels each command <b>immediately</b>. At any moment it shows what the real arm is about to do.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">② Predictor (Smith)</div>
+        <div class="eqn">\[ \tilde X(t) = X(t) + \big[\hat X(t) - \hat X(t-T)\big] \;\approx\; X(t+T) \]</div>
+      </div>
+      <div class="words">
+        <p>Where the tip is <b>now</b>, plus how far it will still move because of commands already sent but not yet arrived. The sum is where the tip will be in half a second. Because \(X(t)\) is measured, any error in the copy shows up here automatically and gets corrected.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">③ Aim ahead</div>
+        <div class="eqn">\[ \tilde r = r + T\dot r + \tfrac12 T^2\ddot r,\qquad \dot{\tilde r} \approx \dot r + T\ddot r \]</div>
+      </div>
+      <div class="words">
+        <p>We now steer the <b>future</b> tip, so we compare it with the <b>future</b> target. \(\dot r\) and \(\ddot r\) come from the last few reference samples. On a smooth circle this short extrapolation is accurate.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">④ The error to remove</div>
+        <div class="eqn">\[ \sigma_i = \tilde X_i - \tilde r_i \]</div>
+      </div>
+      <div class="words">
+        <p>The sliding variable is simply the predicted error. The model is first order, so the paper's surface is the error itself; no derivative is needed.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">⑤ Disturbance observer (paper eqs. 6–8)</div>
+        <div class="eqn">\[ \hat d = z + l_1\tilde X + l_2\tilde X\lvert\tilde X\rvert,\qquad g_o = l_1 + 2l_2\lvert\tilde X\rvert \]</div>
+        <div class="eqn">\[ \dot z = g_o\,\big(a\tilde X - a v - \hat d\big) \]</div>
+      </div>
+      <div class="words">
+        <p>A running estimate of "the push I did not model". It compares how the tip actually moved with how the model said it would and treats the gap as a disturbance. Here it changes the result by only about 0.02 mm, because the predictor already feeds model errors back.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">⑥ Sliding-mode law (paper eq. 12)</div>
+        <div class="eqn">\[ v_i = \frac{1}{a_i}\Big[\dot{\tilde r}_i + a_i\tilde X_i - \lambda\,\sigma_i - \eta_i\,\mathrm{sat}(\sigma_i/\mu) - \hat d_i\Big] \]</div>
+        <div class="eqn">\[ \eta_i = \Phi\,e^{-g_o t} + \epsilon/g_o \]</div>
+      </div>
+      <div class="words">
+        <p><b>−λσ</b>: a spring pulling the error to zero. With λ = 4 s⁻¹ it halves roughly every 0.17 s. <b>\(\dot{\tilde r}\)</b>: move along with the target instead of waiting for an error. <b>\(+a\tilde X\)</b>: the arm springs back by itself, so push a bit extra to cancel that. <b>−η sat</b>: an extra, bounded push when the model is off, softened inside a 1 mm band so the valves don't chatter. <b>−\(\hat d\)</b>: subtract the observer's estimate.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">⑦ Mix into three segments</div>
+        <div class="eqn">\[ p_{\mathrm{des}} = H^{-1} v \]</div>
+      </div>
+      <div class="words">
+        <p>Like a mixing desk: "move x, y and z this much" becomes three segment pressures. S2 pushes +y, S3 pushes −x, S4 pushes −y, and raising all three together stretches the arm (z).</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="math">
+        <div class="tag">⑧ Beat the lag, then clip</div>
+        <div class="eqn">\[ u = \mathrm{clip}\!\Big(4.5 + \frac{p_{\mathrm{des}} + \tau\,\dot p_{\mathrm{des}}}{g},\ 0,\ 9\Big) \]</div>
+      </div>
+      <div class="words">
+        <p>Pressure rises sluggishly, so ask for <b>more</b> than you want while the target is changing, in proportion to how fast it changes. It is like pressing the accelerator harder at first and easing off once the car is moving. Dividing by \(g\) undoes the regulator gain, and the clip keeps the command within 0–9 psi.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Why the law in ⑥ is the right one</h2>
+  <p>Ignoring the delay, which steps ② and ③ have already moved out of the way, substitute ⑥ into the model:</p>
+  <div class="eqn">\[ \dot\sigma = \dot{\tilde X} - \dot{\tilde r} = -a\tilde X + \big(\dot{\tilde r} + a\tilde X - \lambda\sigma - \eta\,\mathrm{sat}(\sigma/\mu) - \hat d\big) + d - \dot{\tilde r} = -\lambda\sigma - \eta\,\mathrm{sat}(\sigma/\mu) + (d - \hat d). \]</div>
+  <p>Every known effect cancels. What remains is an error that decays like \(e^{-\lambda t}\), a bounded push against what is unknown, and the observer removing most of that unknown. With \(V = \tfrac12\sigma^2\), the same argument as the paper's eq. 13 gives \(\dot V \le -2\lambda V\) once \(\eta\) exceeds the observer error.</p>
+</section>
+
+<section>
+  <h2>Numbers</h2>
+  <div class="two">
+    <div class="box ok">
+      <h3>What it achieved (scored task, seed 0)</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Controller</th><th class="n">RMSE</th><th class="n">after 5 s</th></tr></thead>
+        <tbody>
+          <tr><td>Paper SMC (assumes pressure is instant)</td><td class="n">1.46 mm</td><td class="n">0.87 mm</td></tr>
+          <tr><td>Paper NDOSMC</td><td class="n">2.84 mm</td><td class="n">2.51 mm</td></tr>
+          <tr><td>Delay-aware, no observer</td><td class="n">1.23 mm</td><td class="n">0.09 mm</td></tr>
+          <tr><td><b>Delay-aware NDOSMC</b></td><td class="n"><b>1.21 mm</b></td><td class="n"><b>0.10 mm</b></td></tr>
+        </tbody>
+      </table></div>
+      <p class="meta">The whole-run RMSE is dominated by the first 2–3 s, because the circle starts 7 mm from the settled tip. Command: <code>uv run python scripts/compare_controllers.py</code>.</p>
+    </div>
+    <div class="box">
+      <h3>Gains used</h3>
+      <div class="tbl"><table>
+        <tbody>
+          <tr><td>λ (error decay rate)</td><td class="n">4 s⁻¹</td></tr>
+          <tr><td>μ (boundary layer)</td><td class="n">1 mm</td></tr>
+          <tr><td>l₁, l₂ (observer)</td><td class="n">0.1 s⁻¹, 0</td></tr>
+          <tr><td>Φ, ε (switching gain, eq. 14)</td><td class="n">1, 1</td></tr>
+          <tr><td>T, τ (identified)</td><td class="n">0.5 s, 0.6 s</td></tr>
+        </tbody>
+      </table></div>
+      <p class="meta">Chosen by a sweep on the scored task (every run printed by <code>scripts/ndosmc.py --sweep</code>). A held-out task (10 mm, 0.15 Hz, seed 5) keeps the ranking: 1.97 mm.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Why it beats the paper's version, and where it can fail</h2>
+  <div class="two">
+    <div class="box">
+      <h3>Why it works</h3>
+      <p>The paper assumes pressure arrives instantly. Its observer then sees the controller's <em>own</em> late commands as a disturbance and always corrects 0.5 s too late, so it keeps chasing. Steps ② and ⑧ account for the half second explicitly, so the main law never has to fight it.</p>
+    </div>
+    <div class="box warn">
+      <h3>Where it can fail</h3>
+      <ul>
+        <li><b>Wrong delay.</b> A Smith predictor relies on \(T\). If the real delay drifts from 0.5 s the prediction is off; this was not tested.</li>
+        <li><b>Fast surprises.</b> A sudden disturbance can only be corrected after it has passed through the delay.</li>
+        <li><b>Saturation.</b> On the faster, larger held-out circle the commands sat at 0 or 9 psi about 21 % of the time.</li>
+        <li><b>Simulation only.</b> The real regulator may not be a clean delay plus one lag.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
