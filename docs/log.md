@@ -3,6 +3,24 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-20
+
+- Frequency-domain identification (D3), step 4 and lag, `scripts/sysid_frf.py`
+  (branch `sysid-frf`, PR #1). Excitation v2 (f0 0.01 Hz, 36 quasi-log odd lines to
+  2.71 Hz, 10 below the 0.27 Hz lag corner vs 6 in v1) raised the median tip SNR from
+  34.9 to 48.1 dB; command→tip FRF error vs the 50-state answer key fell from 2.6 %
+  to 0.50 % median (max 64 % → 9.7 %). The FRFs (G_p(k) = Y_p(k) U_p(k)⁻¹ per period,
+  averaged) match the answer key in all three stages; cross-coupling is at the noise
+  level; |G| at 1 psi / 2 psi = 1.0003 (linear).
+- The lag can be identified from data without assuming τ. From the pressure sensors
+  (stage A, fit g e^(−sT)/(τs + 1)): τ = 0.5987 ± 0.0003 s, gain 0.994 (curvature
+  coupling), T = −5.4 ms (half-sample alignment artefact, not a physical delay). A
+  linear (Levy) least-squares fit without the delay term is biased to τ ≈ 0.577 s.
+  From the tip alone (lag × one 2nd-order mode): τ = 0.645 ± 0.002 s, 7.5 % high,
+  because the chain's slow real poles get lumped into the lag pole; pressure sensors
+  are needed to separate them. The simulator integrates the lag by forward Euler
+  (τ_eff = 0.5995 s per control step), recorded in `simulator.md`.
+
 ## 2026-10-12
 
 - Frequency-domain identification (D3), steps 0–3, `scripts/sysid_frf.py` (branch

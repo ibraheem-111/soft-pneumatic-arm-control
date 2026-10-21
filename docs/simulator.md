@@ -87,6 +87,13 @@ command (4,5) psi, clipped 0..11 internally (coursework limit 9 psi)
   Which value reflects the real regulators is an open question for the professor.
 - At 100 Hz the lag is a discrete pole at e^(−0.01/0.6) ≈ 0.983. Its corner frequency
   is 1/(2π·0.6) ≈ 0.27 Hz. It is the slowest, dominant dynamic in the plant.
+- The lag is integrated by forward Euler in 1 ms substeps,
+  `p_actual += (timestep / tau) * (p_target - p_actual)` (`simulator.py` lines
+  496–499 at `c92931d`). Over one 10 ms control step that is the pole
+  (1 − 0.001/0.6)¹⁰, equivalent to τ_eff = 0.5995 s, not exactly e^(−0.01/0.6).
+  Frequency-domain identification measured τ = 0.5987 ± 0.0003 s from the pressure
+  sensors (`scripts/sysid_frf.py lag`), and the 50-state answer key, which assumes the
+  exact exponential, differs from the measured lag response by 0.07 %.
 
 ### Pressure → force (exactly linear)
 
