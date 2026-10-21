@@ -62,8 +62,11 @@ controllers") defines `evaluate_controller(controller, task=, sim=)`. Read in
   controller using absolute `tip_pos` carries that offset
   (`scripts/smc_reduced_model.py`).
 
-Which benchmark is graded (this harness or the `make_sim()` random-trajectory PD
-baseline in AGENTS.md) is an open question; ask the professor.
+Decision (Ibraheem, 2026-10-21): this harness on `make_calibrated_sim()` is the
+project's benchmark, because that plant was fitted to hardware data and includes the
+delay. Whether the course grades it or the `make_sim()` baseline is still worth
+confirming with the professor. Seeds change only the pouch-sensor noise here: the MPC
+scores 1.220296 mm with seed 0 and 1.220295 mm with seed 1.
 
 ## Signal path for one `sim.step(command)` (100 Hz)
 

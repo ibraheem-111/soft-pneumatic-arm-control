@@ -131,6 +131,32 @@ G(s) = γ e^{−sT} / (τs + 1)  ×  (b₁s + b₀) / (s³ + a₂s² + a₁s + a
 - The state-space realization (lag state, then stage B in controllable canonical form)
   is printed by `uv run python scripts/sysid_frf.py fit [--plant calibrated]`.
 
+## Delay-compensated MPC on `make_calibrated_sim` (done)
+
+`scripts/mpc_controller.py`, built on `models/sysid_calibrated_v2.json` (written by
+`sysid_frf.py fit --plant calibrated`). Per axis:
+- a Kalman filter on [model state; tip offset], measuring tip and channel pressure;
+- a delay predictor, x_{n+d} = A_d^d x_n + Σ A_d^{d−1−i} B_d u_{n−d+i};
+- unconstrained MPC over 3 s on Δu-penalized tracking error (ρ = 1e-5, tuned on a
+  5 mm, 0.07 Hz task with seed 5);
+- reference preview from an AR(2)-plus-intercept predictor on the reference's own
+  history.
+
+| Controller (harness, seed 0, 7 mm at 0.1 Hz) | RMSE | RMSE after 2 s |
+|---|---|---|
+| PD kp 500, kd 20 (corrected allocator) | 4.08 mm | 3.96 mm |
+| SMC λ 5, K 0.35, φ 0.02, deviation (corrected) | 2.34 mm | 2.06 mm |
+| MPC, no preview | 3.64 mm | — |
+| **MPC, predicted reference** | **1.22 mm** | **0.059 mm** |
+| MPC, true future reference (diagnostic) | 1.16 mm | — |
+
+- The RMSE that remains is the start-up transient: the reference jumps 7 mm at t = 0,
+  and nothing acts for 0.5 s. The diagnostic row shows that the predictor costs 5 %.
+- Held-out cases: 4 mm radius 0.68 mm (SMC 1.42), 10 mm 1.88 (3.32), 0.05 Hz 1.21
+  (2.19), 0.2 Hz 1.29 (3.01). With 0.1 mm or 1 mm tip noise added: 1.220 and 1.235 mm.
+- The S3 command saturates at 9 psi only during the start-up transient, then swings
+  0.6–8.3 psi, so circles much larger than 10 mm will saturate the x channel.
+
 ## Consequences for SMC
 
 - Relative degree 3 breaks the textbook surface s = ė + λe (which assumes the input

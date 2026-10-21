@@ -34,10 +34,12 @@ should depend on a chat session or on someone's memory.
 Full detail in `docs/simulator.md`.
 
 - Pneumatic lag τ = **0.6 s** (not the slides' 120 ms). It dominates tracking.
-- `make_sim()` has **no** transport delay; the 0.5 s delay belongs to
-  `make_calibrated_sim()`, which the coursework does not use.
-- Commands are absolute psi, shape `(4, 5)` (or `(4,)` broadcast), kept within
-  **0–9 psi**. Rows S1–S4 push the tip toward +x, +y, −x, −y.
+- **Target plant: `make_calibrated_sim()`** (decision by Ibraheem, 2026-10-21): the
+  three-input plant fitted to hardware data, with a sealed S1 reservoir and a **0.5 s
+  transport delay** on top of the lag. `make_sim()` has no delay; keep it for reference.
+- Commands are absolute psi kept within **0–9 psi**: `(3,)` for S2–S4 on
+  `make_calibrated_sim()`, `(4, 5)` (or `(4,)`) on `make_sim()`. Rows S1–S4 push the
+  tip toward +x, +y, −x, −y.
 - **P1 is next to the mount** (`level0`), P5 nearest the tip, in the hanging sim.
 - Pouch k affects only level k; pressure→force is linear; opposing columns cancel
   in bending.
@@ -46,12 +48,16 @@ Full detail in `docs/simulator.md`.
 
 ## Controllers and experiments
 
-- Keep the notebook's interface: `compute(t, obs) -> finite (4, 5) array` of
-  absolute psi in 0–9, plus `reference(t) -> (pos_xy, vel_xy)`. Controllers never
-  call `sim.step()`.
-- Benchmark against the PD baseline under identical conditions:
-  `make_sim(control_hz=100, seed=2)`, trajectory seed 7, span 15 mm, 20 s, RMSE
-  over the whole run. Baseline = **4.10 mm** (`uv run python scripts/run_baseline.py`).
+- Use the package harness's interface: `compute(t, obs, ref) -> finite (3,)` array of
+  absolute psi for S2–S4. Controllers never call `sim.step()` and use only
+  hardware-available signals (tip, pouch pressures), never `p_actual` or `q`.
+- Benchmark with `soft_robotic_arm.evaluation.evaluate_controller` on
+  `make_calibrated_sim(control_hz=100, seed=0)` and the default `CircularTrackingTask`
+  (7 mm circle, 0.1 Hz, 30 s, RMSE over the whole run). Current numbers
+  (`uv run python scripts/mpc_controller.py`): PD **4.08 mm**, best SMC **2.34 mm**,
+  delay-compensated MPC **1.22 mm**. Tune on a different task or seed, never the
+  scored one. The old `make_sim` PD baseline (4.10 mm, `scripts/run_baseline.py`) is
+  kept for reference.
 - Report results as numbers you actually ran, with the command that produced them.
   Never estimate a result you did not measure.
 - Fix seeds for anything reported. Use different seeds and trajectories for

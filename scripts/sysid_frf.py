@@ -42,6 +42,7 @@ Usage:
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -66,6 +67,7 @@ SIM_SEED = 11               # identification seeds; validation must use differen
 NOISE_SEED = 11
 FIG_DIR = Path(__file__).resolve().parent.parent / "docs" / "figures"
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
+MODEL_DIR = Path(__file__).resolve().parent.parent / "models"   # identified models, written by `fit`
 
 # Rows of the (4, 5) command: S1..S4. Channel -> (positive segment, negative segment).
 CHANNELS = {"x": (0, 2), "y": (1, 3)}
@@ -834,12 +836,16 @@ def fit_report(version: str, plant: str = "sim") -> None:
             rmses[name] = rmse
 
     np.set_printoptions(precision=4, suppress=True, linewidth=120)
-    selected = {}
+    selected, export = {}, {"plant": plant, "excitation": version, "control_hz": CONTROL_HZ, "axes": {}}
     for ch, j in (("x", 0), ("y", 1)):
         lowest = min(r[j] for r in rmses.values())
         name = next(n for n in rmses if rmses[n][j] <= 1.02 * lowest)   # lowest order within 2 % of the best
         selected[ch] = name
         A, B, C = axis_model(stage_a[ch], fits[(ch, int(name.split()[3]))])
+        export["axes"][ch] = {"A": A.tolist(), "B": B.ravel().tolist(), "C": C.ravel().tolist(),
+                              "delay_samples": delay_samples(stage_a[ch]), "tau": stage_a[ch]["tau"],
+                              "gain": stage_a[ch]["gain"], "stage_b_order": int(name.split()[3]),
+                              "validation_rmse_mm": float(rmses[name][j])}
         print(f"  {ch} axis selected: {name} (lowest order within 2 % of the best free-run error on {ch}). "
               f"State space, state = [p, x_B] "
               f"(stage B in controllable canonical form), input u{ch} [psi], output tip {ch} [m]:")
@@ -848,6 +854,10 @@ def fit_report(version: str, plant: str = "sim") -> None:
         if delay_samples(stage_a[ch]):
             print(f"  input delay {delay_samples(stage_a[ch])} samples = {delay_samples(stage_a[ch]) / CONTROL_HZ:.2f} s")
     best = selected["x"]
+    MODEL_DIR.mkdir(exist_ok=True)
+    out = MODEL_DIR / f"sysid_{tag(version, plant)}.json"
+    out.write_text(json.dumps(export, indent=2) + "\n")
+    print(f"  identified models: {out.relative_to(MODEL_DIR.parent)}")
 
     fd = np.geomspace(0.008, 4, 300)
     sd = 2j * np.pi * fd

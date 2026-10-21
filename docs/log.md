@@ -5,6 +5,15 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-21
 
+- Decision (Ibraheem): `make_calibrated_sim` is the target plant; the benchmark is the
+  package harness (7 mm circle, 0.1 Hz, seed 0). Recorded in AGENTS.md.
+- Delay-compensated MPC (`scripts/mpc_controller.py`, branch `mpc-controller`): Kalman
+  filter, delay predictor and unconstrained MPC on the identified models, with an AR(2)
+  reference predictor. Scored 1.22 mm, against best SMC 2.34 and PD 4.08; 0.059 mm
+  after the first 2 s. The predictor's first version used a 2 s window and a
+  3×-range guard that rejected it in 959 of 3000 steps (2.13 mm); a 4 s window with an
+  AR-pole stability guard fixed it. Details in `modeling-plan.md`.
+
 - Frequency-domain identification finished (steps 5–7, PR #1): per axis
   γe^{−sT}/(τs + 1) × stage B fitted by Sanathanan–Koerner + weighted nonlinear least
   squares, realized in controllable canonical form behind the lag state. `make_sim`:
