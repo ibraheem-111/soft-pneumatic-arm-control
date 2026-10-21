@@ -101,6 +101,36 @@ that run (soft-robotic-arm 0.4.2, 2026-10-07).
   per axis capture the input–output behaviour; identified models should land near
   that order.
 
+## Identified model, frequency domain (done)
+
+`scripts/sysid_frf.py` (branch `sysid-frf`), from hardware-available signals only.
+Per axis, input = differential channel command u [psi], output = tip position [m]:
+
+```
+G(s) = γ e^{−sT} / (τs + 1)  ×  (b₁s + b₀) / (s³ + a₂s² + a₁s + a₀)
+       stage A: lag (from pressure sensors)   stage B: mechanics (pressure -> tip)
+```
+
+| | `make_sim`, x | `make_sim`, y | `make_calibrated_sim`, x | `make_calibrated_sim`, y |
+|---|---|---|---|---|
+| τ [s] | 0.5987 | 0.5986 | 0.5995 | 0.5994 |
+| γ | 0.994 | 0.994 | 1.097 | 1.142 |
+| T [s] | 0 | 0 | 0.50 | 0.50 |
+| stage B order | 3 | 3 | 2 | 3 |
+| stage B poles [1/s] | −4.15 ± 5.56j, −1.60 | −4.01 ± 5.56j, −1.68 | −5.15 ± 5.43j | −4.15 ± 5.57j, −1.55 |
+| free-run fit, held-out input | 99.60 % | 99.24 % | 95.60 % | 99.44 % |
+
+- Order chosen per axis by free-run error on a held-out random-step input (seed 101),
+  lowest order within 2 % of the best; unstable fits rejected.
+- `make_sim`: 4 states per axis, in line with the Hankel singular values. Answer key
+  (50 states) reaches 99.97 % on the same input.
+- `make_calibrated_sim` x is driven by S3 alone against the sealed S1 reservoir; higher
+  orders add a slow pole (≈ −0.05 1/s) that free-runs worse. Its detection lines sit at
+  −48 dB (vs −109 dB on `make_sim`) and the response drifts slowly between periods,
+  so that axis is not exactly LTI.
+- The state-space realization (lag state, then stage B in controllable canonical form)
+  is printed by `uv run python scripts/sysid_frf.py fit [--plant calibrated]`.
+
 ## Consequences for SMC
 
 - Relative degree 3 breaks the textbook surface s = ė + λe (which assumes the input

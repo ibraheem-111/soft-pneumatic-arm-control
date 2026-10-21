@@ -89,7 +89,10 @@ Full detail in `docs/simulator.md`.
 - Don't force-push `main`, and don't rewrite shared history.
 - `gh` may have several accounts logged in. Pushing to this repo needs an account
   with access: `ibraheem-111` (owner) or `Niki-89-AI` (collaborator). Check with
-  `gh auth status`; switch with `gh auth switch --user <name>`.
+  `gh auth status`; switch with `gh auth switch --user <name>`. AI agents may switch
+  the active account themselves when the active one lacks access (Ibraheem's
+  machine often has `ibraheem-tenexity` active); switch back to the previously active
+  account when done.
 - AI agents: follow your harness's commit-attribution conventions, keep commit
   messages descriptive (what and why), and don't push unless the person you're
   working for asked you to.

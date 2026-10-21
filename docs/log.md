@@ -3,6 +3,19 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-21
+
+- Frequency-domain identification finished (steps 5–7, PR #1): per axis
+  γe^{−sT}/(τs + 1) × stage B fitted by Sanathanan–Koerner + weighted nonlinear least
+  squares, realized in controllable canonical form behind the lag state. `make_sim`:
+  4 states per axis, free-run fit 99.60 / 99.24 % (x / y) on a held-out random-step
+  input; answer key 99.97 %. `make_calibrated_sim`: delay identified as 0.50 s,
+  τ 0.5995 s, regulator gains 1.097 (S3) and 1.142 (S2/S4); x (S3 vs sealed S1) 3 states,
+  95.60 %; y 4 states, 99.44 %. Table in `modeling-plan.md`.
+- Delay fit needs a grid-searched start: with the 0.5 s delay the linear start (no
+  delay) lands in a wrong local minimum on one channel.
+- AGENTS.md: agents may switch the active `gh` account (and switch back after).
+
 ## 2026-10-20
 
 - Frequency-domain identification (D3), step 4 and lag, `scripts/sysid_frf.py`
