@@ -110,3 +110,43 @@ Recommended reading for the identification experiments
 
 These were recommended from general knowledge and have not been checked against
 any RAS556 reading list.
+
+## Pressure dynamics as a first-order linear ODE
+
+- C. C. Johnson, D. G. Cheney, D. L. Cordon, M. D. Killpack, "PneuDrive: An Embedded
+  Pressure Control System and Modeling Toolkit for Large-Scale Soft Robots," arXiv:2504.00222,
+  2025. <https://arxiv.org/abs/2504.00222>. §II-B1 gives the linear pressure model
+  ṗ = −αp + βp_cmd (α, β tuned), attributing it to Best et al. 2016, who chose it from step
+  responses of a PID pressure controller; it also gives a nonlinear first-order model from
+  mass flow and chamber volume. Ours is the same form: α = 1/τ, β = g/τ, plus the dead time.
+  Checked 2026-10-21 by reading the arXiv HTML.
+- C. M. Best, M. T. Gillespie, P. Hyatt, L. Rupert, V. Sherrod, M. D. Killpack, "A new soft
+  robot control method: Using model predictive control for a pneumatically actuated
+  humanoid," *IEEE Robotics & Automation Magazine* 23(3), 75–84, 2016.
+  <https://scholarsarchive.byu.edu/facpub/3208>. The original use of that model (per
+  PneuDrive); full text not read, bibliographic details confirmed via DBLP / BYU.
+
+## Sources cited in `docs/reports/model-discussion-guide.html`
+
+Existence of each checked on 2026-10-21 via DOI/Crossref/arXiv/DBLP (section locations not all verified).
+
+- Z. Qiao, W. Tao, W. Zhang, "Nonlinear disturbance observer with sliding mode control for a fabric soft robotic arm," IFAC-PapersOnLine 58(28):516–521, 2024. doi:10.1016/j.ifacol.2025.01.098
+- R. J. Webster III, B. A. Jones, "Design and kinematic modeling of constant curvature continuum robots: a review," IJRR 29(13):1661–1683, 2010. doi:10.1177/0278364910368147
+- C. Della Santina, C. Duriez, D. Rus, "Model-based control of soft robots: a survey," IEEE CSM 43(3):30–65, 2023. doi:10.1109/MCS.2023.3253419; arXiv:2110.01358
+- C. C. Johnson, D. G. Cheney, D. L. Cordon, M. D. Killpack, "PneuDrive: an embedded pressure control system and modeling toolkit for large-scale soft robots," arXiv:2504.00222, 2025.
+- C. M. Best, M. T. Gillespie, P. Hyatt, L. Rupert, V. Sherrod, M. D. Killpack, "A new soft robot control method: using model predictive control for a pneumatically actuated humanoid," IEEE RAM 23(3):75–84, 2016. doi:10.1109/MRA.2016.2580591
+- L. Ljung, System Identification: Theory for the User, 2nd ed., Prentice Hall, 1999.
+- J. Schoukens, L. Ljung, "Nonlinear system identification: a user-oriented road map," IEEE CSM 39(6):28–99, 2019. doi:10.1109/MCS.2019.2938121; arXiv:1902.00683
+- R. Pintelon, J. Schoukens, System Identification: A Frequency Domain Approach, 2nd ed., Wiley, 2012. doi:10.1002/9781118287422
+- J. Schoukens, R. Pintelon, T. Dobrowiecki, Y. Rolain, "Identification of linear systems with nonlinear distortions," Automatica 41(3):491–504, 2005. doi:10.1016/j.automatica.2004.10.004
+- K. Vanhoenacker, T. Dobrowiecki, J. Schoukens, "Design of multisine excitations to characterize the nonlinear distortions during FRF-measurements," IEEE TIM 50(5):1097–1102, 2001. doi:10.1109/19.963166
+- T. K. Caughey, "Classical normal modes in damped linear dynamic systems," J. Appl. Mech. 27(2):269–271, 1960. doi:10.1115/1.3643949
+- W. J. Rugh, J. S. Shamma, "Research on gain scheduling," Automatica 36(10):1401–1425, 2000. doi:10.1016/S0005-1098(00)00058-3
+- V. I. Utkin, "Variable structure systems with sliding modes," IEEE TAC 22(2):212–222, 1977. doi:10.1109/TAC.1977.1101446
+- J.-J. E. Slotine, W. Li, Applied Nonlinear Control, Prentice Hall, 1991 (ch. 7, sliding control).
+- C. Edwards, S. Spurgeon, Sliding Mode Control: Theory and Applications, Taylor & Francis, 1998. doi:10.1201/9781498701822
+- O. J. M. Smith, "Closer control of loops with dead time," Chem. Eng. Prog. 53(5):217–219, 1957.
+- J. E. Normey-Rico, E. F. Camacho, Control of Dead-time Processes, Springer, 2007, ch. 5. doi:10.1007/978-1-84628-829-6
+- G. M. Clayton, S. Tien, K. K. Leang, Q. Zou, S. Devasia, "A review of feedforward control approaches in nanopositioning for high-speed SPM," J. Dyn. Sys. Meas. Control 131(6), 2009. doi:10.1115/1.4000158
+- W.-H. Chen, D. J. Ballance, P. J. Gawthrop, J. O'Reilly, "A nonlinear disturbance observer for robotic manipulators," IEEE TIE 47(4):932–938, 2000. doi:10.1109/41.857974
+- K.-S. Kim, K.-H. Rew, S. Kim, IEEE TAC 55(8):1905–1911, 2010 (higher-order disturbance observer, cited by the paper). doi:10.1109/TAC.2010.2049522

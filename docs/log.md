@@ -3,6 +3,21 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-21
+
+- Lateral stiffness does not change with inflation on `make_calibrated_sim`
+  (`scripts/stiffness_vs_pressure.py`, data only: tip + 0.1 mm noise, pressure sensors).
+  Mean pressure 2.0-7.5 psi on S2-S4, ±0.5 and ±1.0 psi y-bend steps: gain from measured
+  pressure to tip 1.798-1.811 mm/psi (±0.4 %), rate a 4.63-4.88 1/s (no trend, fit noise),
+  identical for both step sizes (linear). Closes the gap left by the paper-style set-point
+  test (which fitted command-to-tip, dominated by the delay and lag). The paper's
+  pressure-dependent stiffness is therefore not present in the simulator; open for hardware.
+- Extended to all axes and bent operating points (`scripts/stiffness_vs_pressure.py`, M2
+  mechanics fit, 0.5 psi steps): x gain -1.81 to -1.84 mm/psi, rate 4.0-4.6 1/s; y gain
+  1.80-1.82, rate 4.35-4.8; both flat over mean 2-7.5 psi and bend offset ±2 psi (no
+  trend beyond fit noise). z gain falls 7 % (-1.47 to -1.36 mm/psi) from 2 to 7.5 psi mean;
+  z rate not identifiable (13-38 1/s, hidden by the lag). Constant Λ, H justified for x, y.
+
 ## 2026-10-14
 
 - `notebooks/SMC_NDOSMC_delay_aware.ipynb`: Nikoletta's notebook (Sections 1-11
