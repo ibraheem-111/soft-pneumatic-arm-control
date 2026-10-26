@@ -390,6 +390,100 @@ mjx-container[display="true"] { margin: .35em 0 !important; }
   </ul>
 </section>
 
+<!-- 8 -->
+<section>
+  <h2>8 · Block diagram</h2>
+  <figure>
+    <div class="scroll">
+<svg viewBox="0 0 980 420" role="img" aria-label="Block diagram of the delay-aware SMC on M2. The reference is previewed by T. The predicted tip y tilde, equal to the measured tip plus the delay-free model output minus its value T ago, is compared with the previewed reference to form sigma. The SMC law gives the desired pressure, mixing by H inverse and the lag inverse give the command u. u drives the arm: dead time, pressure lag, mechanics, measured tip y. u also drives the delay-free model. An optional observer feeds d hat into the law.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        <marker id="arc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/></marker>
+        <marker id="arp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--talk)"/></marker>
+      </defs>
+      <g font-family="IBM Plex Sans, system-ui, sans-serif" font-size="13" fill="currentColor">
+      <!-- frames -->
+      <rect x="40" y="18" width="925" height="262" rx="8" fill="none" stroke="var(--accent)" stroke-dasharray="6 5"/>
+      <text x="52" y="34" font-size="11" font-family="IBM Plex Mono, monospace" fill="var(--accent)">CONTROLLER (runs at 100 Hz)</text>
+      <rect x="450" y="305" width="515" height="90" rx="8" fill="none" stroke="var(--talk)" stroke-dasharray="6 5"/>
+      <text x="462" y="411" font-size="11" font-family="IBM Plex Mono, monospace" fill="var(--talk)">ARM (M2 with delay)</text>
+
+      <!-- row 1 -->
+      <text x="4" y="74">r(t)</text>
+      <line x1="30" y1="70" x2="58" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <rect x="60" y="45" width="130" height="50" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="125" y="66" text-anchor="middle" font-weight="600">③ preview</text>
+      <text x="125" y="84" text-anchor="middle" font-size="12">r + Tṙ + ½T²r̈</text>
+      <line x1="190" y1="70" x2="227" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="198" y="62" font-size="12">r̃</text><text x="219" y="84" font-size="13">−</text>
+      <circle cx="245" cy="70" r="16" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+      <text x="245" y="75" text-anchor="middle" font-size="14">Σ</text>
+      <text x="236" y="112" font-size="13">+</text>
+      <line x1="261" y1="70" x2="298" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="272" y="62" font-size="12">σ ④</text>
+      <rect x="300" y="45" width="260" height="50" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="430" y="66" text-anchor="middle" font-weight="600">⑤ SMC law</text>
+      <text x="430" y="84" text-anchor="middle" font-size="12">H⁻¹Λ⁻¹[r̃̇ + Λỹ − λσ − η sat(σ/μ)]</text>
+      <line x1="560" y1="70" x2="608" y2="70" stroke="currentColor" stroke-width="1.4" marker-end="url(#ar)"/>
+      <text x="566" y="62" font-size="12">p_des</text>
+      <rect x="610" y="45" width="140" height="50" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="680" y="66" text-anchor="middle" font-weight="600">⑥ lag inverse</text>
+      <text x="680" y="84" text-anchor="middle" font-size="12">G⁻¹(p + τṗ), clip</text>
+      <line x1="750" y1="70" x2="930" y2="70" stroke="currentColor" stroke-width="1.6"/>
+      <text x="860" y="62" font-weight="600">u (psi)</text>
+      <path d="M930,70 L930,350 L902,350" fill="none" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar)"/>
+      <circle cx="820" cy="70" r="3.5" fill="currentColor"/>
+      <path d="M820,70 L820,205 L802,205" fill="none" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arc)"/>
+
+      <!-- row 2: internal model, delayed copy, predictor sum, observer -->
+      <rect x="640" y="180" width="160" height="50" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="720" y="200" text-anchor="middle" font-weight="600">① model, no delay</text>
+      <text x="720" y="218" text-anchor="middle" font-size="12">M2 without T</text>
+      <line x1="640" y1="205" x2="602" y2="205" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <circle cx="620" cy="205" r="3.5" fill="var(--accent)"/>
+      <text x="604" y="196" font-size="12" fill="var(--accent)">ŷ(t)</text>
+      <rect x="470" y="180" width="130" height="50" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="535" y="200" text-anchor="middle" font-weight="600">delay by T</text>
+      <text x="535" y="218" text-anchor="middle" font-size="12">stored ŷ</text>
+      <line x1="470" y1="205" x2="358" y2="205" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <text x="380" y="197" font-size="12" fill="var(--accent)">ŷ(t−T)</text><text x="362" y="222" font-size="13">−</text>
+      <path d="M620,205 L620,252 L340,252 L340,223" fill="none" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <text x="468" y="246" font-size="12" fill="var(--accent)">ŷ(t): model, no delay</text><text x="346" y="242" font-size="13">+</text>
+      <circle cx="340" cy="205" r="16" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+      <text x="340" y="210" text-anchor="middle" font-size="14">Σ</text>
+      <text x="316" y="196" font-size="13">+</text>
+      <path d="M340,189 L340,130 L245,130 L245,88" fill="none" stroke="currentColor" stroke-width="1.6" marker-end="url(#ar)"/>
+      <text x="350" y="160" font-size="12" font-weight="600">ỹ ≈ y(t + T)</text>
+      <text x="350" y="174" font-size="11" fill="var(--muted)">② Smith predictor</text>
+      <circle cx="340" cy="140" r="3.5" fill="currentColor"/>
+      <line x1="340" y1="140" x2="468" y2="140" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar)"/>
+      <rect x="470" y="120" width="90" height="40" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+      <text x="515" y="137" text-anchor="middle" font-weight="600" font-size="12.5">observer</text>
+      <text x="515" y="152" text-anchor="middle" font-size="11.5">optional</text>
+      <line x1="515" y1="120" x2="515" y2="97" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arc)"/>
+      <text x="521" y="112" font-size="12" fill="var(--accent)">d̂</text>
+
+      <!-- row 3: plant, right to left -->
+      <rect x="780" y="325" width="120" height="50" rx="5" fill="var(--talk-soft)" stroke="var(--talk)"/>
+      <text x="840" y="346" text-anchor="middle" font-weight="600">dead time</text>
+      <text x="840" y="364" text-anchor="middle" font-size="12">T = 0.5 s</text>
+      <line x1="780" y1="350" x2="752" y2="350" stroke="var(--talk)" stroke-width="1.4" marker-end="url(#arp)"/>
+      <rect x="620" y="325" width="130" height="50" rx="5" fill="var(--talk-soft)" stroke="var(--talk)"/>
+      <text x="685" y="346" text-anchor="middle" font-weight="600">pressure lag</text>
+      <text x="685" y="364" text-anchor="middle" font-size="12">τ = 0.6 s</text>
+      <line x1="620" y1="350" x2="592" y2="350" stroke="var(--talk)" stroke-width="1.4" marker-end="url(#arp)"/>
+      <rect x="460" y="325" width="130" height="50" rx="5" fill="var(--talk-soft)" stroke="var(--talk)"/>
+      <text x="525" y="346" text-anchor="middle" font-weight="600">mechanics</text>
+      <text x="525" y="364" text-anchor="middle" font-size="12">Λ, H</text>
+      <path d="M460,350 L300,350 L300,205 L322,205" fill="none" stroke="var(--talk)" stroke-width="1.6" marker-end="url(#arp)"/>
+      <text x="320" y="342" font-size="12" font-weight="600" fill="var(--talk)">y(t), measured tip</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>Delay-aware SMC on M2. Teal: controller, numbers are the steps of §6. Ochre: the arm. \(\hat y\) is stored for \(N = 50\) steps.</figcaption>
+  </figure>
+</section>
+
 <section>
   <h2>References</h2>
   <ol class="meta">
