@@ -72,3 +72,20 @@ call `sim.step()` itself.
   `uv run python scripts/run_baseline.py` (soft-robotic-arm 0.4.2).
 
 Use the same sim seed, trajectory seed and duration when comparing new controllers.
+
+## Project brief: test motions (RAS556 Course Project Intro, 9/2/2026, slides 15-20)
+
+The brief (PDF from the instructor; not committed) names three test motions and says
+"test scenarios include various reference profiles"; possible methods: linear feedback
+and SMC. The slides show open-loop simulation demos, not scored tracking tasks, from an
+older simulator (slide 13 still says τ ≈ 120 ms; tip motion in cm):
+
+| Motion | Command (slide) | Tip path (slide) |
+|---|---|---|
+| Axial | Seg 4 only, sine 0.5 Hz, 3.6 psi amplitude (0-7.2 psi); Segs 1-3 off | mostly lateral (y up to ~6.5 cm) plus z change ~1-3 cm; "Seg 4 expands, opposite Seg 2 compresses" |
+| Circular | Segs 1-4 phase-shifted sines, 0.2-3.2 psi, ~0.4 Hz | circle, radius ~2.1 cm |
+| Triangular | piecewise-linear Seg 1-4 ramps, 0-2.2 psi, 7.5 s period | triangle by linear Cartesian interpolation, vertices V0 (1.65, 0), V1 (-0.8, 1.43), V2 (-0.8, -1.43) cm |
+
+`scripts/benchmark_all_tasks.py` uses the same three families but takes them from the lab's
+recorded real-robot runs (0.1 Hz, 5 psi peak), not these slide parameters. Read from the
+PDF pages 15-20 on 2026-10-26.

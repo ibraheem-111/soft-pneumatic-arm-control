@@ -5,6 +5,10 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-26
 
+- Project brief (RAS556 Course Project Intro PDF) defines the axial / circular / triangular
+  test motions by open-loop slide demos (0.5 Hz, ~0.4 Hz, 7.5 s period; cm-scale, old τ ≈ 120 ms
+  sim). Recorded in `docs/assignment.md`. Our benchmark used the recorded 0.1 Hz real-robot
+  runs instead; the slide parameters have not been run yet.
 - `scripts/benchmark_all_tasks.py`: every controller of `compare_controllers.py` (same gains)
   tracking the lab's recorded real-robot tip trajectories (upstream `main`
   `data/_data_extract/parallel/{axial,circular,triangular}_2-5_parallel.csv`, read with
