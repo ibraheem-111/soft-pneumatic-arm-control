@@ -3,6 +3,27 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-26
+
+- `scripts/benchmark_all_tasks.py`: every controller of `compare_controllers.py` (same gains)
+  tracking the lab's recorded real-robot tip trajectories (upstream `main`
+  `data/_data_extract/parallel/{axial,circular,triangular}_2-5_parallel.csv`, read with
+  `git show`, not copied), on `make_calibrated_sim(seed=0)`, harness-style (5 s settle at
+  4.5 psi, then 180 s). Parallel / 2 psi charge matches `make_calibrated_sim()`'s defaults;
+  5 psi peaks because the 10 psi runs command 10 psi. Mocap frame: RB3 - RB2 in RB1's frame,
+  Y-up to Z-up, one yaw (84.8 deg) fitted against an open-loop replay; reference smoothed
+  (1 Hz zero-phase). Planar RMSE mm axial / circular / triangular: PD corrected 3.88 / 4.79 /
+  5.93; notebook SMC λ=8 2.63 / 3.00 / 4.17; paper SMC 1.66 / 2.61 / 2.73; paper NDOSMC 2.49 /
+  3.58 / 3.40; delay-aware SMC 1.14 / 1.56 / 1.23; delay-aware NDOSMC 1.07 / 1.63 / 1.31
+  (model-based ones saturate 20-59 % of commands). Open-loop replay of the recorded commands
+  misses the recorded tip by 3.65 / 2.95 / 4.59 mm xy and 4.51 / 4.14 / 2.98 mm z: the real
+  robot moves about twice as far along x (S3 vs sealed S1) as the sim, and its z includes a
+  slow drift. "Axial" drives S3 only (0-5 psi): mostly x motion, not z. PD and notebook SMC
+  do not control z. Gains were not retuned on these tasks.
+- Gains tuned on the scored circle carry over: the delay-aware controllers stay best on all
+  three recorded waveforms. `compare_controllers.py` rerun: identical to
+  `controller_comparison.json` (max difference 0).
+
 ## 2026-10-21
 
 - Lateral stiffness does not change with inflation on `make_calibrated_sim`
