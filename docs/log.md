@@ -5,10 +5,32 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-26
 
+- `scripts/benchmark_slide_tasks.py`: every controller of `compare_controllers.py` (same gains)
+  on the brief's slide motions, `make_calibrated_sim(seed=0)`, 5 s settle at 4.5 psi, 30 s.
+  Chosen: axial = open-loop path of S4 = 3.6 + 3.6 sin(2π·0.5 t) psi (slide command) with S2/S3
+  at 4.5 psi (the harness baseline the models are linearised about; 1.5 psi, the bottom of the
+  identification range, only adds a static offset and was run open-loop for comparison);
+  circle_ol = open-loop path of S2-S4 = 4.5 ± 3.0 psi (1.5-7.5, the identified range), 0.4 Hz,
+  phases 90/180/270° - a 2:1 ellipse (x 6.5 mm, y 14 mm peak-to-peak) because S1 is sealed and x
+  has only S3; geometric circles at 0.4 Hz with r = 8.9 mm (M2 static limit: 4.5 psi × |H_x,S3| ×
+  actuator gain = 8.94 mm) and r = 4.3 mm (M2 limit at 0.4 Hz with mechanics + 0.6 s lag, 4.37 mm);
+  triangle R = 6.0 mm (static vertex limit 8.94 mm; quasi-static edge demand at 7.5 s/lap limits
+  V0 to 6.02 mm). Reach checks (open loop): S3 at 0 / 9 psi holds +9.17 / -8.97 mm x (M2 8.94);
+  S3 ±4.5 psi sine at 0.4 Hz gives 4.78 mm x amplitude (M2 4.37). Planar RMSE mm, axial /
+  circle_ol / circle 8.9 / circle 4.3 / triangle: PD corrected 4.52 / 8.78 / 14.44 / 7.35 / 2.88;
+  notebook SMC λ=8 4.08 / 6.32 / 9.95 / 5.67 / 2.06; paper SMC 5.61 / 9.91 / 11.42 / 8.07 / 2.05;
+  delay-aware SMC 2.67 / 3.49 / 2.70 / 2.46 / 2.08; delay-aware NDOSMC 2.47 / 3.27 / 2.84 / 2.29 /
+  2.06 (others in `docs/figures/benchmark_slide_tasks.json`). The 0.4-0.5 Hz tasks are where the
+  delay-aware controllers pull ahead (they saturate 21-81 % of commands); on the slow triangle all
+  model-based SMCs and notebook λ=8 tie at ~2.05 mm, set by the corners. A tracker that sees the
+  reference through the 0.5 s delay + 0.6 s lag would score 3.42 / 7.15 / 12.44 / 6.01 / 3.61;
+  it is not a lower bound (controllers extrapolating the periodic reference beat it). Open-loop
+  replay of the generating commands scores exactly 0 (tip deterministic; the seed only drives
+  pressure-sensor noise). Figures `docs/figures/slide_task_*.png`, `slide_tasks_rmse.png`.
 - Project brief (RAS556 Course Project Intro PDF) defines the axial / circular / triangular
   test motions by open-loop slide demos (0.5 Hz, ~0.4 Hz, 7.5 s period; cm-scale, old τ ≈ 120 ms
   sim). Recorded in `docs/assignment.md`. Our benchmark used the recorded 0.1 Hz real-robot
-  runs instead; the slide parameters have not been run yet.
+  runs instead; the slide motions are now benchmarked too (entry above).
 - `scripts/benchmark_all_tasks.py`: every controller of `compare_controllers.py` (same gains)
   tracking the lab's recorded real-robot tip trajectories (upstream `main`
   `data/_data_extract/parallel/{axial,circular,triangular}_2-5_parallel.csv`, read with

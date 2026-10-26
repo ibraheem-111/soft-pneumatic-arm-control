@@ -89,3 +89,9 @@ older simulator (slide 13 still says τ ≈ 120 ms; tip motion in cm):
 `scripts/benchmark_all_tasks.py` uses the same three families but takes them from the lab's
 recorded real-robot runs (0.1 Hz, 5 psi peak), not these slide parameters. Read from the
 PDF pages 15-20 on 2026-10-26.
+
+`scripts/benchmark_slide_tasks.py` runs the slide motions themselves, scaled to the calibrated
+arm (S2-S4 only, 0-9 psi): open-loop paths of the slide-like axial and circular commands, and
+geometric circles / triangle at the slide timing with radii from M2's reach (8.9 and 4.3 mm
+circles at 0.4 Hz, 6.0 mm triangle). Results: `docs/log.md` 2026-10-26 and
+`docs/figures/benchmark_slide_tasks.json`.

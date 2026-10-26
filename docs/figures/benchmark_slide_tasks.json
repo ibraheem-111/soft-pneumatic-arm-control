@@ -1,0 +1,766 @@
+{
+  "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+  "track_s": 30.0,
+  "settle": "5.0 s at 4.5 psi",
+  "m2": {
+    "tau_s": 0.5994717450816,
+    "dead_s": 0.5
+  },
+  "reach_bounds_m2": {
+    "circle_static_mm": 8.940386522632828,
+    "circle_dyn_0p4hz_mm": 4.373784150350387,
+    "triangle_static_mm": 8.940386522632828,
+    "triangle_edge_mm": 6.018609099320258,
+    "Hc_mm_per_psi": [
+      [
+        -0.003683980786718926,
+        -1.9867434582457926,
+        -0.002312121442734246
+      ],
+      [
+        2.0415112909444555,
+        -0.0019112593739359655,
+        -2.1107470548223417
+      ],
+      [
+        -0.551903116565275,
+        -0.48906657727457653,
+        -0.5698707278149487
+      ]
+    ]
+  },
+  "reach_checks": {
+    "+x (S3 0)": {
+      "measured_mm": [
+        9.170977986764719,
+        -5.2246858784151974e-05,
+        2.4671950346538676
+      ],
+      "predicted_mm": [
+        8.940345562106067,
+        0.008600667182711845,
+        2.2007995977355943
+      ]
+    },
+    "-x (S3 9)": {
+      "measured_mm": [
+        -8.96586627948524,
+        -0.000151078791200256,
+        -1.9636351010949924
+      ],
+      "predicted_mm": [
+        -8.940345562106067,
+        -0.008600667182711845,
+        -2.2007995977355943
+      ]
+    },
+    "+y (S2 9, S4 0)": {
+      "measured_mm": [
+        -0.02963345988628793,
+        19.119518272722786,
+        1.2065063974379044
+      ],
+      "predicted_mm": [
+        -0.006173367047931063,
+        18.685162555950587,
+        0.08085425062353174
+      ]
+    },
+    "-y (S2 0, S4 9)": {
+      "measured_mm": [
+        -0.02980754862963128,
+        -19.390781867278392,
+        1.1297114094458607
+      ],
+      "predicted_mm": [
+        0.006173367047931063,
+        -18.685162555950587,
+        -0.08085425062353174
+      ]
+    },
+    "S3 +-4.5 psi sine at 0.4 Hz, x amplitude": {
+      "measured_mm": 4.777412177744861,
+      "predicted_mm": 4.373794101136625
+    }
+  },
+  "chosen": {
+    "axial_hold_psi": 4.5,
+    "axial_S4_psi": [
+      0.0,
+      7.2
+    ],
+    "circle_ol_amp_psi": 3.0,
+    "circle_static_r_mm": 8.9,
+    "circle_dyn_r_mm": 4.3,
+    "triangle_R_mm": 6.0
+  },
+  "axial_low_hold_open_loop": {
+    "hold_psi": 1.5,
+    "settle": "S2/S3 1.5, S4 3.6 psi",
+    "range_mm": {
+      "min": [
+        -0.04231759896623191,
+        -4.211629101643597,
+        -1.0641925793814233
+      ],
+      "max": [
+        -7.515242432857248e-05,
+        3.423099661726243,
+        0.9264682487406806
+      ]
+    }
+  },
+  "tasks": {
+    "axial": {
+      "title": "Axial: open-loop path of S4 = 3.6+3.6 sin(2\u03c0\u00b70.5t) psi, S2/S3 at 4.5 psi",
+      "short": "axial\n(S4 sine, open-loop path)",
+      "lap_s": 2.0,
+      "z_in_reference": true,
+      "reference_range_mm": {
+        "min": [
+          -0.05176603023369919,
+          -2.837430464211804,
+          -0.783521829617162
+        ],
+        "max": [
+          -0.00019650951545244905,
+          5.339182994666791,
+          1.5323216378868854
+        ]
+      },
+      "floor_delay": {
+        "planar_rmse_mm": 3.3563502604878472,
+        "planar_rmse_after_lap_mm": 3.4550199971758446,
+        "z_rmse_mm": 0.9596848974566236,
+        "z_rmse_after_lap_mm": 0.984656432248992,
+        "max_planar_error_mm": 5.333275010033868,
+        "max_planar_error_after_lap_mm": 5.333275010033868,
+        "phase_lag_s": 0.5
+      },
+      "floor_delay_lag": {
+        "planar_rmse_mm": 3.4210653895089527,
+        "planar_rmse_after_lap_mm": 3.5222773466295636,
+        "z_rmse_mm": 0.975873247755453,
+        "z_rmse_after_lap_mm": 1.0032801521568637,
+        "max_planar_error_mm": 6.271504013491284,
+        "max_planar_error_after_lap_mm": 6.271504013491284,
+        "phase_lag_s": 0.84
+      },
+      "controllers": {
+        "PD, notebook allocator": {
+          "planar_rmse_mm": 2.604577087844314,
+          "planar_rmse_after_lap_mm": 2.669025143556653,
+          "z_rmse_mm": 0.9555922541659034,
+          "z_rmse_after_lap_mm": 0.9825261819811619,
+          "max_planar_error_mm": 5.375402899283981,
+          "max_planar_error_after_lap_mm": 5.375402899283981,
+          "phase_lag_s": 0.03,
+          "saturated_pct": 0.0,
+          "run_s": 1.4701710459776223
+        },
+        "PD, corrected allocator": {
+          "planar_rmse_mm": 4.524092055605599,
+          "planar_rmse_after_lap_mm": 4.66786169840372,
+          "z_rmse_mm": 0.8557295131125203,
+          "z_rmse_after_lap_mm": 0.8790197312986788,
+          "max_planar_error_mm": 7.451409102227523,
+          "max_planar_error_after_lap_mm": 7.451409102227523,
+          "phase_lag_s": 1.0,
+          "saturated_pct": 0.0,
+          "run_s": 1.479768086981494
+        },
+        "SMC (notebook model), as written": {
+          "planar_rmse_mm": 3.4030829052587435,
+          "planar_rmse_after_lap_mm": 3.5124100427179954,
+          "z_rmse_mm": 1.0345153719520697,
+          "z_rmse_after_lap_mm": 1.064818258175057,
+          "max_planar_error_mm": 6.7662116023301175,
+          "max_planar_error_after_lap_mm": 6.7662116023301175,
+          "phase_lag_s": -0.31,
+          "saturated_pct": 0.0,
+          "run_s": 1.494590057991445
+        },
+        "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
+          "planar_rmse_mm": 4.07958552692112,
+          "planar_rmse_after_lap_mm": 4.205738027091348,
+          "z_rmse_mm": 0.849804978751908,
+          "z_rmse_after_lap_mm": 0.8728789123746945,
+          "max_planar_error_mm": 7.1870593553068876,
+          "max_planar_error_after_lap_mm": 7.1870593553068876,
+          "phase_lag_s": 0.69,
+          "saturated_pct": 0.0,
+          "run_s": 1.5018833599751815
+        },
+        "Paper SMC, eq. 5 (M1)": {
+          "planar_rmse_mm": 5.613383963279382,
+          "planar_rmse_after_lap_mm": 5.79388615461518,
+          "z_rmse_mm": 1.2172548194779034,
+          "z_rmse_after_lap_mm": 1.2475513758496077,
+          "max_planar_error_mm": 9.126452033158483,
+          "max_planar_error_after_lap_mm": 9.126452033158483,
+          "phase_lag_s": 0.67,
+          "saturated_pct": 19.8,
+          "run_s": 1.6837134700035676
+        },
+        "Paper NDOSMC, eq. 12 (M1)": {
+          "planar_rmse_mm": 5.993069587428708,
+          "planar_rmse_after_lap_mm": 6.190830024815323,
+          "z_rmse_mm": 1.8717000302649927,
+          "z_rmse_after_lap_mm": 1.9181823998693355,
+          "max_planar_error_mm": 9.830198420348514,
+          "max_planar_error_after_lap_mm": 9.830198420348514,
+          "phase_lag_s": 0.89,
+          "saturated_pct": 38.87777777777778,
+          "run_s": 1.667193720000796
+        },
+        "Delay-aware SMC, no observer (M2)": {
+          "planar_rmse_mm": 2.6737001837015733,
+          "planar_rmse_after_lap_mm": 2.7333004568500874,
+          "z_rmse_mm": 0.3206641632286946,
+          "z_rmse_after_lap_mm": 0.32067580707765764,
+          "max_planar_error_mm": 4.450824946429611,
+          "max_planar_error_after_lap_mm": 4.450824946429611,
+          "phase_lag_s": 0.0,
+          "saturated_pct": 20.666666666666668,
+          "run_s": 1.7496355579933152
+        },
+        "Delay-aware NDOSMC (M2)": {
+          "planar_rmse_mm": 2.4726868768983037,
+          "planar_rmse_after_lap_mm": 2.5230661110059387,
+          "z_rmse_mm": 0.31496777023561684,
+          "z_rmse_after_lap_mm": 0.31448326873416976,
+          "max_planar_error_mm": 4.329338867098796,
+          "max_planar_error_after_lap_mm": 4.329338867098796,
+          "phase_lag_s": -0.01,
+          "saturated_pct": 21.977777777777778,
+          "run_s": 1.7771346250083297
+        }
+      },
+      "open_loop": {
+        "planar_rmse_mm": 0.0,
+        "planar_rmse_after_lap_mm": 0.0,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 0.0,
+        "max_planar_error_after_lap_mm": 0.0,
+        "phase_lag_s": 0.0,
+        "saturated_pct": 0.16666666666666669
+      }
+    },
+    "circle_ol": {
+      "title": "Circular (open-loop path): S2-S4 = 4.5 \u00b1 3.0 psi, 0.4 Hz, phases 90/180/270\u00b0",
+      "short": "circle, open-loop\n(ellipse)",
+      "lap_s": 2.5,
+      "z_in_reference": true,
+      "reference_range_mm": {
+        "min": [
+          -3.317949106701719,
+          -6.619448459989209,
+          -0.8070135482519114
+        ],
+        "max": [
+          3.158534675108616,
+          7.756084729674641,
+          0.8597543368210614
+        ]
+      },
+      "floor_delay": {
+        "planar_rmse_mm": 5.966738340375254,
+        "planar_rmse_after_lap_mm": 6.112460307642451,
+        "z_rmse_mm": 0.6700083948604995,
+        "z_rmse_after_lap_mm": 0.6838884867396624,
+        "max_planar_error_mm": 8.12672153611065,
+        "max_planar_error_after_lap_mm": 8.12672153611065,
+        "phase_lag_s": 0.5
+      },
+      "floor_delay_lag": {
+        "planar_rmse_mm": 7.147875698792244,
+        "planar_rmse_after_lap_mm": 7.343101278005184,
+        "z_rmse_mm": 0.8016098474781674,
+        "z_rmse_after_lap_mm": 0.8180484609845329,
+        "max_planar_error_mm": 10.391466121144317,
+        "max_planar_error_after_lap_mm": 10.391466121144317,
+        "phase_lag_s": 0.88
+      },
+      "controllers": {
+        "PD, notebook allocator": {
+          "planar_rmse_mm": 5.698623198097668,
+          "planar_rmse_after_lap_mm": 5.709677960636978,
+          "z_rmse_mm": 0.894819962932073,
+          "z_rmse_after_lap_mm": 0.8908803467576882,
+          "max_planar_error_mm": 10.338350572000339,
+          "max_planar_error_after_lap_mm": 10.338350572000339,
+          "phase_lag_s": -0.5,
+          "saturated_pct": 0.42222222222222217,
+          "run_s": 1.4736293979804032
+        },
+        "PD, corrected allocator": {
+          "planar_rmse_mm": 8.776633309755177,
+          "planar_rmse_after_lap_mm": 9.059424999248282,
+          "z_rmse_mm": 0.9706339543876222,
+          "z_rmse_after_lap_mm": 0.9975364800350812,
+          "max_planar_error_mm": 11.674091052956808,
+          "max_planar_error_after_lap_mm": 11.674091052956808,
+          "phase_lag_s": 0.89,
+          "saturated_pct": 0.0,
+          "run_s": 1.4966081379679963
+        },
+        "SMC (notebook model), as written": {
+          "planar_rmse_mm": 3.942671558930825,
+          "planar_rmse_after_lap_mm": 3.909144661569019,
+          "z_rmse_mm": 0.2555342622107342,
+          "z_rmse_after_lap_mm": 0.23799237317499988,
+          "max_planar_error_mm": 7.6624567690427785,
+          "max_planar_error_after_lap_mm": 6.240936457583209,
+          "phase_lag_s": -0.16,
+          "saturated_pct": 0.0,
+          "run_s": 1.5075497880461626
+        },
+        "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
+          "planar_rmse_mm": 6.3219439873135395,
+          "planar_rmse_after_lap_mm": 6.469769961495119,
+          "z_rmse_mm": 0.8033823209470631,
+          "z_rmse_after_lap_mm": 0.8168757174123911,
+          "max_planar_error_mm": 8.372485722220603,
+          "max_planar_error_after_lap_mm": 8.372485722220603,
+          "phase_lag_s": 0.63,
+          "saturated_pct": 0.0,
+          "run_s": 1.5053095539915375
+        },
+        "Paper SMC, eq. 5 (M1)": {
+          "planar_rmse_mm": 9.913772253811786,
+          "planar_rmse_after_lap_mm": 10.198275441854138,
+          "z_rmse_mm": 1.0414323462441886,
+          "z_rmse_after_lap_mm": 1.0601643668725218,
+          "max_planar_error_mm": 13.668719980279203,
+          "max_planar_error_after_lap_mm": 13.668719980279203,
+          "phase_lag_s": 0.58,
+          "saturated_pct": 52.011111111111106,
+          "run_s": 1.6919376659789123
+        },
+        "Paper NDOSMC, eq. 12 (M1)": {
+          "planar_rmse_mm": 10.587406201487939,
+          "planar_rmse_after_lap_mm": 10.898233619853361,
+          "z_rmse_mm": 1.4933551515886163,
+          "z_rmse_after_lap_mm": 1.4970250764457727,
+          "max_planar_error_mm": 14.807491113291883,
+          "max_planar_error_after_lap_mm": 14.807491113291883,
+          "phase_lag_s": 0.59,
+          "saturated_pct": 70.15555555555557,
+          "run_s": 1.6919155700015835
+        },
+        "Delay-aware SMC, no observer (M2)": {
+          "planar_rmse_mm": 3.49065475859515,
+          "planar_rmse_after_lap_mm": 3.563309351236161,
+          "z_rmse_mm": 0.5200580410630198,
+          "z_rmse_after_lap_mm": 0.53151888235707,
+          "max_planar_error_mm": 5.152049949251052,
+          "max_planar_error_after_lap_mm": 5.152049949251052,
+          "phase_lag_s": -0.06,
+          "saturated_pct": 34.72222222222222,
+          "run_s": 1.7695799139910378
+        },
+        "Delay-aware NDOSMC (M2)": {
+          "planar_rmse_mm": 3.270465189884432,
+          "planar_rmse_after_lap_mm": 3.33903822367677,
+          "z_rmse_mm": 0.3645128533412855,
+          "z_rmse_after_lap_mm": 0.36619189139508973,
+          "max_planar_error_mm": 4.844367124115696,
+          "max_planar_error_after_lap_mm": 4.418864506045526,
+          "phase_lag_s": -0.07,
+          "saturated_pct": 27.53333333333333,
+          "run_s": 1.7798823219491169
+        }
+      },
+      "open_loop": {
+        "planar_rmse_mm": 0.0,
+        "planar_rmse_after_lap_mm": 0.0,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 0.0,
+        "max_planar_error_after_lap_mm": 0.0,
+        "phase_lag_s": 0.0,
+        "saturated_pct": 0.0
+      }
+    },
+    "circle_static": {
+      "title": "Circular (geometric): r = 8.9 mm (M2 static limit), 0.4 Hz",
+      "short": "circle r=8.9 mm\n(static-H limit)",
+      "lap_s": 2.5,
+      "z_in_reference": false,
+      "reference_range_mm": {
+        "min": [
+          -8.9,
+          -8.899297293413964,
+          0.0
+        ],
+        "max": [
+          8.9,
+          8.899297293413964,
+          0.0
+        ]
+      },
+      "floor_delay": {
+        "planar_rmse_mm": 10.438451463472386,
+        "planar_rmse_after_lap_mm": 10.462577490806021,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 10.462577490806074,
+        "max_planar_error_after_lap_mm": 10.462577490806074,
+        "phase_lag_s": 0.5
+      },
+      "floor_delay_lag": {
+        "planar_rmse_mm": 12.43853892379388,
+        "planar_rmse_after_lap_mm": 12.529432526059715,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 13.041409637960157,
+        "max_planar_error_after_lap_mm": 12.57572155572806,
+        "phase_lag_s": 0.88
+      },
+      "controllers": {
+        "PD, notebook allocator": {
+          "planar_rmse_mm": 9.939533421112431,
+          "planar_rmse_after_lap_mm": 9.741767522987368,
+          "z_rmse_mm": 0.9549920561515761,
+          "z_rmse_after_lap_mm": 0.9634853307562042,
+          "max_planar_error_mm": 13.856154485821296,
+          "max_planar_error_after_lap_mm": 12.775563012970448,
+          "phase_lag_s": -0.58,
+          "saturated_pct": 10.755555555555556,
+          "run_s": 1.471554304996971
+        },
+        "PD, corrected allocator": {
+          "planar_rmse_mm": 14.435100653756951,
+          "planar_rmse_after_lap_mm": 14.65404669538003,
+          "z_rmse_mm": 1.024283053524589,
+          "z_rmse_after_lap_mm": 1.0400017083397977,
+          "max_planar_error_mm": 16.073169431592643,
+          "max_planar_error_after_lap_mm": 16.073169431592643,
+          "phase_lag_s": 0.89,
+          "saturated_pct": 17.033333333333335,
+          "run_s": 1.4665306539973244
+        },
+        "SMC (notebook model), as written": {
+          "planar_rmse_mm": 4.9497908183772115,
+          "planar_rmse_after_lap_mm": 4.754873213970104,
+          "z_rmse_mm": 0.7747444212963227,
+          "z_rmse_after_lap_mm": 0.7859472736779699,
+          "max_planar_error_mm": 8.899803490484741,
+          "max_planar_error_after_lap_mm": 5.889472298839348,
+          "phase_lag_s": 0.06,
+          "saturated_pct": 0.0,
+          "run_s": 1.512966301990673
+        },
+        "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
+          "planar_rmse_mm": 9.946015950396198,
+          "planar_rmse_after_lap_mm": 9.994386793821262,
+          "z_rmse_mm": 0.7847677664434929,
+          "z_rmse_after_lap_mm": 0.797149378770855,
+          "max_planar_error_mm": 10.390227147782864,
+          "max_planar_error_after_lap_mm": 10.390227147782864,
+          "phase_lag_s": 0.62,
+          "saturated_pct": 0.08888888888888889,
+          "run_s": 1.510970276023727
+        },
+        "Paper SMC, eq. 5 (M1)": {
+          "planar_rmse_mm": 11.423954841475938,
+          "planar_rmse_after_lap_mm": 11.530284582584924,
+          "z_rmse_mm": 0.708559905650322,
+          "z_rmse_after_lap_mm": 0.7314953360405122,
+          "max_planar_error_mm": 12.56423773241489,
+          "max_planar_error_after_lap_mm": 12.56423773241489,
+          "phase_lag_s": 0.59,
+          "saturated_pct": 77.64444444444445,
+          "run_s": 1.675900016038213
+        },
+        "Paper NDOSMC, eq. 12 (M1)": {
+          "planar_rmse_mm": 11.579867492781055,
+          "planar_rmse_after_lap_mm": 11.599987116758465,
+          "z_rmse_mm": 0.8576878805238469,
+          "z_rmse_after_lap_mm": 0.8887197173174692,
+          "max_planar_error_mm": 15.010570731152828,
+          "max_planar_error_after_lap_mm": 12.352368772638712,
+          "phase_lag_s": 0.61,
+          "saturated_pct": 83.11111111111111,
+          "run_s": 1.6730806300183758
+        },
+        "Delay-aware SMC, no observer (M2)": {
+          "planar_rmse_mm": 2.6991019577819615,
+          "planar_rmse_after_lap_mm": 2.1657095441748133,
+          "z_rmse_mm": 0.748642728703519,
+          "z_rmse_after_lap_mm": 0.7515151450319257,
+          "max_planar_error_mm": 8.899803490484741,
+          "max_planar_error_after_lap_mm": 3.209002750115249,
+          "phase_lag_s": -0.01,
+          "saturated_pct": 80.93333333333334,
+          "run_s": 1.7597458109958097
+        },
+        "Delay-aware NDOSMC (M2)": {
+          "planar_rmse_mm": 2.83816396979578,
+          "planar_rmse_after_lap_mm": 2.347615777958925,
+          "z_rmse_mm": 0.6430021647942544,
+          "z_rmse_after_lap_mm": 0.644503844999912,
+          "max_planar_error_mm": 8.899803490484741,
+          "max_planar_error_after_lap_mm": 3.3304445136112815,
+          "phase_lag_s": -0.03,
+          "saturated_pct": 79.3,
+          "run_s": 1.7610283610410988
+        }
+      }
+    },
+    "circle_dyn": {
+      "title": "Circular (geometric): r = 4.3 mm (M2 limit at 0.4 Hz)",
+      "short": "circle r=4.3 mm\n(0.4 Hz M2 limit)",
+      "lap_s": 2.5,
+      "z_in_reference": false,
+      "reference_range_mm": {
+        "min": [
+          -4.3,
+          -4.299660490076409,
+          0.0
+        ],
+        "max": [
+          4.3,
+          4.299660490076409,
+          0.0
+        ]
+      },
+      "floor_delay": {
+        "planar_rmse_mm": 5.043296774486659,
+        "planar_rmse_after_lap_mm": 5.05495316971527,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 5.054953169715295,
+        "max_planar_error_after_lap_mm": 5.054953169715295,
+        "phase_lag_s": 0.5
+      },
+      "floor_delay_lag": {
+        "planar_rmse_mm": 6.009631165428504,
+        "planar_rmse_after_lap_mm": 6.053546051916491,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 6.300905780138053,
+        "max_planar_error_after_lap_mm": 6.075910414565242,
+        "phase_lag_s": 0.88
+      },
+      "controllers": {
+        "PD, notebook allocator": {
+          "planar_rmse_mm": 4.810528231655477,
+          "planar_rmse_after_lap_mm": 4.713276215736148,
+          "z_rmse_mm": 0.48899936698605545,
+          "z_rmse_after_lap_mm": 0.49333579240923425,
+          "max_planar_error_mm": 6.714441849400825,
+          "max_planar_error_after_lap_mm": 6.288384325034128,
+          "phase_lag_s": -0.57,
+          "saturated_pct": 0.0,
+          "run_s": 1.4769947369932197
+        },
+        "PD, corrected allocator": {
+          "planar_rmse_mm": 7.351211709742406,
+          "planar_rmse_after_lap_mm": 7.477640311850593,
+          "z_rmse_mm": 0.686382494624854,
+          "z_rmse_after_lap_mm": 0.7041380071058642,
+          "max_planar_error_mm": 7.632584804691544,
+          "max_planar_error_after_lap_mm": 7.632584804691544,
+          "phase_lag_s": 0.89,
+          "saturated_pct": 0.0,
+          "run_s": 1.4764294640044682
+        },
+        "SMC (notebook model), as written": {
+          "planar_rmse_mm": 2.3721835375011326,
+          "planar_rmse_after_lap_mm": 2.278670352554931,
+          "z_rmse_mm": 0.43556056972106955,
+          "z_rmse_after_lap_mm": 0.4307788812366383,
+          "max_planar_error_mm": 4.2998034904849485,
+          "max_planar_error_after_lap_mm": 3.5335520448367896,
+          "phase_lag_s": 0.07,
+          "saturated_pct": 0.0,
+          "run_s": 1.5190968789975159
+        },
+        "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
+          "planar_rmse_mm": 5.674130667495467,
+          "planar_rmse_after_lap_mm": 5.710544814116427,
+          "z_rmse_mm": 0.645967487280135,
+          "z_rmse_after_lap_mm": 0.6599000203825144,
+          "max_planar_error_mm": 6.347919251470505,
+          "max_planar_error_after_lap_mm": 6.001005187443309,
+          "phase_lag_s": 0.63,
+          "saturated_pct": 0.0,
+          "run_s": 1.5057348539703526
+        },
+        "Paper SMC, eq. 5 (M1)": {
+          "planar_rmse_mm": 8.065461995405457,
+          "planar_rmse_after_lap_mm": 8.1802229036245,
+          "z_rmse_mm": 0.5236753348027219,
+          "z_rmse_after_lap_mm": 0.5430615217873981,
+          "max_planar_error_mm": 9.30159141837438,
+          "max_planar_error_after_lap_mm": 9.30159141837438,
+          "phase_lag_s": 0.57,
+          "saturated_pct": 53.86666666666666,
+          "run_s": 1.685166047012899
+        },
+        "Paper NDOSMC, eq. 12 (M1)": {
+          "planar_rmse_mm": 8.894135584726007,
+          "planar_rmse_after_lap_mm": 8.95735203710501,
+          "z_rmse_mm": 0.5134625744788183,
+          "z_rmse_after_lap_mm": 0.5282282718887731,
+          "max_planar_error_mm": 12.387862046057675,
+          "max_planar_error_after_lap_mm": 11.472564720375955,
+          "phase_lag_s": 0.56,
+          "saturated_pct": 66.04444444444444,
+          "run_s": 1.6646327649941668
+        },
+        "Delay-aware SMC, no observer (M2)": {
+          "planar_rmse_mm": 2.4634066797514524,
+          "planar_rmse_after_lap_mm": 2.351180421317924,
+          "z_rmse_mm": 0.6733284562545714,
+          "z_rmse_after_lap_mm": 0.6750656196409449,
+          "max_planar_error_mm": 4.2998034904849485,
+          "max_planar_error_after_lap_mm": 3.02638266701323,
+          "phase_lag_s": -0.05,
+          "saturated_pct": 35.68888888888889,
+          "run_s": 1.7475472419755533
+        },
+        "Delay-aware NDOSMC (M2)": {
+          "planar_rmse_mm": 2.292424903474985,
+          "planar_rmse_after_lap_mm": 2.179076771219124,
+          "z_rmse_mm": 0.6102945448607002,
+          "z_rmse_after_lap_mm": 0.6100394844849978,
+          "max_planar_error_mm": 4.2998034904849485,
+          "max_planar_error_after_lap_mm": 2.8114750077303423,
+          "phase_lag_s": -0.07,
+          "saturated_pct": 31.255555555555553,
+          "run_s": 1.7728679950232618
+        }
+      }
+    },
+    "triangle": {
+      "title": "Triangular: circumradius 6 mm, vertices 0/120/240\u00b0, 7.5 s per lap",
+      "short": "triangle R=6 mm",
+      "lap_s": 7.5,
+      "z_in_reference": false,
+      "reference_range_mm": {
+        "min": [
+          -3.0000000000000027,
+          -5.19615242270663,
+          0.0
+        ],
+        "max": [
+          6.0,
+          5.196152422706632,
+          0.0
+        ]
+      },
+      "floor_delay": {
+        "planar_rmse_mm": 2.0734134175315835,
+        "planar_rmse_after_lap_mm": 1.9718450243363448,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 6.0,
+        "max_planar_error_after_lap_mm": 2.0784609690826605,
+        "phase_lag_s": 0.5
+      },
+      "floor_delay_lag": {
+        "planar_rmse_mm": 3.609362522209938,
+        "planar_rmse_after_lap_mm": 3.60005389268915,
+        "z_rmse_mm": 0.0,
+        "z_rmse_after_lap_mm": 0.0,
+        "max_planar_error_mm": 6.0,
+        "max_planar_error_after_lap_mm": 4.41851173927609,
+        "phase_lag_s": 1.01
+      },
+      "controllers": {
+        "PD, notebook allocator": {
+          "planar_rmse_mm": 8.278041400631668,
+          "planar_rmse_after_lap_mm": 8.167622529158047,
+          "z_rmse_mm": 1.2259368232851868,
+          "z_rmse_after_lap_mm": 1.2695439248971072,
+          "max_planar_error_mm": 10.916306267903819,
+          "max_planar_error_after_lap_mm": 9.878108105707108,
+          "phase_lag_s": 1.85,
+          "saturated_pct": 1.2,
+          "run_s": 1.46500432403991
+        },
+        "PD, corrected allocator": {
+          "planar_rmse_mm": 2.8761575151535976,
+          "planar_rmse_after_lap_mm": 2.792690754930171,
+          "z_rmse_mm": 0.3995276701908944,
+          "z_rmse_after_lap_mm": 0.4085334844795025,
+          "max_planar_error_mm": 6.000196509515741,
+          "max_planar_error_after_lap_mm": 4.171200665792766,
+          "phase_lag_s": 0.72,
+          "saturated_pct": 0.0,
+          "run_s": 1.4726771680288948
+        },
+        "SMC (notebook model), as written": {
+          "planar_rmse_mm": 3.791278355474507,
+          "planar_rmse_after_lap_mm": 3.8350331753207074,
+          "z_rmse_mm": 0.5177552811447775,
+          "z_rmse_after_lap_mm": 0.5067478364251845,
+          "max_planar_error_mm": 6.915489289059852,
+          "max_planar_error_after_lap_mm": 6.915489289059852,
+          "phase_lag_s": -0.82,
+          "saturated_pct": 0.08888888888888889,
+          "run_s": 1.4933896980364807
+        },
+        "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
+          "planar_rmse_mm": 2.055204815806493,
+          "planar_rmse_after_lap_mm": 1.9470221717733756,
+          "z_rmse_mm": 0.58007440488566,
+          "z_rmse_after_lap_mm": 0.6049353625614345,
+          "max_planar_error_mm": 6.000196509515741,
+          "max_planar_error_after_lap_mm": 3.3834452027817936,
+          "phase_lag_s": 0.41,
+          "saturated_pct": 0.06666666666666667,
+          "run_s": 1.5115925130085088
+        },
+        "Paper SMC, eq. 5 (M1)": {
+          "planar_rmse_mm": 2.0527394363251115,
+          "planar_rmse_after_lap_mm": 1.968917932321099,
+          "z_rmse_mm": 0.07661141972242531,
+          "z_rmse_after_lap_mm": 0.07717319123277515,
+          "max_planar_error_mm": 6.000196509515741,
+          "max_planar_error_after_lap_mm": 4.187772346600239,
+          "phase_lag_s": 0.22,
+          "saturated_pct": 1.633333333333333,
+          "run_s": 1.695337888028007
+        },
+        "Paper NDOSMC, eq. 12 (M1)": {
+          "planar_rmse_mm": 3.164714901280668,
+          "planar_rmse_after_lap_mm": 3.0498473277811744,
+          "z_rmse_mm": 1.2556099566827423,
+          "z_rmse_after_lap_mm": 1.3107110342131532,
+          "max_planar_error_mm": 6.000196509515741,
+          "max_planar_error_after_lap_mm": 5.4411553763500455,
+          "phase_lag_s": -0.07,
+          "saturated_pct": 23.133333333333333,
+          "run_s": 1.6837689760141075
+        },
+        "Delay-aware SMC, no observer (M2)": {
+          "planar_rmse_mm": 2.08020377840054,
+          "planar_rmse_after_lap_mm": 1.9851664589600018,
+          "z_rmse_mm": 0.13383361204485625,
+          "z_rmse_after_lap_mm": 0.1350398980950376,
+          "max_planar_error_mm": 6.000196509515741,
+          "max_planar_error_after_lap_mm": 4.267564328708802,
+          "phase_lag_s": 0.31,
+          "saturated_pct": 3.077777777777778,
+          "run_s": 1.7638922240003012
+        },
+        "Delay-aware NDOSMC (M2)": {
+          "planar_rmse_mm": 2.0582841867962762,
+          "planar_rmse_after_lap_mm": 1.979045375265072,
+          "z_rmse_mm": 0.07690359846968212,
+          "z_rmse_after_lap_mm": 0.07846938494166122,
+          "max_planar_error_mm": 6.000196509515741,
+          "max_planar_error_after_lap_mm": 4.359676436682576,
+          "phase_lag_s": 0.27,
+          "saturated_pct": 2.911111111111111,
+          "run_s": 1.780188189004548
+        }
+      }
+    }
+  },
+  "total_run_s": 81.60202576802112
+}
