@@ -3,6 +3,17 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-26
+
+- Motion tests (`scripts/motion_tests.py`) for the course slides' triangular and axial
+  motions. The slides define axial as a one-axis horizontal swing (one segment driven,
+  the opposite compresses), not extension along z. MPC lateral RMSE: triangle 1.51 mm
+  (SMC 2.03, PD 3.06); axial y 0.48 (1.42, 2.78); axial x 0.51 (1.46, 2.83).
+- The AR reference preview could not foresee the triangle's corners (2.15 mm, worse
+  than SMC). A periodic preview, which detects the reference's period from its own
+  history and replays it, fixed it. It is now the default; the circle score is
+  unchanged at 1.220 mm.
+
 ## 2026-10-21
 
 - Decision (Ibraheem): `make_calibrated_sim` is the target plant; the benchmark is the

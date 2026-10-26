@@ -157,6 +157,38 @@ G(s) = γ e^{−sT} / (τs + 1)  ×  (b₁s + b₀) / (s³ + a₂s² + a₁s + a
 - The S3 command saturates at 9 psi only during the start-up transient, then swings
   0.6–8.3 psi, so circles much larger than 10 mm will saturate the x channel.
 
+### Other reference motions (`scripts/motion_tests.py`)
+
+Definitions follow the RAS 556 project-introduction slides ("Simulation Results
+Circular / Axial / Triangular Motion"):
+- **Triangular:** straight-line interpolation through V0 (+x), V1 (upper left) and V2
+  (lower left).
+- **Axial:** the tip swings along one horizontal axis; the slides drive one segment
+  (Seg 4) and the opposite one compresses. That is not extension along z.
+
+Here the triangle is equilateral with circumradius 7 mm, 10 s per lap; axial is
+7 mm·sin(2π·0.1 t) along y or along x, with the other axis held. Settle, duration and
+seed are as in the harness; the loop reproduces `evaluate_controller` exactly.
+
+| Lateral RMSE [mm] | MPC | MPC, AR preview only | SMC | PD |
+|---|---|---|---|---|
+| circle | 1.220 | 1.220 | 2.342 | 4.080 |
+| triangle | **1.510** | 2.149 | 2.027 | 3.055 |
+| axial along y | **0.480** | 0.480 | 1.421 | 2.776 |
+| axial along x | **0.511** | 0.511 | 1.460 | 2.826 |
+
+- **Triangle.** The AR preview cannot foresee corners, which made the MPC no better
+  than SMC (2.15 vs 2.03 mm).
+  - The fix: the reference predictor detects a repeating period in the reference's
+    history and replays it. It is exact for any periodic reference once one lap has
+    been seen (detection needs P + 2 s, about 12 s here). It is now the default and
+    leaves the circle and axial results unchanged.
+  - During the first lap S3 saturates at 0 and 9 psi near the corners. After
+    detection the error is 0.05–0.3 mm, with spikes only at the corners.
+  - With the true future reference the MPC would reach 0.957 mm.
+- **Axial.** The held axis stays within 0.005 mm. The z by-product is +0.17 mm along
+  y, and −1.6 to +1.9 mm along x (S3 alone bends and extends the arm).
+
 ## Consequences for SMC
 
 - Relative degree 3 breaks the textbook surface s = ė + λe (which assumes the input

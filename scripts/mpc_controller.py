@@ -12,9 +12,10 @@ Per axis, every control step:
      using the commands already sent but not yet acting.
   3. MPC without constraints: minimise sum_i (C x_{n+d+1+i} + offset - r(n+d+i))^2
      + rho sum_i (u_{n+i} - u_{n+i-1})^2 over a 3 s horizon; apply the first move.
-     The future reference r(n+d+i) is predicted from the reference's own history
-     (AR(2) with intercept on samples 0.1 s apart, exact for a sinusoid plus offset);
-     nothing about the task's trajectory is assumed.
+     The future reference r(n+d+i) is predicted from the reference's own history:
+     AR(2) with intercept on samples 0.1 s apart (exact for a sinusoid plus offset)
+     until the reference is seen to repeat, then the detected period is replayed
+     (exact for any periodic reference). Nothing about the trajectory is assumed.
   4. Channels to segments: S2 = b + uy/2, S3 = b - ux, S4 = b - uy/2 (the same map the
      model was identified with), clipped to 0-9 psi.
 
@@ -135,21 +136,47 @@ class RefPredictor:
     samples (exact for a sinusoid plus offset), interpolated back to the control rate.
     It holds the last value until 5 coarse samples exist, or when the fitted AR poles
     lie outside the unit circle (a growing prediction).
+    mode "periodic": as "ar" until the reference is seen to repeat, then
+    r(n+k) = r(n+k-mP) with P the detected period (exact for any periodic reference,
+    including corners an AR model cannot foresee). Every 0.5 s the period is searched
+    over 1-15 s by comparing the last 2 s with the history P earlier; it is accepted
+    when the mean squared mismatch is below 1e-6 of the signal's variance.
     mode "hold": r(n+k) = r(n), i.e. no preview."""
 
-    def __init__(self, mode: str = "ar", stride: int = 10, window: int = 400):
+    def __init__(self, mode: str = "periodic", stride: int = 10, window: int = 400,
+                 period_range: tuple[int, int] = (100, 1500), match: int = 200, every: int = 50):
         self.mode, self.stride, self.window = mode, stride, window
-        self.hist: list[float] = []
+        self.period_range, self.match, self.every = period_range, match, every
+        self.hist: deque = deque(maxlen=period_range[1] + match + 1)
+        self.period: int | None = None
 
     def update(self, r: float) -> None:
         self.hist.append(r)
-        if len(self.hist) > self.window + 1:
-            self.hist.pop(0)
+        if self.mode == "periodic" and len(self.hist) % self.every == 0:
+            self._detect_period()
+
+    def _detect_period(self) -> None:
+        h = np.array(self.hist)
+        lo, hi = self.period_range
+        hi = min(hi, h.size - self.match)
+        var = h.var()
+        if hi < lo or var < 1e-18:
+            return
+        recent = h[-self.match:]
+        cost = np.array([np.mean((recent - h[-self.match - P:-P]) ** 2) for P in range(lo, hi + 1)])
+        best = int(np.argmin(cost))
+        self.period = lo + best if cost[best] < 1e-6 * var else None
 
     def predict(self, start: int, length: int) -> np.ndarray:
         r_now = self.hist[-1]
         hold = np.full(length, r_now)
-        coarse = np.array(self.hist[::-1][::self.stride][::-1])
+        if self.mode == "periodic" and self.period:
+            h, P = np.array(self.hist), self.period
+            k = np.arange(start, start + length)
+            back = k - P * np.ceil(k / P).astype(int)          # index relative to now, always <= 0
+            return h[h.size - 1 + back]
+        recent = list(self.hist)[-(self.window + 1):]
+        coarse = np.array(recent[::-1][::self.stride][::-1])
         if self.mode == "hold" or coarse.size < 5 or np.ptp(coarse) < 1e-9:
             return hold
         X = np.column_stack([np.ones(coarse.size - 2), coarse[1:-1], coarse[:-2]])
@@ -168,7 +195,7 @@ class DelayMPCController:
     """compute(t, obs, ref) -> (3,) S2-S4 setpoints, for evaluate_controller."""
 
     def __init__(self, model_path: Path = MODEL_PATH, baseline_psi: float = 4.5, rho: float = RHO,
-                 preview: str = "ar", oracle=None):
+                 preview: str = "periodic", oracle=None):
         model = json.loads(model_path.read_text())
         dt = 1.0 / model["control_hz"]
         self.axes = [AxisController(model["axes"][ch], dt, rho=rho) for ch in ("x", "y")]
@@ -273,7 +300,8 @@ def main() -> None:
     print("Scored task: make_calibrated_sim seed 0, 7 mm circle at 0.1 Hz, 30 s (package harness)")
     print(f"  {'controller':<40}{'RMSE mm':>9}{'max mm':>9}{'lag s':>9}{'effort':>9}")
     oracle = oracle_for(task, 0)
-    ctrls = {"MPC, predicted reference (AR)": lambda: DelayMPCController(),
+    ctrls = {"MPC, predicted reference": lambda: DelayMPCController(),
+             "MPC, AR preview only": lambda: DelayMPCController(preview="ar"),
              "MPC, no preview (hold)": lambda: DelayMPCController(preview="hold"),
              "MPC, true future reference (diagnostic)": lambda: DelayMPCController(preview="oracle", oracle=oracle),
              **baselines()}
@@ -281,9 +309,9 @@ def main() -> None:
     for name, make in ctrls.items():
         results[name] = evaluate(make, task)
         print(row(name, results[name]))
-    after = results["MPC, predicted reference (AR)"]
+    after = results["MPC, predicted reference"]
     k0 = int(2.0 * task.control_hz)
-    for name in ("MPC, predicted reference (AR)", "SMC lam=5 K=0.35 phi=0.02, deviation", "PD kp=500 kd=20"):
+    for name in ("MPC, predicted reference", "SMC lam=5 K=0.35 phi=0.02, deviation", "PD kp=500 kd=20"):
         r = results[name]
         e = np.linalg.norm(r.tips[k0:, :2] - r.references[k0:, :2], axis=1) * 1000
         print(f"  {name:<40} RMSE after the first 2 s: {np.sqrt(np.mean(e ** 2)):.3f} mm")
@@ -292,9 +320,9 @@ def main() -> None:
     cases = [("radius 4 mm", dict(radius_m=0.004), 0), ("radius 10 mm", dict(radius_m=0.010), 0),
              ("0.05 Hz", dict(frequency_hz=0.05), 0), ("0.2 Hz", dict(frequency_hz=0.2), 0),
              ("sim seed 1", {}, 1), ("sim seed 2", {}, 2)]
-    names = ["MPC, predicted reference (AR)", *baselines()]
+    names = ["MPC, predicted reference", *baselines()]
     print(f"  {'case':<14}" + "".join(f"{n[:26]:>28}" for n in names))
-    makers = {"MPC, predicted reference (AR)": lambda: DelayMPCController(), **baselines()}
+    makers = {"MPC, predicted reference": lambda: DelayMPCController(), **baselines()}
     for label, kw, seed in cases:
         t = CircularTrackingTask(**kw)
         print(f"  {label:<14}" + "".join(f"{evaluate(makers[n], t, seed).rmse_mm:>25.3f} mm" for n in names))
@@ -302,7 +330,7 @@ def main() -> None:
         f"{evaluate(lambda m=makers[n]: NoisyTip(m()), task).rmse_mm:>25.3f} mm" for n in names))
 
     fig, ax = plt.subplots(1, 3, figsize=(16, 4.8))
-    styles = {"MPC, predicted reference (AR)": "C0", "SMC lam=5 K=0.35 phi=0.02, deviation": "C1",
+    styles = {"MPC, predicted reference": "C0", "SMC lam=5 K=0.35 phi=0.02, deviation": "C1",
               "PD kp=500 kd=20": "C2"}
     ref = after.references
     ax[0].plot(1000 * (ref[:, 0] - after.home[0]), 1000 * (ref[:, 1] - after.home[1]), "k--", lw=1, label="reference")
