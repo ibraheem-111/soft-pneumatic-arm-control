@@ -41,8 +41,14 @@ benchmark_slide_tasks.json, benchmark_all_tasks.json) and prints the differences
 
 Writes docs/figures/benchmark_unified.json and docs/figures/benchmark_unified.png.
 
+With --trajectories it instead reruns the controllers of TRAJ_PANELS on the tests of
+TRAJ_TESTS and draws one figure per test, docs/figures/traj_<test>.png: tip paths over the
+last lap (x-y; for axial tests the moving axis against time) and planar error against time,
+in panels that never put two series of a colour-confusable pair together.
+
 Usage:
     uv run python scripts/benchmark_unified.py [--workers 10] [--upstream PATH]
+    uv run python scripts/benchmark_unified.py --trajectories [--workers 10]
 """
 
 import argparse
@@ -259,6 +265,89 @@ def run_one(job: tuple[str, str]) -> dict:
                 run_s=time.perf_counter() - t0)
 
 
+# ------------------------------------------------------------------------ trajectories
+
+TRAJ_TESTS = ["scored circle", "MT triangle", "MT axial along y", "brief circle_dyn", "brief triangle",
+              "recorded circular", "recorded triangular"]
+TRAJ_PANELS = [  # (title, controllers); blue and purple, green and orange never share a panel
+    ("No prediction across the delay", ["PD, corrected allocator",
+                                        "SMC (notebook model), corrected allocator + deviation, λ=8",
+                                        "Paper SMC, eq. 5 (M1)"]),
+    ("Predict across the delay: Taylor preview vs MPC", ["Delay-aware SMC, no observer (M2)",
+                                                         "MPC, predicted reference"]),
+    ("Delay-aware SMC: predicted vs exact r(t+T)", ["Delay-aware SMC, RefPredictor r(t+T) (M2)",
+                                                    "Delay-aware SMC, exact future reference (M2) [diagnostic]"]),
+]
+
+
+def run_traj(job: tuple[str, str]) -> tuple[str, str, np.ndarray, np.ndarray]:
+    test_key, ctrl_name = job
+    test = TESTS[test_key]
+    res = B.track(CTRL[ctrl_name][3](test["ref_mm"]), test["ref_fn"], test["n"], seed=test["seed"])
+    return test_key, ctrl_name, 1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"])
+
+
+def trajectory_figure(test_key: str, runs: dict, path: Path) -> None:
+    test = TESTS[test_key]
+    ref = next(iter(runs.values()))[1]
+    n = len(ref)
+    t = np.arange(n) / HZ
+    last = t >= t[-1] - test["lap_s"]
+    axial = "axial" in test_key
+    ax_i = 1 if "along y" in test_key or test_key.endswith("axial") else 0
+    fig, axs = P.figure(3, 2, layout="constrained")
+    fig.set_size_inches(P.WIDTH * 1.25, P.PANEL_H * 3 * 1.35)
+    for row, (title, names) in enumerate(TRAJ_PANELS):
+        ax = axs[row, 0]
+        if axial:
+            ax.plot(t[last], ref[last, ax_i], **P.REFERENCE)
+        else:
+            ax.plot(ref[last, 0], ref[last, 1], **P.REFERENCE)
+        for nm in names:
+            tip = runs[nm][0]
+            if axial:
+                ax.plot(t[last], tip[last, ax_i], **P.line(nm, int(last.sum())))
+            else:
+                ax.plot(tip[last, 0], tip[last, 1], **P.line(nm, int(last.sum())))
+        if axial:
+            ax.set(xlabel="tracking time (s)", ylabel=f"{'xy'[ax_i]} − home (mm)", title=f"{title}: last lap")
+        else:
+            ax.set(xlabel="x − home (mm)", ylabel="y − home (mm)", title=f"{title}: last lap")
+            ax.set_aspect("equal", adjustable="datalim")
+        ax.grid(alpha=0.3)
+        ax = axs[row, 1]
+        for nm in names:
+            e = np.linalg.norm(runs[nm][0][:, :2] - ref[:, :2], axis=1)
+            k0 = int(round(test["lap_s"] * HZ))
+            rm = float(np.sqrt(np.mean(e[k0:] ** 2)))
+            ax.plot(t, e, **P.line(nm, n, label=f"{P.label(nm)}: {rm:.2f} mm after lap 1"))
+        ax.set(xlabel="tracking time (s)", ylabel="planar error (mm)", title="Planar error over time")
+        ax.set_ylim(0, None)
+        ax.grid(alpha=0.3)
+        P.legend_below(ax, ncol=1)
+        h, lab = axs[row, 0].get_legend_handles_labels()
+        axs[row, 0].legend(h, ["reference"] + [P.label(x) for x in names], loc="upper center",
+                           bbox_to_anchor=(0.5, -0.18), ncol=1, frameon=True)
+    fig.suptitle(f"{test_key}: {test['source'].split()[0]}, seed {test['seed']}, lap {test['lap_s']:g} s", fontsize=16)
+    P.save(fig, path)
+
+
+def trajectories(workers: int) -> None:
+    names = [nm for _, group in TRAJ_PANELS for nm in group]
+    jobs = [(t, c) for t in TRAJ_TESTS for c in names]
+    jobs.sort(key=lambda j: -TESTS[j[0]]["n"])
+    out: dict = {t: {} for t in TRAJ_TESTS}
+    with mp.get_context("fork").Pool(workers) as pool:
+        for i, (tk, cn, tip, ref) in enumerate(pool.imap_unordered(run_traj, jobs), 1):
+            out[tk][cn] = (tip, ref)
+            if i % 10 == 0 or i == len(jobs):
+                print(f"  {i}/{len(jobs)} runs", flush=True)
+    for tk in TRAJ_TESTS:
+        path = FIG / f"traj_{tk.replace(' ', '_')}.png"
+        trajectory_figure(tk, out[tk], path)
+        print(f"  wrote {path}")
+
+
 # ----------------------------------------------------------------------- sanity checks
 
 def sanity_checks(rows: dict) -> list[tuple[str, float, float]]:
@@ -337,10 +426,15 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     ap.add_argument("--upstream", type=Path, default=B.UPSTREAM, help="clone of Jeevan-HM/Soft-Robotic-Arm")
+    ap.add_argument("--trajectories", action="store_true", help="draw the trajectory figures only")
     args = ap.parse_args()
     t_start = time.perf_counter()
     TESTS.update(build_tests(args.upstream))
     print(f"built {len(TESTS)} tests ({time.perf_counter() - t_start:.0f} s)", flush=True)
+    if args.trajectories:
+        P.apply()
+        trajectories(args.workers)
+        return
 
     tests, ctrls = list(TESTS), [c[0] for c in CONTROLLERS]
     jobs = [(t, c) for t in tests for c in ctrls]

@@ -163,7 +163,7 @@ s.addTable([
   [hdr("Controller"), hdr("Scored circle\n0.1 Hz"), hdr("Triangle\n10 s lap"), hdr("Axial\n0.1 Hz"), hdr("Fast circle\n0.4 Hz"), hdr("Robot\ncircle")],
   ["PD", "3.96", "2.94", "2.77", "7.48", "4.75"],
   ["SMC, one-mode (Nikoletta)", "2.13", "1.81", "1.48", "5.71", "2.95"],
-  ["Paper SMC (M1)", "0.87", "1.46", "0.61", "8.18", "2.62"],
+  ["Paper SMC (M1, no observer)", "0.87", "1.46", "0.61", "8.18", "2.62"],
   ["Delay-aware SMC (M2)", "0.09", "1.46", "0.07", "2.35", { text: "1.56", options: { bold: true } }],
   ["Delay-aware SMC + predictor", { text: "0.03", options: { bold: true } }, "1.78", "0.03", "0.55", "2.07"],
   ["Delay-compensated MPC", "0.06", { text: "0.62", options: { bold: true } }, { text: "0.01", options: { bold: true } }, { text: "0.15", options: { bold: true } }, "3.56"],
