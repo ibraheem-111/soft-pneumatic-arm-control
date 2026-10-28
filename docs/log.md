@@ -5,6 +5,13 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-28
 
+- Gain sweep (`scripts/sweep_preview_gain.py`, 70 runs, every run's parameters and metrics in
+  `docs/figures/sweep_preview_gain.json`): lowering λ does not remove the delay-aware SMC's
+  overshoot with the Taylor preview (circle 4.3 mm size 148-157 % for λ 0.5-8), because λ sets
+  how fast σ decays, not its steady state y(t) = r~(t - T). With the exact preview the gain is a
+  trade-off: smooth motions best at λ 0.5-1 (circle 0.28 mm, 103 %; axial 0.16 mm, 102 %),
+  triangle best at λ 8 (0.30 mm). Paper SMC: lower λ shrinks its overshoot (183 -> 134 %) but
+  error stays 6.4-9.0 mm. Figures now show the exact-preview controller's commands.
 - Shape vs timing on the brief's motions (`scripts/benchmark_slide_tasks.py`, now reports
   shape = RMS distance to the reference path ignoring time, and size %). PD and Nikoletta's
   SMC trace the right shape but 0.65-0.9 s late on the 0.4 Hz circle (shape 0.35 / 0.65 mm,

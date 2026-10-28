@@ -1,0 +1,1857 @@
+{
+  "description": "Sweep the reference preview and the sliding gain lambda on the brief's test motions.",
+  "lam_delay": [
+    0.5,
+    1.0,
+    2.0,
+    4.0,
+    8.0
+  ],
+  "lam_paper": [
+    0.25,
+    0.5,
+    1.0,
+    2.0
+  ],
+  "delay_fixed": {
+    "mu": 1.0,
+    "eps": 1.0,
+    "observer": false
+  },
+  "paper_fixed": {
+    "eps": 0.1
+  },
+  "runs": [
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 2.5761120713628176,
+        "planar_rmse_after_lap_mm": 2.6309579975823914,
+        "z_rmse_mm": 0.20107934146715756,
+        "z_rmse_after_lap_mm": 0.19794096831399932,
+        "max_planar_error_mm": 4.504927587959525,
+        "max_planar_error_after_lap_mm": 4.504927587959525,
+        "phase_lag_s": 0.14,
+        "shape_rms_after_lap_mm": 1.8003752044106573,
+        "size_pct_after_lap": 177.4287075434961,
+        "saturated_pct": 15.511111111111111
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 0.16425531218864126,
+        "planar_rmse_after_lap_mm": 0.16262539151304575,
+        "z_rmse_mm": 0.3470686250393462,
+        "z_rmse_after_lap_mm": 0.3589295136756485,
+        "max_planar_error_mm": 0.3896236595998592,
+        "max_planar_error_after_lap_mm": 0.2715995193695088,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.10441907799576644,
+        "size_pct_after_lap": 102.09085759832803,
+        "saturated_pct": 2.011111111111111
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 2.6482404562798916,
+        "planar_rmse_after_lap_mm": 2.7056048439013964,
+        "z_rmse_mm": 0.2174298769788563,
+        "z_rmse_after_lap_mm": 0.2157159116621489,
+        "max_planar_error_mm": 4.567274920939317,
+        "max_planar_error_after_lap_mm": 4.567274920939317,
+        "phase_lag_s": 0.13,
+        "shape_rms_after_lap_mm": 1.942523158599787,
+        "size_pct_after_lap": 187.85891018314337,
+        "saturated_pct": 16.666666666666664
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 0.19536893855777474,
+        "planar_rmse_after_lap_mm": 0.1951254449782527,
+        "z_rmse_mm": 0.27440656025090826,
+        "z_rmse_after_lap_mm": 0.2837234883409418,
+        "max_planar_error_mm": 0.4127957351650642,
+        "max_planar_error_after_lap_mm": 0.3023930743410628,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.09669018406750514,
+        "size_pct_after_lap": 105.3006328360172,
+        "saturated_pct": 1.988888888888889
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 2.7773373374325407,
+        "planar_rmse_after_lap_mm": 2.8391867181387767,
+        "z_rmse_mm": 0.26745027854444775,
+        "z_rmse_after_lap_mm": 0.2683115552833793,
+        "max_planar_error_mm": 4.723238205568676,
+        "max_planar_error_after_lap_mm": 4.723238205568676,
+        "phase_lag_s": 0.1,
+        "shape_rms_after_lap_mm": 2.2048652897598227,
+        "size_pct_after_lap": 201.98563133343714,
+        "saturated_pct": 18.2
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 0.30184560280743283,
+        "planar_rmse_after_lap_mm": 0.3066010281825472,
+        "z_rmse_mm": 0.2012430081276409,
+        "z_rmse_after_lap_mm": 0.2080419448185312,
+        "max_planar_error_mm": 0.46203382152449984,
+        "max_planar_error_after_lap_mm": 0.4537272318082336,
+        "phase_lag_s": 0.02,
+        "shape_rms_after_lap_mm": 0.156236970702526,
+        "size_pct_after_lap": 111.21874742936406,
+        "saturated_pct": 2.688888888888889
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 2.8148120914442134,
+        "planar_rmse_after_lap_mm": 2.877941499083949,
+        "z_rmse_mm": 0.3109993560584564,
+        "z_rmse_after_lap_mm": 0.3126298380456062,
+        "max_planar_error_mm": 4.714524007674235,
+        "max_planar_error_after_lap_mm": 4.714524007674235,
+        "phase_lag_s": 0.06,
+        "shape_rms_after_lap_mm": 2.3985846238932944,
+        "size_pct_after_lap": 212.0991121469454,
+        "saturated_pct": 19.68888888888889
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 0.4598096739614109,
+        "planar_rmse_after_lap_mm": 0.4706136405089913,
+        "z_rmse_mm": 0.12144555005917936,
+        "z_rmse_after_lap_mm": 0.1255255170135299,
+        "max_planar_error_mm": 0.6833170565285756,
+        "max_planar_error_after_lap_mm": 0.6833170565285756,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.2884280454766837,
+        "size_pct_after_lap": 119.15924987384017,
+        "saturated_pct": 3.8666666666666667
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 2.6737001837015733,
+        "planar_rmse_after_lap_mm": 2.7333004568500874,
+        "z_rmse_mm": 0.3206641632286946,
+        "z_rmse_after_lap_mm": 0.32067580707765764,
+        "max_planar_error_mm": 4.450824946429611,
+        "max_planar_error_after_lap_mm": 4.450824946429611,
+        "phase_lag_s": 0.0,
+        "shape_rms_after_lap_mm": 2.3207800731967874,
+        "size_pct_after_lap": 209.77722354972326,
+        "saturated_pct": 20.666666666666668
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 0.6009642128290835,
+        "planar_rmse_after_lap_mm": 0.6165013675484606,
+        "z_rmse_mm": 0.04954081343471176,
+        "z_rmse_after_lap_mm": 0.05118303960452437,
+        "max_planar_error_mm": 0.9335190927932965,
+        "max_planar_error_after_lap_mm": 0.9335190927932965,
+        "phase_lag_s": -0.01,
+        "shape_rms_after_lap_mm": 0.40151647149575975,
+        "size_pct_after_lap": 125.0384413399362,
+        "saturated_pct": 5.022222222222222
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.25,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 4.617559878356512,
+        "planar_rmse_after_lap_mm": 4.7615899737506275,
+        "z_rmse_mm": 1.121201247960325,
+        "z_rmse_after_lap_mm": 1.149991713141795,
+        "max_planar_error_mm": 7.699874053172764,
+        "max_planar_error_after_lap_mm": 7.699874053172764,
+        "phase_lag_s": 0.56,
+        "shape_rms_after_lap_mm": 1.1344522488086843,
+        "size_pct_after_lap": 145.23749123894615,
+        "saturated_pct": 11.533333333333333
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.5,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 4.932957726530393,
+        "planar_rmse_after_lap_mm": 5.088556766336931,
+        "z_rmse_mm": 1.1735469771210636,
+        "z_rmse_after_lap_mm": 1.2037220925072212,
+        "max_planar_error_mm": 8.107763942980982,
+        "max_planar_error_after_lap_mm": 8.107763942980982,
+        "phase_lag_s": 0.59,
+        "shape_rms_after_lap_mm": 1.23882244843558,
+        "size_pct_after_lap": 152.61668404554413,
+        "saturated_pct": 15.388888888888888
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 1.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 5.613383963279382,
+        "planar_rmse_after_lap_mm": 5.79388615461518,
+        "z_rmse_mm": 1.2172548194779034,
+        "z_rmse_after_lap_mm": 1.2475513758496077,
+        "max_planar_error_mm": 9.126452033158483,
+        "max_planar_error_after_lap_mm": 9.126452033158483,
+        "phase_lag_s": 0.67,
+        "shape_rms_after_lap_mm": 1.5211666755544144,
+        "size_pct_after_lap": 166.7374520167685,
+        "saturated_pct": 19.8
+      }
+    },
+    {
+      "task": "axial",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 2.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.0,
+      "metrics": {
+        "planar_rmse_mm": 7.7860419190507635,
+        "planar_rmse_after_lap_mm": 8.047112428028912,
+        "z_rmse_mm": 1.2044716353795613,
+        "z_rmse_after_lap_mm": 1.2323685703695837,
+        "max_planar_error_mm": 12.694514257642913,
+        "max_planar_error_after_lap_mm": 12.694514257642913,
+        "phase_lag_s": 0.85,
+        "shape_rms_after_lap_mm": 3.009855718282678,
+        "size_pct_after_lap": 236.0476438631566,
+        "saturated_pct": 36.922222222222224
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 3.5954708859663627,
+        "planar_rmse_after_lap_mm": 3.6675404165309695,
+        "z_rmse_mm": 1.2750648919140455,
+        "z_rmse_after_lap_mm": 1.3225664385773581,
+        "max_planar_error_mm": 7.639277826415483,
+        "max_planar_error_after_lap_mm": 7.639277826415483,
+        "phase_lag_s": 0.11,
+        "shape_rms_after_lap_mm": 2.9958116954362395,
+        "size_pct_after_lap": 159.0952832414115,
+        "saturated_pct": 31.055555555555554
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.25607730738965845,
+        "planar_rmse_after_lap_mm": 0.2557659768898252,
+        "z_rmse_mm": 0.5966923004579276,
+        "z_rmse_after_lap_mm": 0.616675035554358,
+        "max_planar_error_mm": 0.46799503647565105,
+        "max_planar_error_after_lap_mm": 0.3495913779795663,
+        "phase_lag_s": 0.02,
+        "shape_rms_after_lap_mm": 0.1101979814929756,
+        "size_pct_after_lap": 101.33231944885542,
+        "saturated_pct": 0.03333333333333333
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 3.6010092756517897,
+        "planar_rmse_after_lap_mm": 3.6752418159123192,
+        "z_rmse_mm": 1.059913885520215,
+        "z_rmse_after_lap_mm": 1.0968251583611062,
+        "max_planar_error_mm": 7.050107053600694,
+        "max_planar_error_after_lap_mm": 7.050107053600694,
+        "phase_lag_s": 0.08,
+        "shape_rms_after_lap_mm": 3.1992971590422834,
+        "size_pct_after_lap": 165.15916640351992,
+        "saturated_pct": 35.67777777777778
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.3001748677897148,
+        "planar_rmse_after_lap_mm": 0.3025369293061259,
+        "z_rmse_mm": 0.4725463928673455,
+        "z_rmse_after_lap_mm": 0.4869028929135639,
+        "max_planar_error_mm": 0.463407030062018,
+        "max_planar_error_after_lap_mm": 0.4039274459623274,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.18523686384832708,
+        "size_pct_after_lap": 103.76242007398878,
+        "saturated_pct": 0.03333333333333333
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 3.586606567635972,
+        "planar_rmse_after_lap_mm": 3.6610659195529105,
+        "z_rmse_mm": 0.9103490460556406,
+        "z_rmse_after_lap_mm": 0.9408623339724329,
+        "max_planar_error_mm": 6.164315878562356,
+        "max_planar_error_after_lap_mm": 6.164315878562356,
+        "phase_lag_s": 0.03,
+        "shape_rms_after_lap_mm": 3.3717400182174284,
+        "size_pct_after_lap": 169.27995334371374,
+        "saturated_pct": 41.16666666666667
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.4040500365244852,
+        "planar_rmse_after_lap_mm": 0.4105677195780235,
+        "z_rmse_mm": 0.33866115968495647,
+        "z_rmse_after_lap_mm": 0.34750667024893456,
+        "max_planar_error_mm": 0.5421694394949489,
+        "max_planar_error_after_lap_mm": 0.5421694394949489,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.34062228127467253,
+        "size_pct_after_lap": 107.32171810845671,
+        "saturated_pct": 0.03333333333333333
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 3.56707363482908,
+        "planar_rmse_after_lap_mm": 3.6433657212715795,
+        "z_rmse_mm": 0.7259349017982417,
+        "z_rmse_after_lap_mm": 0.7485474907604504,
+        "max_planar_error_mm": 5.4219307177671,
+        "max_planar_error_after_lap_mm": 5.4219307177671,
+        "phase_lag_s": -0.02,
+        "shape_rms_after_lap_mm": 3.3689297046644424,
+        "size_pct_after_lap": 169.58242329354007,
+        "saturated_pct": 39.67777777777778
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.536856913588489,
+        "planar_rmse_after_lap_mm": 0.5459161479010478,
+        "z_rmse_mm": 0.2153954055795858,
+        "z_rmse_after_lap_mm": 0.2200264390485442,
+        "max_planar_error_mm": 0.7043058158981863,
+        "max_planar_error_after_lap_mm": 0.7043058158981863,
+        "phase_lag_s": 0.0,
+        "shape_rms_after_lap_mm": 0.4868297295449448,
+        "size_pct_after_lap": 110.47611042821073,
+        "saturated_pct": 0.03333333333333333
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 3.49065475859515,
+        "planar_rmse_after_lap_mm": 3.563309351236161,
+        "z_rmse_mm": 0.5200580410630198,
+        "z_rmse_after_lap_mm": 0.53151888235707,
+        "max_planar_error_mm": 5.152049949251052,
+        "max_planar_error_after_lap_mm": 5.152049949251052,
+        "phase_lag_s": -0.06,
+        "shape_rms_after_lap_mm": 3.163876079627333,
+        "size_pct_after_lap": 165.3092235044794,
+        "saturated_pct": 34.72222222222222
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.6370252130138836,
+        "planar_rmse_after_lap_mm": 0.6444821771999864,
+        "z_rmse_mm": 0.12431691851829732,
+        "z_rmse_after_lap_mm": 0.1265640968901808,
+        "max_planar_error_mm": 0.9212228748333535,
+        "max_planar_error_after_lap_mm": 0.8641805272307093,
+        "phase_lag_s": -0.01,
+        "shape_rms_after_lap_mm": 0.5397343401355063,
+        "size_pct_after_lap": 111.59655753265862,
+        "saturated_pct": 0.03333333333333333
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.25,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 7.823418040976993,
+        "planar_rmse_after_lap_mm": 8.024133612369903,
+        "z_rmse_mm": 0.8178838763289068,
+        "z_rmse_after_lap_mm": 0.8352975228451749,
+        "max_planar_error_mm": 10.53584335395348,
+        "max_planar_error_after_lap_mm": 10.53584335395348,
+        "phase_lag_s": 0.54,
+        "shape_rms_after_lap_mm": 1.960849834501623,
+        "size_pct_after_lap": 140.99636242015828,
+        "saturated_pct": 6.388888888888888
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.5,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 8.741384443761156,
+        "planar_rmse_after_lap_mm": 8.981842624665768,
+        "z_rmse_mm": 0.9238047723395996,
+        "z_rmse_after_lap_mm": 0.944217214098376,
+        "max_planar_error_mm": 11.898750197566912,
+        "max_planar_error_after_lap_mm": 11.898750197566912,
+        "phase_lag_s": 0.56,
+        "shape_rms_after_lap_mm": 2.8536738537623068,
+        "size_pct_after_lap": 159.03015489740068,
+        "saturated_pct": 21.2
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 1.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 9.913772253811786,
+        "planar_rmse_after_lap_mm": 10.198275441854138,
+        "z_rmse_mm": 1.0414323462441886,
+        "z_rmse_after_lap_mm": 1.0601643668725218,
+        "max_planar_error_mm": 13.668719980279203,
+        "max_planar_error_after_lap_mm": 13.668719980279203,
+        "phase_lag_s": 0.58,
+        "shape_rms_after_lap_mm": 3.9321073778091895,
+        "size_pct_after_lap": 180.6000605795736,
+        "saturated_pct": 52.011111111111106
+      }
+    },
+    {
+      "task": "circle_ol",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 2.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 10.620382763859439,
+        "planar_rmse_after_lap_mm": 10.918038636666928,
+        "z_rmse_mm": 1.0982576698485773,
+        "z_rmse_after_lap_mm": 1.1040352490244005,
+        "max_planar_error_mm": 14.923927046105643,
+        "max_planar_error_after_lap_mm": 14.923927046105643,
+        "phase_lag_s": 0.6,
+        "shape_rms_after_lap_mm": 4.444234995723643,
+        "size_pct_after_lap": 190.47673829243564,
+        "saturated_pct": 70.17777777777778
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.8716873481910685,
+        "planar_rmse_after_lap_mm": 2.244295712136435,
+        "z_rmse_mm": 0.8407807696833661,
+        "z_rmse_after_lap_mm": 0.8516461298327657,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.1540279743583066,
+        "phase_lag_s": -0.01,
+        "shape_rms_after_lap_mm": 1.6872624975009167,
+        "size_pct_after_lap": 87.54953977258732,
+        "saturated_pct": 73.6888888888889
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 3.1703139083107907,
+        "planar_rmse_after_lap_mm": 2.4626304098135092,
+        "z_rmse_mm": 0.9554558153125016,
+        "z_rmse_after_lap_mm": 0.9678198104228823,
+        "max_planar_error_mm": 9.266868001642903,
+        "max_planar_error_after_lap_mm": 3.897824775388588,
+        "phase_lag_s": 0.0,
+        "shape_rms_after_lap_mm": 2.140159472707938,
+        "size_pct_after_lap": 78.10728787771936,
+        "saturated_pct": 49.62222222222222
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.8078569265243227,
+        "planar_rmse_after_lap_mm": 2.2115814090991854,
+        "z_rmse_mm": 0.8249689118233885,
+        "z_rmse_after_lap_mm": 0.8340717207897499,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.1733742184166833,
+        "phase_lag_s": 0.0,
+        "shape_rms_after_lap_mm": 1.6727375362536476,
+        "size_pct_after_lap": 87.90121269943121,
+        "saturated_pct": 74.6111111111111
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.989328669624634,
+        "planar_rmse_after_lap_mm": 2.3312360255789204,
+        "z_rmse_mm": 0.8755827083087834,
+        "z_rmse_after_lap_mm": 0.8859841316041135,
+        "max_planar_error_mm": 9.028110651510078,
+        "max_planar_error_after_lap_mm": 3.4390036826503905,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 2.022813558854148,
+        "size_pct_after_lap": 79.84247421124108,
+        "saturated_pct": 50.922222222222224
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.7457320256327207,
+        "planar_rmse_after_lap_mm": 2.1761304496721436,
+        "z_rmse_mm": 0.8034722871220698,
+        "z_rmse_after_lap_mm": 0.8101806697657691,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.1944257377030496,
+        "phase_lag_s": -0.01,
+        "shape_rms_after_lap_mm": 1.6571189868545264,
+        "size_pct_after_lap": 88.3968685617033,
+        "saturated_pct": 76.35555555555555
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.807129726808874,
+        "planar_rmse_after_lap_mm": 2.22509277365876,
+        "z_rmse_mm": 0.7892810976249316,
+        "z_rmse_after_lap_mm": 0.7974386514660307,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.3122240053718706,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 1.9032932463302124,
+        "size_pct_after_lap": 81.88806927472157,
+        "saturated_pct": 53.666666666666664
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.7065935539925645,
+        "planar_rmse_after_lap_mm": 2.156500806671771,
+        "z_rmse_mm": 0.7767093212343887,
+        "z_rmse_after_lap_mm": 0.7809989629376793,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.212586442050243,
+        "phase_lag_s": -0.01,
+        "shape_rms_after_lap_mm": 1.6425296872014483,
+        "size_pct_after_lap": 89.13745638432732,
+        "saturated_pct": 78.33333333333333
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.700561764614376,
+        "planar_rmse_after_lap_mm": 2.176117277312754,
+        "z_rmse_mm": 0.7397680465561122,
+        "z_rmse_after_lap_mm": 0.7428922795780704,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.3918321522130146,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 1.832256216835184,
+        "size_pct_after_lap": 83.32554138095134,
+        "saturated_pct": 58.84444444444444
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.6991019577819615,
+        "planar_rmse_after_lap_mm": 2.1657095441748133,
+        "z_rmse_mm": 0.748642728703519,
+        "z_rmse_after_lap_mm": 0.7515151450319257,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.209002750115249,
+        "phase_lag_s": -0.01,
+        "shape_rms_after_lap_mm": 1.6325309823608694,
+        "size_pct_after_lap": 90.15515542375157,
+        "saturated_pct": 80.93333333333334
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.66453970583981,
+        "planar_rmse_after_lap_mm": 2.155990052925715,
+        "z_rmse_mm": 0.7163013257790832,
+        "z_rmse_after_lap_mm": 0.717728790179399,
+        "max_planar_error_mm": 8.899803490484741,
+        "max_planar_error_after_lap_mm": 3.426876549996351,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 1.801519493090334,
+        "size_pct_after_lap": 83.88962110153308,
+        "saturated_pct": 62.63333333333333
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.25,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 10.215911811553388,
+        "planar_rmse_after_lap_mm": 10.30804400930839,
+        "z_rmse_mm": 0.6894596455232918,
+        "z_rmse_after_lap_mm": 0.7088165857233247,
+        "max_planar_error_mm": 11.880357888818573,
+        "max_planar_error_after_lap_mm": 11.880357888818573,
+        "phase_lag_s": 0.53,
+        "shape_rms_after_lap_mm": 1.7290369183777312,
+        "size_pct_after_lap": 85.8689605761816,
+        "saturated_pct": 69.84444444444445
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.5,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 10.649018306642377,
+        "planar_rmse_after_lap_mm": 10.749580732126688,
+        "z_rmse_mm": 0.6964046135365862,
+        "z_rmse_after_lap_mm": 0.7171144115068366,
+        "max_planar_error_mm": 12.03210791928227,
+        "max_planar_error_after_lap_mm": 12.03210791928227,
+        "phase_lag_s": 0.55,
+        "shape_rms_after_lap_mm": 1.7032274180769171,
+        "size_pct_after_lap": 86.73378439980968,
+        "saturated_pct": 72.76666666666667
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 1.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 11.423954841475938,
+        "planar_rmse_after_lap_mm": 11.530284582584924,
+        "z_rmse_mm": 0.708559905650322,
+        "z_rmse_after_lap_mm": 0.7314953360405122,
+        "max_planar_error_mm": 12.56423773241489,
+        "max_planar_error_after_lap_mm": 12.56423773241489,
+        "phase_lag_s": 0.59,
+        "shape_rms_after_lap_mm": 1.6754450806986254,
+        "size_pct_after_lap": 88.02532651103762,
+        "saturated_pct": 77.64444444444445
+      }
+    },
+    {
+      "task": "circle_static",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 2.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 12.60566786809928,
+        "planar_rmse_after_lap_mm": 12.709911673152353,
+        "z_rmse_mm": 0.7220163585472733,
+        "z_rmse_after_lap_mm": 0.7464707848741216,
+        "max_planar_error_mm": 14.585469185514036,
+        "max_planar_error_after_lap_mm": 13.952955512254324,
+        "phase_lag_s": 0.66,
+        "shape_rms_after_lap_mm": 1.6617064549930665,
+        "size_pct_after_lap": 89.43526177233815,
+        "saturated_pct": 83.67777777777778
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.808042817746847,
+        "planar_rmse_after_lap_mm": 2.5194746335943963,
+        "z_rmse_mm": 1.1633880643544339,
+        "z_rmse_after_lap_mm": 1.1960892393326417,
+        "max_planar_error_mm": 6.571084232163822,
+        "max_planar_error_after_lap_mm": 4.432043239087064,
+        "phase_lag_s": 0.1,
+        "shape_rms_after_lap_mm": 2.171363868859082,
+        "size_pct_after_lap": 147.89193846189377,
+        "saturated_pct": 37.922222222222224
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 1.1742874987600058,
+        "planar_rmse_after_lap_mm": 0.364286613038358,
+        "z_rmse_mm": 0.4374293309581229,
+        "z_rmse_after_lap_mm": 0.45283846952186296,
+        "max_planar_error_mm": 4.469365254164295,
+        "max_planar_error_after_lap_mm": 2.166516354284741,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.19185866224123935,
+        "size_pct_after_lap": 100.69528257455768,
+        "saturated_pct": 0.05555555555555555
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.8087561489894437,
+        "planar_rmse_after_lap_mm": 2.585510649158268,
+        "z_rmse_mm": 1.0124313048197828,
+        "z_rmse_after_lap_mm": 1.035079611611058,
+        "max_planar_error_mm": 5.978644648387616,
+        "max_planar_error_after_lap_mm": 3.657947348283464,
+        "phase_lag_s": 0.09,
+        "shape_rms_after_lap_mm": 2.3535446643677527,
+        "size_pct_after_lap": 152.53138111351115,
+        "saturated_pct": 39.77777777777778
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 1.0323529863607341,
+        "planar_rmse_after_lap_mm": 0.2812142209758753,
+        "z_rmse_mm": 0.34122118653772415,
+        "z_rmse_after_lap_mm": 0.3537525274063631,
+        "max_planar_error_mm": 4.342987788916793,
+        "max_planar_error_after_lap_mm": 1.2143778722140623,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.17270386100927582,
+        "size_pct_after_lap": 103.43152239186624,
+        "saturated_pct": 0.05555555555555555
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.818731126251601,
+        "planar_rmse_after_lap_mm": 2.6723126897928444,
+        "z_rmse_mm": 0.8783705142696354,
+        "z_rmse_after_lap_mm": 0.8923200756248468,
+        "max_planar_error_mm": 5.181053675668042,
+        "max_planar_error_after_lap_mm": 3.5545666546548818,
+        "phase_lag_s": 0.05,
+        "shape_rms_after_lap_mm": 2.5603233876864153,
+        "size_pct_after_lap": 157.1632026149113,
+        "saturated_pct": 43.4
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.9419873274713053,
+        "planar_rmse_after_lap_mm": 0.34383986400672284,
+        "z_rmse_mm": 0.2447396306010471,
+        "z_rmse_after_lap_mm": 0.2541207129657755,
+        "max_planar_error_mm": 4.2998034904849485,
+        "max_planar_error_after_lap_mm": 0.6609463797173024,
+        "phase_lag_s": 0.0,
+        "shape_rms_after_lap_mm": 0.31385092733374226,
+        "size_pct_after_lap": 107.18490653658041,
+        "saturated_pct": 0.05555555555555555
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.68452492784586,
+        "planar_rmse_after_lap_mm": 2.580787873586722,
+        "z_rmse_mm": 0.7569117563302563,
+        "z_rmse_after_lap_mm": 0.7628462106884885,
+        "max_planar_error_mm": 4.450624667548281,
+        "max_planar_error_after_lap_mm": 3.4154715888085505,
+        "phase_lag_s": -0.01,
+        "shape_rms_after_lap_mm": 2.511056564117653,
+        "size_pct_after_lap": 156.26076691676084,
+        "saturated_pct": 41.266666666666666
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.9167767426932631,
+        "planar_rmse_after_lap_mm": 0.4542473424810725,
+        "z_rmse_mm": 0.15822194699552547,
+        "z_rmse_after_lap_mm": 0.16420026296344367,
+        "max_planar_error_mm": 4.2998034904849485,
+        "max_planar_error_after_lap_mm": 0.5495573228110144,
+        "phase_lag_s": 0.0,
+        "shape_rms_after_lap_mm": 0.4538723170395872,
+        "size_pct_after_lap": 110.51504468524874,
+        "saturated_pct": 0.16666666666666669
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 2.4634066797514524,
+        "planar_rmse_after_lap_mm": 2.351180421317924,
+        "z_rmse_mm": 0.6733284562545714,
+        "z_rmse_after_lap_mm": 0.6750656196409449,
+        "max_planar_error_mm": 4.2998034904849485,
+        "max_planar_error_after_lap_mm": 3.02638266701323,
+        "phase_lag_s": -0.05,
+        "shape_rms_after_lap_mm": 2.2169355527878096,
+        "size_pct_after_lap": 149.95730155667684,
+        "saturated_pct": 35.68888888888889
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 0.9276092285869254,
+        "planar_rmse_after_lap_mm": 0.5435002424715895,
+        "z_rmse_mm": 0.10011767164945116,
+        "z_rmse_after_lap_mm": 0.10045623448747103,
+        "max_planar_error_mm": 4.2998034904849485,
+        "max_planar_error_after_lap_mm": 0.5697974321134435,
+        "phase_lag_s": -0.02,
+        "shape_rms_after_lap_mm": 0.5140982269120247,
+        "size_pct_after_lap": 111.9087214214272,
+        "saturated_pct": 3.4000000000000004
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.25,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 6.380267096030306,
+        "planar_rmse_after_lap_mm": 6.422979255733075,
+        "z_rmse_mm": 0.1683592859185005,
+        "z_rmse_after_lap_mm": 0.1607239060932326,
+        "max_planar_error_mm": 7.846264811400047,
+        "max_planar_error_after_lap_mm": 7.259250121710647,
+        "phase_lag_s": 0.54,
+        "shape_rms_after_lap_mm": 1.4940025128824668,
+        "size_pct_after_lap": 134.21291823372354,
+        "saturated_pct": 15.222222222222223
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.5,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 7.038729503841166,
+        "planar_rmse_after_lap_mm": 7.116566566036063,
+        "z_rmse_mm": 0.29787093384377655,
+        "z_rmse_after_lap_mm": 0.30381184475000694,
+        "max_planar_error_mm": 7.99429258713811,
+        "max_planar_error_after_lap_mm": 7.99429258713811,
+        "phase_lag_s": 0.55,
+        "shape_rms_after_lap_mm": 2.174738383549148,
+        "size_pct_after_lap": 149.0339240518719,
+        "saturated_pct": 20.922222222222224
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 1.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 8.065461995405457,
+        "planar_rmse_after_lap_mm": 8.1802229036245,
+        "z_rmse_mm": 0.5236753348027219,
+        "z_rmse_after_lap_mm": 0.5430615217873981,
+        "max_planar_error_mm": 9.30159141837438,
+        "max_planar_error_after_lap_mm": 9.30159141837438,
+        "phase_lag_s": 0.57,
+        "shape_rms_after_lap_mm": 3.2307174909247744,
+        "size_pct_after_lap": 170.97356974783762,
+        "saturated_pct": 53.86666666666666
+      }
+    },
+    {
+      "task": "circle_dyn",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 2.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 2.5,
+      "metrics": {
+        "planar_rmse_mm": 8.873702298872596,
+        "planar_rmse_after_lap_mm": 8.978885126386597,
+        "z_rmse_mm": 0.615447762098585,
+        "z_rmse_after_lap_mm": 0.6397532991698417,
+        "max_planar_error_mm": 10.67815640016181,
+        "max_planar_error_after_lap_mm": 10.67815640016181,
+        "phase_lag_s": 0.6,
+        "shape_rms_after_lap_mm": 3.807718162864528,
+        "size_pct_after_lap": 182.81149322146962,
+        "saturated_pct": 71.02222222222223
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 3.3535689996914435,
+        "planar_rmse_after_lap_mm": 3.332254530131065,
+        "z_rmse_mm": 0.7448929131262879,
+        "z_rmse_after_lap_mm": 0.752532438519405,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 4.401556383303975,
+        "phase_lag_s": 0.72,
+        "shape_rms_after_lap_mm": 1.0205771221679545,
+        "size_pct_after_lap": 129.4309837681774,
+        "saturated_pct": 2.2444444444444445
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 0.5,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 1.2294977702447063,
+        "planar_rmse_after_lap_mm": 0.8437660766891216,
+        "z_rmse_mm": 0.6269948251188275,
+        "z_rmse_after_lap_mm": 0.6561029075183586,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 1.2860675283333212,
+        "phase_lag_s": 0.18,
+        "shape_rms_after_lap_mm": 0.250729881286311,
+        "size_pct_after_lap": 106.8313089773235,
+        "saturated_pct": 0.41111111111111115
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 3.0625639986821565,
+        "planar_rmse_after_lap_mm": 3.040853479616573,
+        "z_rmse_mm": 0.6174670380555269,
+        "z_rmse_after_lap_mm": 0.6344231522545195,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 4.543226364711954,
+        "phase_lag_s": 0.59,
+        "shape_rms_after_lap_mm": 1.2593257027642457,
+        "size_pct_after_lap": 136.44844759270126,
+        "saturated_pct": 2.7777777777777777
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 1.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 1.1170457954306152,
+        "planar_rmse_after_lap_mm": 0.6969632059581466,
+        "z_rmse_mm": 0.4828060561607509,
+        "z_rmse_after_lap_mm": 0.5043811727240087,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 1.1312717323885702,
+        "phase_lag_s": 0.14,
+        "shape_rms_after_lap_mm": 0.23557500152685076,
+        "size_pct_after_lap": 106.94923048836708,
+        "saturated_pct": 0.41111111111111115
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 2.625305792063423,
+        "planar_rmse_after_lap_mm": 2.5746313409262744,
+        "z_rmse_mm": 0.4145544973695474,
+        "z_rmse_after_lap_mm": 0.42380188437919175,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 4.4962354365346116,
+        "phase_lag_s": 0.46,
+        "shape_rms_after_lap_mm": 1.1971665468821435,
+        "size_pct_after_lap": 135.02998910447363,
+        "saturated_pct": 2.922222222222222
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 2.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 1.0028926344084337,
+        "planar_rmse_after_lap_mm": 0.5295381590724159,
+        "z_rmse_mm": 0.3284053397088033,
+        "z_rmse_after_lap_mm": 0.34219545922159145,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 1.0810288668279797,
+        "phase_lag_s": 0.1,
+        "shape_rms_after_lap_mm": 0.20389287568183717,
+        "size_pct_after_lap": 106.17910965633733,
+        "saturated_pct": 0.41111111111111115
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 2.2879894811015067,
+        "planar_rmse_after_lap_mm": 2.210427163044277,
+        "z_rmse_mm": 0.24164011911185104,
+        "z_rmse_after_lap_mm": 0.24466703992215283,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 4.381322654466594,
+        "phase_lag_s": 0.36,
+        "shape_rms_after_lap_mm": 1.0976836637454108,
+        "size_pct_after_lap": 131.31287326264177,
+        "saturated_pct": 2.977777777777778
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 4.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 0.9180769412964945,
+        "planar_rmse_after_lap_mm": 0.3865370814533219,
+        "z_rmse_mm": 0.19933006345799012,
+        "z_rmse_after_lap_mm": 0.2071217927016596,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 0.9869292852897329,
+        "phase_lag_s": 0.07,
+        "shape_rms_after_lap_mm": 0.16977845098817987,
+        "size_pct_after_lap": 104.7527046500176,
+        "saturated_pct": 0.41111111111111115
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "taylor",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": false
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 2.08020377840054,
+        "planar_rmse_after_lap_mm": 1.9851664589600018,
+        "z_rmse_mm": 0.13383361204485625,
+        "z_rmse_after_lap_mm": 0.1350398980950376,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 4.267564328708802,
+        "phase_lag_s": 0.31,
+        "shape_rms_after_lap_mm": 1.0308839823041638,
+        "size_pct_after_lap": 128.07089042991691,
+        "saturated_pct": 3.077777777777778
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "delay-aware SMC (M2)",
+      "preview": "exact",
+      "params": {
+        "lam": 8.0,
+        "mu": 1.0,
+        "eps": 1.0,
+        "observer": false,
+        "exact_preview": true
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 0.8713808381610306,
+        "planar_rmse_after_lap_mm": 0.3001778117403541,
+        "z_rmse_mm": 0.11202941015793069,
+        "z_rmse_after_lap_mm": 0.11597589104497724,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 0.8702402841320577,
+        "phase_lag_s": 0.04,
+        "shape_rms_after_lap_mm": 0.1450963888130821,
+        "size_pct_after_lap": 103.33777381516367,
+        "saturated_pct": 0.4444444444444444
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.25,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 2.391100297210322,
+        "planar_rmse_after_lap_mm": 2.071483814911045,
+        "z_rmse_mm": 0.06175765497859471,
+        "z_rmse_after_lap_mm": 0.06022919839687975,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 3.8638967940934656,
+        "phase_lag_s": 0.44,
+        "shape_rms_after_lap_mm": 0.7511252060095811,
+        "size_pct_after_lap": 120.68309705826361,
+        "saturated_pct": 1.3222222222222222
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 0.5,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 2.219566689887967,
+        "planar_rmse_after_lap_mm": 2.0871430975138887,
+        "z_rmse_mm": 0.06826875575594646,
+        "z_rmse_after_lap_mm": 0.06783749361828512,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 4.172138375568949,
+        "phase_lag_s": 0.36,
+        "shape_rms_after_lap_mm": 1.05830427173072,
+        "size_pct_after_lap": 128.4565188177117,
+        "saturated_pct": 1.988888888888889
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 1.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 2.0527394363251115,
+        "planar_rmse_after_lap_mm": 1.968917932321099,
+        "z_rmse_mm": 0.07661141972242531,
+        "z_rmse_after_lap_mm": 0.07717319123277515,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 4.187772346600239,
+        "phase_lag_s": 0.22,
+        "shape_rms_after_lap_mm": 1.020339842440405,
+        "size_pct_after_lap": 129.12168505004578,
+        "saturated_pct": 1.633333333333333
+      }
+    },
+    {
+      "task": "triangle",
+      "controller": "paper SMC (M1)",
+      "preview": "none",
+      "params": {
+        "lam": 2.0,
+        "eps": 0.1
+      },
+      "sim": "make_calibrated_sim(control_hz=100, seed=0)",
+      "track_s": 30.0,
+      "lap_s": 7.5,
+      "metrics": {
+        "planar_rmse_mm": 2.4559696264430246,
+        "planar_rmse_after_lap_mm": 2.3316517727564205,
+        "z_rmse_mm": 0.15305637161162808,
+        "z_rmse_after_lap_mm": 0.1567227556459618,
+        "max_planar_error_mm": 6.000196509515741,
+        "max_planar_error_after_lap_mm": 3.9130872304328017,
+        "phase_lag_s": 0.01,
+        "shape_rms_after_lap_mm": 0.7012479091755837,
+        "size_pct_after_lap": 129.40575326391001,
+        "saturated_pct": 3.8555555555555556
+      }
+    }
+  ],
+  "total_run_s": 142.6727660880424
+}

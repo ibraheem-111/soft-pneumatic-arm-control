@@ -298,11 +298,11 @@ def task_figure(key: str, task: dict, runs: dict, path) -> None:
         if j == 0:
             ax.legend(fontsize=7.5, loc="best")
     ax = fig.add_subplot(gs[0, len(planes)])
-    cm = runs[BEST]["cmds"]
+    cm = runs[EXACT]["cmds"]
     for s, col in zip(range(3), ["#c0392b", "#2e86c1", "#27ae60"]):
         ax.plot(t, cm[:, s], color=col, lw=0.9, label=f"S{s + 2}")
     ax.set(xlabel="tracking time (s)", ylabel="command (psi)", ylim=(-0.3, 9.3),
-           title=f"{SHORT[BEST]}: commands")
+           title=f"{SHORT[EXACT]}: commands")
     ax.legend(fontsize=8, ncol=3, loc="upper right")
     ax.grid(alpha=0.3)
     ax = fig.add_subplot(gs[0, len(planes) + 1])
@@ -312,7 +312,7 @@ def task_figure(key: str, task: dict, runs: dict, path) -> None:
     fl = delayed_floor(ref, task["dead_s"], task["tau"], lag=True)
     ax.plot(t, np.linalg.norm(fl[:, :2] - ref[:, :2], axis=1), ":", color="black", lw=1.0,
             label=f"{NO_PRED} ({task['floor_delay_lag']['planar_rmse_mm']:.2f})")
-    ax.set(xlabel="tracking time (s)", ylabel="planar error (mm)", title="Tracking error (xy RMSE mm)")
+    ax.set(xlabel="tracking time (s)", ylabel="planar error (mm)", title="Planar error over time (legend: RMSE, mm)")
     ax.set_ylim(0, None)
     ax.legend(fontsize=7.5, loc="upper right")
     ax.grid(alpha=0.3)

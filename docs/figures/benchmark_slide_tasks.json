@@ -162,7 +162,7 @@
           "shape_rms_after_lap_mm": 1.3809431880660146,
           "size_pct_after_lap": 47.532847636018786,
           "saturated_pct": 0.0,
-          "run_s": 1.655751358019188
+          "run_s": 1.6735553899779916
         },
         "PD, corrected allocator": {
           "planar_rmse_mm": 4.524092055605599,
@@ -175,7 +175,7 @@
           "shape_rms_after_lap_mm": 0.17333358381290295,
           "size_pct_after_lap": 89.1417143519519,
           "saturated_pct": 0.0,
-          "run_s": 1.6530783619964495
+          "run_s": 1.6909595940960571
         },
         "SMC (notebook model), as written": {
           "planar_rmse_mm": 3.4030829052587435,
@@ -188,7 +188,7 @@
           "shape_rms_after_lap_mm": 2.149563096830812,
           "size_pct_after_lap": 64.14430065846878,
           "saturated_pct": 0.0,
-          "run_s": 1.6862732470035553
+          "run_s": 1.6993514959467575
         },
         "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
           "planar_rmse_mm": 4.07958552692112,
@@ -201,7 +201,7 @@
           "shape_rms_after_lap_mm": 0.32582993042919944,
           "size_pct_after_lap": 88.88091720185257,
           "saturated_pct": 0.0,
-          "run_s": 1.6742081900592893
+          "run_s": 1.7071035100379959
         },
         "Paper SMC, eq. 5 (M1)": {
           "planar_rmse_mm": 5.613383963279382,
@@ -214,7 +214,7 @@
           "shape_rms_after_lap_mm": 1.5211666755544144,
           "size_pct_after_lap": 166.7374520167685,
           "saturated_pct": 19.8,
-          "run_s": 1.9104047790169716
+          "run_s": 1.9371968599734828
         },
         "Paper NDOSMC, eq. 12 (M1)": {
           "planar_rmse_mm": 5.993069587428708,
@@ -227,7 +227,7 @@
           "shape_rms_after_lap_mm": 2.811457942710168,
           "size_pct_after_lap": 178.68495013219692,
           "saturated_pct": 38.87777777777778,
-          "run_s": 1.9034447249723598
+          "run_s": 1.9036722499877214
         },
         "Delay-aware SMC, no observer (M2)": {
           "planar_rmse_mm": 2.6737001837015733,
@@ -240,7 +240,7 @@
           "shape_rms_after_lap_mm": 2.3207800731967874,
           "size_pct_after_lap": 209.77722354972326,
           "saturated_pct": 20.666666666666668,
-          "run_s": 1.9763548549963161
+          "run_s": 2.009156186017208
         },
         "Delay-aware NDOSMC (M2)": {
           "planar_rmse_mm": 2.4726868768983037,
@@ -253,7 +253,7 @@
           "shape_rms_after_lap_mm": 2.127505640943194,
           "size_pct_after_lap": 200.07353823226492,
           "saturated_pct": 21.977777777777778,
-          "run_s": 1.9862258560024202
+          "run_s": 2.0085841269465163
         },
         "Delay-aware SMC, exact future reference (M2)": {
           "planar_rmse_mm": 0.6009642128290835,
@@ -266,7 +266,7 @@
           "shape_rms_after_lap_mm": 0.40151647149575975,
           "size_pct_after_lap": 125.0384413399362,
           "saturated_pct": 5.022222222222222,
-          "run_s": 1.9835347790503874
+          "run_s": 2.005269846995361
         }
       },
       "open_loop": {
@@ -333,7 +333,7 @@
           "shape_rms_after_lap_mm": 1.3792624355935998,
           "size_pct_after_lap": 63.99684097728207,
           "saturated_pct": 0.42222222222222217,
-          "run_s": 1.6537055630469695
+          "run_s": 1.6697274129837751
         },
         "PD, corrected allocator": {
           "planar_rmse_mm": 8.776633309755177,
@@ -346,7 +346,7 @@
           "shape_rms_after_lap_mm": 0.39392569954800744,
           "size_pct_after_lap": 93.14302495703188,
           "saturated_pct": 0.0,
-          "run_s": 1.6604159850394353
+          "run_s": 1.6900119910715148
         },
         "SMC (notebook model), as written": {
           "planar_rmse_mm": 3.942671558930825,
@@ -359,7 +359,7 @@
           "shape_rms_after_lap_mm": 1.358274709279997,
           "size_pct_after_lap": 49.970777130104565,
           "saturated_pct": 0.0,
-          "run_s": 1.6902101429877803
+          "run_s": 1.7284726389916614
         },
         "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
           "planar_rmse_mm": 6.3219439873135395,
@@ -372,7 +372,7 @@
           "shape_rms_after_lap_mm": 0.9950810069275212,
           "size_pct_after_lap": 74.84749948539127,
           "saturated_pct": 0.0,
-          "run_s": 1.6917458069510758
+          "run_s": 1.7139646819559857
         },
         "Paper SMC, eq. 5 (M1)": {
           "planar_rmse_mm": 9.913772253811786,
@@ -385,7 +385,7 @@
           "shape_rms_after_lap_mm": 3.9321073778091895,
           "size_pct_after_lap": 180.6000605795736,
           "saturated_pct": 52.011111111111106,
-          "run_s": 1.9119649130152538
+          "run_s": 1.9657422590535134
         },
         "Paper NDOSMC, eq. 12 (M1)": {
           "planar_rmse_mm": 10.587406201487939,
@@ -398,7 +398,7 @@
           "shape_rms_after_lap_mm": 4.426212332279644,
           "size_pct_after_lap": 189.95130937850058,
           "saturated_pct": 70.15555555555557,
-          "run_s": 1.8901468979893252
+          "run_s": 1.8982209680834785
         },
         "Delay-aware SMC, no observer (M2)": {
           "planar_rmse_mm": 3.49065475859515,
@@ -411,7 +411,7 @@
           "shape_rms_after_lap_mm": 3.163876079627333,
           "size_pct_after_lap": 165.3092235044794,
           "saturated_pct": 34.72222222222222,
-          "run_s": 1.9946562950499356
+          "run_s": 2.0171804119599983
         },
         "Delay-aware NDOSMC (M2)": {
           "planar_rmse_mm": 3.270465189884432,
@@ -424,7 +424,7 @@
           "shape_rms_after_lap_mm": 2.8684861672871595,
           "size_pct_after_lap": 159.23145149262348,
           "saturated_pct": 27.53333333333333,
-          "run_s": 2.015417528920807
+          "run_s": 2.023569159093313
         },
         "Delay-aware SMC, exact future reference (M2)": {
           "planar_rmse_mm": 0.6370252130138836,
@@ -437,7 +437,7 @@
           "shape_rms_after_lap_mm": 0.5397343401355063,
           "size_pct_after_lap": 111.59655753265862,
           "saturated_pct": 0.03333333333333333,
-          "run_s": 1.960846088011749
+          "run_s": 2.021891847020015
         }
       },
       "open_loop": {
@@ -504,7 +504,7 @@
           "shape_rms_after_lap_mm": 3.521264422514349,
           "size_pct_after_lap": 60.76832278660334,
           "saturated_pct": 10.755555555555556,
-          "run_s": 1.6407944270176813
+          "run_s": 1.6753731810022146
         },
         "PD, corrected allocator": {
           "planar_rmse_mm": 14.435100653756951,
@@ -517,7 +517,7 @@
           "shape_rms_after_lap_mm": 2.1351300945853002,
           "size_pct_after_lap": 79.6651740152501,
           "saturated_pct": 17.033333333333335,
-          "run_s": 1.6406103420304134
+          "run_s": 1.666443066089414
         },
         "SMC (notebook model), as written": {
           "planar_rmse_mm": 4.9497908183772115,
@@ -530,7 +530,7 @@
           "shape_rms_after_lap_mm": 4.516442492383985,
           "size_pct_after_lap": 49.20887330281789,
           "saturated_pct": 0.0,
-          "run_s": 1.6832488799700513
+          "run_s": 1.7260613118996844
         },
         "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
           "planar_rmse_mm": 9.946015950396198,
@@ -543,7 +543,7 @@
           "shape_rms_after_lap_mm": 4.467919331395331,
           "size_pct_after_lap": 49.86252806638882,
           "saturated_pct": 0.08888888888888889,
-          "run_s": 1.6777843459276482
+          "run_s": 1.7093763260636479
         },
         "Paper SMC, eq. 5 (M1)": {
           "planar_rmse_mm": 11.423954841475938,
@@ -556,7 +556,7 @@
           "shape_rms_after_lap_mm": 1.6754450806986254,
           "size_pct_after_lap": 88.02532651103762,
           "saturated_pct": 77.64444444444445,
-          "run_s": 1.8878864970756695
+          "run_s": 1.9071379119995981
         },
         "Paper NDOSMC, eq. 12 (M1)": {
           "planar_rmse_mm": 11.579867492781055,
@@ -569,7 +569,7 @@
           "shape_rms_after_lap_mm": 1.9484032839990033,
           "size_pct_after_lap": 82.64044463034463,
           "saturated_pct": 83.11111111111111,
-          "run_s": 1.8989104150095955
+          "run_s": 1.9032979069743305
         },
         "Delay-aware SMC, no observer (M2)": {
           "planar_rmse_mm": 2.6991019577819615,
@@ -582,7 +582,7 @@
           "shape_rms_after_lap_mm": 1.6325309823608694,
           "size_pct_after_lap": 90.15515542375157,
           "saturated_pct": 80.93333333333334,
-          "run_s": 1.9533559700939804
+          "run_s": 2.024481268017553
         },
         "Delay-aware NDOSMC (M2)": {
           "planar_rmse_mm": 2.83816396979578,
@@ -595,7 +595,7 @@
           "shape_rms_after_lap_mm": 1.7229073831364237,
           "size_pct_after_lap": 93.35598970414888,
           "saturated_pct": 79.3,
-          "run_s": 2.024099078029394
+          "run_s": 2.0318516879342496
         },
         "Delay-aware SMC, exact future reference (M2)": {
           "planar_rmse_mm": 2.66453970583981,
@@ -608,7 +608,7 @@
           "shape_rms_after_lap_mm": 1.801519493090334,
           "size_pct_after_lap": 83.88962110153308,
           "saturated_pct": 62.63333333333333,
-          "run_s": 1.9888789150863886
+          "run_s": 2.0208748769946396
         }
       }
     },
@@ -663,7 +663,7 @@
           "shape_rms_after_lap_mm": 1.6462274277130466,
           "size_pct_after_lap": 62.73224626819591,
           "saturated_pct": 0.0,
-          "run_s": 1.699609711067751
+          "run_s": 1.682845285977237
         },
         "PD, corrected allocator": {
           "planar_rmse_mm": 7.351211709742406,
@@ -676,7 +676,7 @@
           "shape_rms_after_lap_mm": 0.3528347986898564,
           "size_pct_after_lap": 92.28379264574714,
           "saturated_pct": 0.0,
-          "run_s": 1.6439139529829845
+          "run_s": 1.6774900120217353
         },
         "SMC (notebook model), as written": {
           "planar_rmse_mm": 2.3721835375011326,
@@ -689,7 +689,7 @@
           "shape_rms_after_lap_mm": 2.008057129064447,
           "size_pct_after_lap": 53.768628867824795,
           "saturated_pct": 0.0,
-          "run_s": 1.6927969079697505
+          "run_s": 1.6884681899100542
         },
         "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
           "planar_rmse_mm": 5.674130667495467,
@@ -702,7 +702,7 @@
           "shape_rms_after_lap_mm": 0.6496498794624419,
           "size_pct_after_lap": 85.48009564475905,
           "saturated_pct": 0.0,
-          "run_s": 1.6821925659896806
+          "run_s": 1.6912777100224048
         },
         "Paper SMC, eq. 5 (M1)": {
           "planar_rmse_mm": 8.065461995405457,
@@ -715,7 +715,7 @@
           "shape_rms_after_lap_mm": 3.2307174909247744,
           "size_pct_after_lap": 170.97356974783762,
           "saturated_pct": 53.86666666666666,
-          "run_s": 1.9059386450098827
+          "run_s": 1.9339166959980503
         },
         "Paper NDOSMC, eq. 12 (M1)": {
           "planar_rmse_mm": 8.894135584726007,
@@ -728,7 +728,7 @@
           "shape_rms_after_lap_mm": 4.080695818457058,
           "size_pct_after_lap": 186.2307782031187,
           "saturated_pct": 66.04444444444444,
-          "run_s": 1.8941247889306396
+          "run_s": 1.9278256880352274
         },
         "Delay-aware SMC, no observer (M2)": {
           "planar_rmse_mm": 2.4634066797514524,
@@ -741,7 +741,7 @@
           "shape_rms_after_lap_mm": 2.2169355527878096,
           "size_pct_after_lap": 149.95730155667684,
           "saturated_pct": 35.68888888888889,
-          "run_s": 1.9731995749752969
+          "run_s": 2.0112741489429027
         },
         "Delay-aware NDOSMC (M2)": {
           "planar_rmse_mm": 2.292424903474985,
@@ -754,7 +754,7 @@
           "shape_rms_after_lap_mm": 1.974222250959592,
           "size_pct_after_lap": 144.6103379767014,
           "saturated_pct": 31.255555555555553,
-          "run_s": 1.9879443850368261
+          "run_s": 2.039992969017476
         },
         "Delay-aware SMC, exact future reference (M2)": {
           "planar_rmse_mm": 0.9276092285869254,
@@ -767,7 +767,7 @@
           "shape_rms_after_lap_mm": 0.5140982269120247,
           "size_pct_after_lap": 111.9087214214272,
           "saturated_pct": 3.4000000000000004,
-          "run_s": 1.9895132989622653
+          "run_s": 2.0458141959970817
         }
       }
     },
@@ -822,7 +822,7 @@
           "shape_rms_after_lap_mm": 3.401974214946606,
           "size_pct_after_lap": 174.33111261145157,
           "saturated_pct": 1.2,
-          "run_s": 1.66820762201678
+          "run_s": 1.7092274309834465
         },
         "PD, corrected allocator": {
           "planar_rmse_mm": 2.8761575151535976,
@@ -835,7 +835,7 @@
           "shape_rms_after_lap_mm": 1.4439196880452387,
           "size_pct_after_lap": 54.829920589169646,
           "saturated_pct": 0.0,
-          "run_s": 1.6801757089560851
+          "run_s": 1.6832196459872648
         },
         "SMC (notebook model), as written": {
           "planar_rmse_mm": 3.791278355474507,
@@ -848,7 +848,7 @@
           "shape_rms_after_lap_mm": 1.2693854713057005,
           "size_pct_after_lap": 64.49813555034589,
           "saturated_pct": 0.08888888888888889,
-          "run_s": 1.720235108048655
+          "run_s": 1.7189008820569143
         },
         "SMC (notebook model), corrected allocator + deviation, \u03bb=8": {
           "planar_rmse_mm": 2.055204815806493,
@@ -861,7 +861,7 @@
           "shape_rms_after_lap_mm": 0.871541589379112,
           "size_pct_after_lap": 79.60148155595319,
           "saturated_pct": 0.06666666666666667,
-          "run_s": 1.7056513240095228
+          "run_s": 1.7203627610579133
         },
         "Paper SMC, eq. 5 (M1)": {
           "planar_rmse_mm": 2.0527394363251115,
@@ -874,7 +874,7 @@
           "shape_rms_after_lap_mm": 1.020339842440405,
           "size_pct_after_lap": 129.12168505004578,
           "saturated_pct": 1.633333333333333,
-          "run_s": 1.9159242989262566
+          "run_s": 1.9436244230018929
         },
         "Paper NDOSMC, eq. 12 (M1)": {
           "planar_rmse_mm": 3.164714901280668,
@@ -887,7 +887,7 @@
           "shape_rms_after_lap_mm": 1.4980528629021503,
           "size_pct_after_lap": 125.34448077201658,
           "saturated_pct": 23.133333333333333,
-          "run_s": 1.9213618439389393
+          "run_s": 1.938720001024194
         },
         "Delay-aware SMC, no observer (M2)": {
           "planar_rmse_mm": 2.08020377840054,
@@ -900,7 +900,7 @@
           "shape_rms_after_lap_mm": 1.0308839823041638,
           "size_pct_after_lap": 128.07089042991691,
           "saturated_pct": 3.077777777777778,
-          "run_s": 2.0003786019515246
+          "run_s": 2.0160030210390687
         },
         "Delay-aware NDOSMC (M2)": {
           "planar_rmse_mm": 2.0582841867962762,
@@ -913,7 +913,7 @@
           "shape_rms_after_lap_mm": 1.0579974872267837,
           "size_pct_after_lap": 127.63863769682325,
           "saturated_pct": 2.911111111111111,
-          "run_s": 2.011108691105619
+          "run_s": 2.0310470910044387
         },
         "Delay-aware SMC, exact future reference (M2)": {
           "planar_rmse_mm": 0.8713808381610306,
@@ -926,10 +926,10 @@
           "shape_rms_after_lap_mm": 0.1450963888130821,
           "size_pct_after_lap": 103.33777381516367,
           "saturated_pct": 0.4444444444444444,
-          "run_s": 1.98135994898621
+          "run_s": 2.0256635600235313
         }
       }
     }
   },
-  "total_run_s": 97.55550991301425
+  "total_run_s": 98.80933466204442
 }
