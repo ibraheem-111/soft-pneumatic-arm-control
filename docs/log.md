@@ -3,6 +3,15 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-28
+
+- `motion_tests.py` also reports the shape error: the distance from each tip sample to the
+  nearest point of the reference path, ignoring timing. After the first 2 s (RMS):
+  circle MPC 0.046 mm (SMC 1.63, PD 3.33); triangle 0.48 (0.98, 1.69), where the MPC's
+  first lap before period detection dominates (0.042 with the true future reference).
+  For axial motion the path is a line, so the shape error only measures off-axis
+  deviation (0.000–0.017 mm for every controller) and says nothing about timing.
+
 ## 2026-10-26
 
 - Motion tests (`scripts/motion_tests.py`) for the course slides' triangular and axial

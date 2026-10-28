@@ -83,10 +83,32 @@ def run(make_ctrl, ref_fn, seed: int = 0) -> dict:
     finally:
         sim.close()
     lat = np.linalg.norm(tips[:, :2] - refs[:, :2], axis=1) * 1000
+    shape = shape_error(tips[:, :2], ref_fn, home)
+    tail = slice(int(2 * TASK.control_hz), None)
     return {"rmse": float(np.sqrt(np.mean(lat ** 2))), "max": float(lat.max()), "lat": lat,
+            "shape": shape, "shape_rms": float(np.sqrt(np.mean(shape ** 2))),
+            "shape_rms_tail": float(np.sqrt(np.mean(shape[tail] ** 2))), "shape_max_tail": float(shape[tail].max()),
             "effort": float(np.sqrt(np.mean((cmds - baseline) ** 2))), "tips": tips, "refs": refs,
             "cmds": cmds, "s1": s1, "home": home, "err_xy": (tips[:, :2] - refs[:, :2]) * 1000,
             "dz": (tips[:, 2] - home[2]) * 1000}
+
+
+def shape_error(tips_xy: np.ndarray, ref_fn, home: np.ndarray) -> np.ndarray:
+    """Distance [mm] from each tip sample to the nearest point of the reference path,
+    ignoring timing. The path is one period of the reference, as a polyline sampled every
+    5 ms, and the distance is to the nearest segment."""
+    t = np.arange(0.0, 1.0 / TASK.frequency_hz + 0.005, 0.005)
+    path = np.array([ref_fn(home, tk)[:2] for tk in t])
+    a, b = path[:-1], path[1:]
+    ab = b - a
+    L2 = np.maximum((ab ** 2).sum(1), 1e-30)
+    out = np.empty(len(tips_xy))
+    for i in range(0, len(tips_xy), 500):            # chunks keep the distance matrix small
+        p = tips_xy[i:i + 500, None, :]
+        s = np.clip(((p - a) * ab).sum(2) / L2, 0.0, 1.0)
+        d = np.linalg.norm(p - (a + s[..., None] * ab), axis=2)
+        out[i:i + 500] = d.min(1)
+    return out * 1000
 
 
 def controllers() -> dict:
@@ -103,7 +125,8 @@ def controllers() -> dict:
 
 def main() -> None:
     ctrls = controllers()
-    print("make_calibrated_sim, seed 0; 7 mm, 0.1 Hz, 30 s; lateral RMSE / max [mm], effort [psi]")
+    print("make_calibrated_sim, seed 0; 7 mm, 0.1 Hz, 30 s; lateral RMSE / max [mm], effort [psi]; "
+          "shape error RMS (whole run / after 2 s) and max after 2 s [mm]")
     results = {}
     for motion, ref_fn in MOTIONS.items():
         print(f"  {motion}")
@@ -120,7 +143,8 @@ def main() -> None:
             elif motion == "triangle":
                 tail = slice(int(2 * TASK.control_hz), None)
                 extra = f"; after 2 s {np.sqrt(np.mean(r['lat'][tail] ** 2)):.3f} mm"
-            print(f"    {name:<36}{r['rmse']:7.3f} {r['max']:6.2f} {r['effort']:6.2f}{extra}")
+            print(f"    {name:<36}{r['rmse']:7.3f} {r['max']:6.2f} {r['effort']:6.2f}  shape {r['shape_rms']:.3f} / "
+                  f"{r['shape_rms_tail']:.3f}, max {r['shape_max_tail']:.3f}{extra}")
     harness = mpc.evaluate(lambda: mpc.DelayMPCController()).rmse_mm
     print(f"  check: harness MPC on the circle {harness:.6f} mm vs this loop "
           f"{results[('circle (harness check)', 'MPC')]['rmse']:.6f} mm")
@@ -178,18 +202,22 @@ def motion_figure(motion: str, results: dict, out: Path) -> None:
 
     a = ax[1, 1]
     for name, col in colors.items():
-        a.semilogy(t, np.maximum(results[(motion, name)]["lat"], 1e-3), col, lw=1, label=name)
-    a.set(title="Lateral tracking error", xlabel="time [s]", ylabel="error [mm]", ylim=(1e-2, 10))
+        a.semilogy(t, np.maximum(results[(motion, name)]["lat"], 1e-3), col, lw=1, label=f"{name} tracking")
+        a.semilogy(t, np.maximum(results[(motion, name)]["shape"], 1e-3), col, lw=0.8, ls=":",
+                   label=f"{name} shape")
+    a.set(title="Tracking error (solid) and shape error (dotted)", xlabel="time [s]", ylabel="error [mm]",
+          ylim=(1e-3, 10))
     a.legend(fontsize=8)
 
     a = ax[1, 2]
     a.axis("off")
     rows = [(n, results[(motion, n)]) for n in ("MPC", "MPC, AR preview only", "MPC, true future ref (diagnostic)",
                                                "SMC", "PD")]
-    a.table(cellText=[[n, f"{r['rmse']:.3f}", f"{np.sqrt(np.mean(r['lat'][200:] ** 2)):.3f}", f"{r['effort']:.2f}"]
+    a.table(cellText=[[n, f"{r['rmse']:.3f}", f"{np.sqrt(np.mean(r['lat'][200:] ** 2)):.3f}", f"{r['shape_rms']:.3f}",
+                       f"{r['shape_rms_tail']:.3f}", f"{r['effort']:.2f}"]
                       for n, r in rows],
-            colLabels=["controller", "RMSE [mm]", "after 2 s [mm]", "effort [psi]"], loc="center",
-            cellLoc="left", colWidths=[0.52, 0.16, 0.18, 0.16]).scale(1, 1.6)
+            colLabels=["controller", "RMSE", "RMSE >2 s", "shape", "shape >2 s", "effort"], loc="center",
+            cellLoc="left", colWidths=[0.44, 0.11, 0.13, 0.11, 0.13, 0.11]).scale(1, 1.6)
     for a in ax.flat[:5]:
         a.grid(True, which="both", alpha=0.3)
     fig.suptitle(f"{motion.capitalize()}: make_calibrated_sim, 7 mm, 0.1 Hz, seed 0")
