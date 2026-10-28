@@ -31,7 +31,7 @@ function title(slide, text) {
 const d = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "figures", "benchmark_unified.json"), "utf8"));
 const M = {};
 for (const r of d.runs) M[r.short + "|" + r.test] = r.metrics;
-const TESTS = ["scored circle", "held-out circle", "MT triangle", "brief circle_dyn", "recorded circular"];
+const TESTS = ["scored circle", "held-out circle", "MT triangle"];
 const ROWS = [
   ["PD", "PD corrected"],
   ["SMC, one-mode (Nikoletta)", "Notebook SMC λ=8"],
@@ -41,7 +41,7 @@ const ROWS = [
   ["MPC, reference known in advance*", "MPC, true future ref [diag]"],
 ];
 const rmse = (key, t) => M[key + "|" + t].planar_rmse_after_lap_mm;
-const size = (key) => M[key + "|MT triangle"].size_pct_after_lap;
+const size = (key) => M[key + "|scored circle"].size_pct_after_lap;
 const best = TESTS.map((t) => Math.min(...ROWS.slice(0, 5).map(([, k]) => Number(rmse(k, t).toFixed(2)))));
 const bestSize = Math.min(...ROWS.slice(0, 5).map(([, k]) => Math.abs(Math.round(size(k)) - 100)));
 
@@ -49,7 +49,7 @@ const bestSize = Math.min(...ROWS.slice(0, 5).map(([, k]) => Math.abs(Math.round
 let s = pres.addSlide();
 title(s, "Current results");
 const th = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: HEAD }, align: "center", valign: "middle" } });
-const rows = [[th("Controller"), th("Scored circle"), th("Held-out circle"), th("Triangle"), th("Fast circle"), th("Recorded path"), th("Triangle size")]];
+const rows = [[th("Controller"), th("Scored circle"), th("Held-out circle"), th("Triangle"), th("Circle size")]];
 ROWS.forEach(([label, key], i) => {
   const ref = i === 5;
   const base = { color: ref ? MUTED : INK, italic: ref, valign: "middle" };
@@ -64,13 +64,14 @@ ROWS.forEach(([label, key], i) => {
   row.push({ text: `${sz} %`, options: { ...base, align: "center", bold: szBest, fill: szBest ? { color: BEST } : undefined } });
   rows.push(row);
 });
-s.addTable(rows, { x: 0.4, y: 1.15, w: 6.55, colW: [2.15, 0.72, 0.72, 0.72, 0.72, 0.76, 0.76], fontFace: FONT, fontSize: 9.5,
+s.addTable(rows, { x: 0.4, y: 1.15, w: 6.55, colW: [2.55, 1.0, 1.0, 1.0, 1.0], fontFace: FONT, fontSize: 10.5,
   border: { type: "solid", pt: 0.75, color: RULE }, rowH: [0.42, 0.36, 0.36, 0.36, 0.36, 0.36, 0.36], margin: [2, 4, 2, 4] });
 s.addText([
-  { text: "RMSE after the first lap, mm. Simulation (make_calibrated_sim), seed 0. Bold: best per column. ", options: { breakLine: true } },
-  { text: "Circles: 7 mm 0.1 Hz (scored), 10 mm 0.15 Hz (held-out), 4.3 mm 0.4 Hz (fast). Triangle: 7 mm, 10 s per lap. Recorded: the lab robot's tip path. Size: path size vs the reference.", options: { breakLine: true } },
+  { text: "RMSE after the first lap, mm: the error once the start-up jump is over (steady tracking). Bold: best per column.", options: { breakLine: true } },
+  { text: `The harness reports RMSE over the whole run, which includes the first seconds where the 7 mm circle starts 7 mm from the arm: PD ${M["PD corrected|scored circle"].planar_rmse_mm.toFixed(2)} vs ${M["PD corrected|scored circle"].planar_rmse_after_lap_mm.toFixed(2)}, delay-aware SMC ${M["Delay-aware SMC (Taylor preview)|scored circle"].planar_rmse_mm.toFixed(2)} vs ${M["Delay-aware SMC (Taylor preview)|scored circle"].planar_rmse_after_lap_mm.toFixed(2)}, MPC ${M["MPC (predicted reference)|scored circle"].planar_rmse_mm.toFixed(2)} vs ${M["MPC (predicted reference)|scored circle"].planar_rmse_after_lap_mm.toFixed(2)} mm (whole run vs after lap 1).`, options: { breakLine: true } },
+  { text: "Circles: 7 mm at 0.1 Hz (scored), 10 mm at 0.15 Hz (held-out, not used for tuning). Triangle: 7 mm, 10 s per lap. Circle size: traced path vs the reference, scored circle. Simulation, seed 0.", options: { breakLine: true } },
   { text: "* Reference case: the controller is given the future path, which the evaluation does not provide." },
-], { x: 0.4, y: 3.85, w: 6.55, h: 0.95, fontFace: FONT, fontSize: 8.5, color: MUTED, valign: "top", margin: 0, isTextBox: true });
+], { x: 0.4, y: 3.85, w: 6.55, h: 1.3, fontFace: FONT, fontSize: 8.5, color: MUTED, valign: "top", margin: 0, isTextBox: true });
 
 s.addText([
   { text: "Prediction matters", options: { bold: true, fontSize: 14, breakLine: true, paraSpaceAfter: 6 } },
