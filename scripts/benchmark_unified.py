@@ -156,7 +156,7 @@ CONTROLLERS = [
 CTRL = {c[0]: c for c in CONTROLLERS}
 
 
-STATE = {"n", "k", "t0", "u_prev", "z", "dt"}   # running state / derived, not settings
+STATE = {"n", "t0", "u_prev", "z", "dt"}   # running state / derived, not settings
 
 
 def gains(obj, depth: int = 0) -> dict:
@@ -164,7 +164,7 @@ def gains(obj, depth: int = 0) -> dict:
     out = {}
     for k, v in vars(obj).items():
         if (isinstance(v, (bool, int, float, str, np.floating, np.integer)) and k not in STATE
-                and not k.startswith("g_")):
+                and not k.startswith("g_") and not (k == "k" and isinstance(obj, BS.Ahead))):
             out[k] = v.item() if isinstance(v, np.generic) else v
     if depth < 2:
         for k in ("c", "obs", "act"):
