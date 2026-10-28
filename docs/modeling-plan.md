@@ -101,6 +101,94 @@ that run (soft-robotic-arm 0.4.2, 2026-10-07).
   per axis capture the input–output behaviour; identified models should land near
   that order.
 
+## Identified model, frequency domain (done)
+
+`scripts/sysid_frf.py` (branch `sysid-frf`), from hardware-available signals only.
+Per axis, input = differential channel command u [psi], output = tip position [m]:
+
+```
+G(s) = γ e^{−sT} / (τs + 1)  ×  (b₁s + b₀) / (s³ + a₂s² + a₁s + a₀)
+       stage A: lag (from pressure sensors)   stage B: mechanics (pressure -> tip)
+```
+
+| | `make_sim`, x | `make_sim`, y | `make_calibrated_sim`, x | `make_calibrated_sim`, y |
+|---|---|---|---|---|
+| τ [s] | 0.5987 | 0.5986 | 0.5995 | 0.5994 |
+| γ | 0.994 | 0.994 | 1.097 | 1.142 |
+| T [s] | 0 | 0 | 0.50 | 0.50 |
+| stage B order | 3 | 3 | 2 | 3 |
+| stage B poles [1/s] | −4.15 ± 5.56j, −1.60 | −4.01 ± 5.56j, −1.68 | −5.15 ± 5.43j | −4.15 ± 5.57j, −1.55 |
+| free-run fit, held-out input | 99.60 % | 99.24 % | 95.60 % | 99.44 % |
+
+- Order chosen per axis by free-run error on a held-out random-step input (seed 101),
+  lowest order within 2 % of the best; unstable fits rejected.
+- `make_sim`: 4 states per axis, in line with the Hankel singular values. Answer key
+  (50 states) reaches 99.97 % on the same input.
+- `make_calibrated_sim` x is driven by S3 alone against the sealed S1 reservoir; higher
+  orders add a slow pole (≈ −0.05 1/s) that free-runs worse. Its detection lines sit at
+  −48 dB (vs −109 dB on `make_sim`) and the response drifts slowly between periods,
+  so that axis is not exactly LTI.
+- The state-space realization (lag state, then stage B in controllable canonical form)
+  is printed by `uv run python scripts/sysid_frf.py fit [--plant calibrated]`.
+
+## Delay-compensated MPC on `make_calibrated_sim` (done)
+
+`scripts/mpc_controller.py`, built on `models/sysid_calibrated_v2.json` (written by
+`sysid_frf.py fit --plant calibrated`). Per axis:
+- a Kalman filter on [model state; tip offset], measuring tip and channel pressure;
+- a delay predictor, x_{n+d} = A_d^d x_n + Σ A_d^{d−1−i} B_d u_{n−d+i};
+- unconstrained MPC over 3 s on Δu-penalized tracking error (ρ = 1e-5, tuned on a
+  5 mm, 0.07 Hz task with seed 5);
+- reference preview from an AR(2)-plus-intercept predictor on the reference's own
+  history.
+
+| Controller (harness, seed 0, 7 mm at 0.1 Hz) | RMSE | RMSE after 2 s |
+|---|---|---|
+| PD kp 500, kd 20 (corrected allocator) | 4.08 mm | 3.96 mm |
+| SMC λ 5, K 0.35, φ 0.02, deviation (corrected) | 2.34 mm | 2.06 mm |
+| MPC, no preview | 3.64 mm | — |
+| **MPC, predicted reference** | **1.22 mm** | **0.059 mm** |
+| MPC, true future reference (diagnostic) | 1.16 mm | — |
+
+- The RMSE that remains is the start-up transient: the reference jumps 7 mm at t = 0,
+  and nothing acts for 0.5 s. The diagnostic row shows that the predictor costs 5 %.
+- Held-out cases: 4 mm radius 0.68 mm (SMC 1.42), 10 mm 1.88 (3.32), 0.05 Hz 1.21
+  (2.19), 0.2 Hz 1.29 (3.01). With 0.1 mm or 1 mm tip noise added: 1.220 and 1.235 mm.
+- The S3 command saturates at 9 psi only during the start-up transient, then swings
+  0.6–8.3 psi, so circles much larger than 10 mm will saturate the x channel.
+
+### Other reference motions (`scripts/motion_tests.py`)
+
+Definitions follow the RAS 556 project-introduction slides ("Simulation Results
+Circular / Axial / Triangular Motion"):
+- **Triangular:** straight-line interpolation through V0 (+x), V1 (upper left) and V2
+  (lower left).
+- **Axial:** the tip swings along one horizontal axis; the slides drive one segment
+  (Seg 4) and the opposite one compresses. That is not extension along z.
+
+Here the triangle is equilateral with circumradius 7 mm, 10 s per lap; axial is
+7 mm·sin(2π·0.1 t) along y or along x, with the other axis held. Settle, duration and
+seed are as in the harness; the loop reproduces `evaluate_controller` exactly.
+
+| Lateral RMSE [mm] | MPC | MPC, AR preview only | SMC | PD |
+|---|---|---|---|---|
+| circle | 1.220 | 1.220 | 2.342 | 4.080 |
+| triangle | **1.510** | 2.149 | 2.027 | 3.055 |
+| axial along y | **0.480** | 0.480 | 1.421 | 2.776 |
+| axial along x | **0.511** | 0.511 | 1.460 | 2.826 |
+
+- **Triangle.** The AR preview cannot foresee corners, which made the MPC no better
+  than SMC (2.15 vs 2.03 mm).
+  - The fix: the reference predictor detects a repeating period in the reference's
+    history and replays it. It is exact for any periodic reference once one lap has
+    been seen (detection needs P + 2 s, about 12 s here). It is now the default and
+    leaves the circle and axial results unchanged.
+  - During the first lap S3 saturates at 0 and 9 psi near the corners. After
+    detection the error is 0.05–0.3 mm, with spikes only at the corners.
+  - With the true future reference the MPC would reach 0.957 mm.
+- **Axial.** The held axis stays within 0.005 mm. The z by-product is +0.17 mm along
+  y, and −1.6 to +1.9 mm along x (S3 alone bends and extends the arm).
+
 ## Consequences for SMC
 
 - Relative degree 3 breaks the textbook surface s = ė + λe (which assumes the input

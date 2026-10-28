@@ -14,3 +14,4 @@ wheels/
 soft_arm.xml
 .ipynb_checkpoints/
 docs/slides/*.pptx
+.cache/

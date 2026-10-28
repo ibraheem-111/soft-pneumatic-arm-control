@@ -5,6 +5,13 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-28
 
+- Merged `mpc-controller` (frequency-domain identification `scripts/sysid_frf.py`,
+  delay-compensated MPC `scripts/mpc_controller.py`, motion tests `scripts/motion_tests.py`,
+  from the Data Driven Approach session) into `main`, after `docs/discussion-guide`.
+  Checked after the merge: `compare_controllers.py` output identical; `mpc_controller.py`
+  still 1.220 mm on the scored circle. Two test sets now coexist and are not yet unified:
+  `motion_tests.py` (7 mm, 0.1 Hz circle/triangle/axial) and `benchmark_slide_tasks.py`
+  (brief timing 0.4-0.5 Hz, scaled) + `benchmark_all_tasks.py` (recorded robot runs).
 - Gain sweep (`scripts/sweep_preview_gain.py`, 70 runs, every run's parameters and metrics in
   `docs/figures/sweep_preview_gain.json`): lowering λ does not remove the delay-aware SMC's
   overshoot with the Taylor preview (circle 4.3 mm size 148-157 % for λ 0.5-8), because λ sets
@@ -24,6 +31,12 @@ person (or agent) can pick up without asking. Keep entries short and dated.
   unchanged (`compare_controllers.py` output identical). Remaining 12 % on the circle:
   hypothesis = M2 underestimates 0.4 Hz reach by ~9 %. Paper-SMC overshoot: hypothesis =
   high-gain feedback through the unmodelled 1.1 s delay; not tested.
+- `motion_tests.py` also reports the shape error: the distance from each tip sample to the
+  nearest point of the reference path, ignoring timing. After the first 2 s (RMS):
+  circle MPC 0.046 mm (SMC 1.63, PD 3.33); triangle 0.48 (0.98, 1.69), where the MPC's
+  first lap before period detection dominates (0.042 with the true future reference).
+  For axial motion the path is a line, so the shape error only measures off-axis
+  deviation (0.000–0.017 mm for every controller) and says nothing about timing.
 
 ## 2026-10-26
 
@@ -71,6 +84,14 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 - Gains tuned on the scored circle carry over: the delay-aware controllers stay best on all
   three recorded waveforms. `compare_controllers.py` rerun: identical to
   `controller_comparison.json` (max difference 0).
+- Motion tests (`scripts/motion_tests.py`) for the course slides' triangular and axial
+  motions. The slides define axial as a one-axis horizontal swing (one segment driven,
+  the opposite compresses), not extension along z. MPC lateral RMSE: triangle 1.51 mm
+  (SMC 2.03, PD 3.06); axial y 0.48 (1.42, 2.78); axial x 0.51 (1.46, 2.83).
+- The AR reference preview could not foresee the triangle's corners (2.15 mm, worse
+  than SMC). A periodic preview, which detects the reference's period from its own
+  history and replays it, fixed it. It is now the default; the circle score is
+  unchanged at 1.220 mm.
 
 ## 2026-10-21
 
@@ -86,6 +107,43 @@ person (or agent) can pick up without asking. Keep entries short and dated.
   1.80-1.82, rate 4.35-4.8; both flat over mean 2-7.5 psi and bend offset ±2 psi (no
   trend beyond fit noise). z gain falls 7 % (-1.47 to -1.36 mm/psi) from 2 to 7.5 psi mean;
   z rate not identifiable (13-38 1/s, hidden by the lag). Constant Λ, H justified for x, y.
+- Decision (Ibraheem): `make_calibrated_sim` is the target plant; the benchmark is the
+  package harness (7 mm circle, 0.1 Hz, seed 0). Recorded in AGENTS.md.
+- Delay-compensated MPC (`scripts/mpc_controller.py`, branch `mpc-controller`): Kalman
+  filter, delay predictor and unconstrained MPC on the identified models, with an AR(2)
+  reference predictor. Scored 1.22 mm, against best SMC 2.34 and PD 4.08; 0.059 mm
+  after the first 2 s. The predictor's first version used a 2 s window and a
+  3×-range guard that rejected it in 959 of 3000 steps (2.13 mm); a 4 s window with an
+  AR-pole stability guard fixed it. Details in `modeling-plan.md`.
+
+- Frequency-domain identification finished (steps 5–7, PR #1): per axis
+  γe^{−sT}/(τs + 1) × stage B fitted by Sanathanan–Koerner + weighted nonlinear least
+  squares, realized in controllable canonical form behind the lag state. `make_sim`:
+  4 states per axis, free-run fit 99.60 / 99.24 % (x / y) on a held-out random-step
+  input; answer key 99.97 %. `make_calibrated_sim`: delay identified as 0.50 s,
+  τ 0.5995 s, regulator gains 1.097 (S3) and 1.142 (S2/S4); x (S3 vs sealed S1) 3 states,
+  95.60 %; y 4 states, 99.44 %. Table in `modeling-plan.md`.
+- Delay fit needs a grid-searched start: with the 0.5 s delay the linear start (no
+  delay) lands in a wrong local minimum on one channel.
+- AGENTS.md: agents may switch the active `gh` account (and switch back after).
+
+## 2026-10-20
+
+- Frequency-domain identification (D3), step 4 and lag, `scripts/sysid_frf.py`
+  (branch `sysid-frf`, PR #1). Excitation v2 (f0 0.01 Hz, 36 quasi-log odd lines to
+  2.71 Hz, 10 below the 0.27 Hz lag corner vs 6 in v1) raised the median tip SNR from
+  34.9 to 48.1 dB; command→tip FRF error vs the 50-state answer key fell from 2.6 %
+  to 0.50 % median (max 64 % → 9.7 %). The FRFs (G_p(k) = Y_p(k) U_p(k)⁻¹ per period,
+  averaged) match the answer key in all three stages; cross-coupling is at the noise
+  level; |G| at 1 psi / 2 psi = 1.0003 (linear).
+- The lag can be identified from data without assuming τ. From the pressure sensors
+  (stage A, fit g e^(−sT)/(τs + 1)): τ = 0.5987 ± 0.0003 s, gain 0.994 (curvature
+  coupling), T = −5.4 ms (half-sample alignment artefact, not a physical delay). A
+  linear (Levy) least-squares fit without the delay term is biased to τ ≈ 0.577 s.
+  From the tip alone (lag × one 2nd-order mode): τ = 0.645 ± 0.002 s, 7.5 % high,
+  because the chain's slow real poles get lumped into the lag pole; pressure sensors
+  are needed to separate them. The simulator integrates the lag by forward Euler
+  (τ_eff = 0.5995 s per control step), recorded in `simulator.md`.
 
 ## 2026-10-14
 
@@ -124,6 +182,18 @@ person (or agent) can pick up without asking. Keep entries short and dated.
   (0.22-0.36 z) vs M3 (actuator + 2nd-order mechanics) 0.10-0.16 mm (noise floor 0.10). Residual x
   error is the S1 reservoir (leaks ~0.04 psi/min). The paper's printed B = -diag(1/c) has
   the wrong sign; its eqs. 5/13 need +1/c.
+- Frequency-domain identification (D3), steps 0–3, `scripts/sysid_frf.py` (branch
+  `sysid-frf`). Two differential channels (S1−S3, S2−S4, all levels) on `make_sim` at
+  4.5 psi: static tip gain 1.8102 mm/psi per channel, cross gain 0.0000, ±2 psi
+  responses exactly antisymmetric; matches the 50-state answer key. Lag alone gives
+  t63 0.60 s; tip t63 0.81 s. Pressure sensors read the differential pressure 0.5 %
+  low because the curvature offsets of opposing columns add (−0.0099 psi on 2 psi).
+  Odd random-phase multisine (f0 0.02 Hz, 57 lines to 2.98 Hz, crest factor 2.46,
+  ±2 psi): noise-free tip is periodic after one period (change 1e-16); no even-order
+  distortion; odd-order distortion −105.5 dB at 2 psi, −117.5 dB at 1 psi (12 dB per
+  halving, i.e. cubic). With 0.1 mm tip noise the detection lines sit at −24 dB (noise
+  floor), median SNR 34.9 dB. Open: only 6 excited lines lie below the 0.27 Hz lag
+  corner; a longer period or log-spaced lines would sample the slow dynamics better.
 - Ported Nikoletta's SMC notebook to `scripts/smc_reduced_model.py`; it reproduces
   her table exactly on `make_calibrated_sim` + `CircularTrackingTask` (PD 500/20:
   9.94 mm; SMC λ=5, K=0.2, φ=0.02: 4.37 mm). Her one-mode model uses joint springs
