@@ -5,6 +5,41 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-28
 
+- Unified benchmark (`uv run python scripts/benchmark_unified.py`, 156 runs, 2 min 45 s on 10
+  workers; every run's gains, seed, test parameters, metrics and run time in
+  `docs/figures/benchmark_unified.json`, heat maps in `benchmark_unified.png`): 12 controllers
+  (compare_controllers' 7, mpc_controller's SMC baseline, MPC with predicted and with true future
+  reference, delay-aware SMC with exact r(t+T), and new: delay-aware SMC fed r(t+T) by
+  mpc_controller's `RefPredictor`) × 13 tests (scored and held-out circles, motion_tests'
+  triangle / axial y / axial x, the 5 brief-scaled tasks, the 3 recorded robot runs), one harness
+  loop (`benchmark_all_tasks.track`), `benchmark_slide_tasks.score()` for all. Reproduces every
+  published number: compare_controllers, benchmark_slide_tasks and benchmark_all_tasks JSONs to
+  1e-15 mm; mpc_controller 1.2203 (printed 1.220); motion_tests MPC triangle / axial y / axial x
+  1.5098 / 0.4796 / 0.5114. Only difference: the exact-preview SMC's saturation % on the brief
+  tasks (here the reference runs on past the end, which changes only the last 0.5 s of commands;
+  tracking metrics identical). Planar RMSE after the first lap (mm), scored circle / held-out /
+  MT triangle / brief circle 4.3 mm / brief triangle / recorded circular: MPC (predicted ref)
+  0.057 / 0.92 / 0.62 / 0.15 / 0.71 / 3.57; delay-aware SMC (Taylor) 0.090 / 0.97 / 1.46 / 2.35 /
+  1.99 / 1.56; delay-aware SMC + RefPredictor 0.034 / 0.92 / 1.78 / 0.55 / 2.35 / 2.07; paper SMC
+  0.87 / 3.03 / 1.47 / 8.18 / 1.97 / 2.62; with true future reference (diagnostics): MPC 0.057 /
+  0.92 / 0.066 / 0.15 / 0.084 / 0.093, delay-aware SMC 0.034 / 0.92 / 0.19 / 0.54 / 0.30 / 0.72.
+  Findings: the MPC is best on synthetic periodic tasks but behind the paper and delay-aware SMCs
+  on the recorded runs (3.1-4.5 mm vs 1.1-2.7): the recorded mocap path never repeats exactly, so
+  RefPredictor never detects a period there (checked: 0 of 18000 steps on x and y, all three runs)
+  and stays on AR(2); the Taylor-preview SMCs win there (1.1-1.6 mm). The RefPredictor SMC equals the
+  exact-preview SMC once the period is detected (prediction error 6e-15 mm after 12 s on the MT
+  triangle, commands identical to 1e-9 psi after 25 s), but on the triangle AR(2) before
+  detection drives it into 40-54 % saturation and it needs ~3 s to recover, which the
+  after-first-lap RMSE includes (MT triangle 4.05 mm RMS 10-12.5 s, 0.14 mm 15-30 s). The
+  held-out circle (10 mm, 0.15 Hz) is reach-limited: every predictive controller ties at 0.92 mm
+  with 19 % saturation.
+- Shared figure style `scripts/plot_style.py` (Okabe-Ito colours, a fixed colour + line style +
+  marker per controller, at most 4-5 series per panel, 12 in wide, fonts 16/14/12/12, 150 dpi;
+  heat maps cividis with values in cells). Restyled and regenerated `slide_task_*.png`,
+  `slide_tasks_rmse.png`, `sweep_preview_gain.png`; their JSON numbers unchanged (diffed, timing
+  only). `benchmark_slide_tasks.build_tasks` and `benchmark_all_tasks.recorded_runs` extracted
+  from their `main()` so other scripts can import the references; both scripts' JSON output
+  unchanged (rerun and diffed).
 - Merged `mpc-controller` (frequency-domain identification `scripts/sysid_frf.py`,
   delay-compensated MPC `scripts/mpc_controller.py`, motion tests `scripts/motion_tests.py`,
   from the Data Driven Approach session) into `main`, after `docs/discussion-guide`.
