@@ -41,15 +41,16 @@ const ROWS = [
   ["MPC, reference known in advance*", "MPC, true future ref [diag]"],
 ];
 const rmse = (key, t) => M[key + "|" + t].planar_rmse_after_lap_mm;
-const size = (key) => M[key + "|scored circle"].size_pct_after_lap;
+const rad = (key) => [M[key + "|scored circle"].radius_min_after_lap_mm, M[key + "|scored circle"].radius_max_after_lap_mm];
 const best = TESTS.map((t) => Math.min(...ROWS.slice(0, 5).map(([, k]) => Number(rmse(k, t).toFixed(2)))));
-const bestSize = Math.min(...ROWS.slice(0, 5).map(([, k]) => Math.abs(Math.round(size(k)) - 100)));
+const radErr = (k) => Math.max(...rad(k).map((v) => Math.abs(Number(v.toFixed(1)) - 7.0)));
+const bestRad = Math.min(...ROWS.slice(0, 5).map(([, k]) => radErr(k)));
 
 // ---------------------------------------------------------------- slide 1: results
 let s = pres.addSlide();
 title(s, "Current results");
 const th = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: HEAD }, align: "center", valign: "middle" } });
-const rows = [[th("Controller"), th("Scored circle"), th("Held-out circle"), th("Triangle"), th("Circle size")]];
+const rows = [[th("Controller"), th("Scored circle"), th("Held-out circle"), th("Triangle"), th("Circle radius (7.0 mm)")]];
 ROWS.forEach(([label, key], i) => {
   const ref = i === 5;
   const base = { color: ref ? MUTED : INK, italic: ref, valign: "middle" };
@@ -59,9 +60,9 @@ ROWS.forEach(([label, key], i) => {
     const isBest = !ref && v === best[j];
     row.push({ text: v.toFixed(2), options: { ...base, align: "center", bold: isBest, fill: isBest ? { color: BEST } : undefined } });
   });
-  const sz = Math.round(size(key));
-  const szBest = !ref && Math.abs(sz - 100) === bestSize;
-  row.push({ text: `${sz} %`, options: { ...base, align: "center", bold: szBest, fill: szBest ? { color: BEST } : undefined } });
+  const [r0, r1] = rad(key);
+  const rBest = !ref && radErr(key) === bestRad;
+  row.push({ text: `${r0.toFixed(1)}–${r1.toFixed(1)}`, options: { ...base, align: "center", bold: rBest, fill: rBest ? { color: BEST } : undefined } });
   rows.push(row);
 });
 s.addTable(rows, { x: 0.4, y: 1.15, w: 6.55, colW: [2.55, 1.0, 1.0, 1.0, 1.0], fontFace: FONT, fontSize: 10.5,
@@ -69,7 +70,7 @@ s.addTable(rows, { x: 0.4, y: 1.15, w: 6.55, colW: [2.55, 1.0, 1.0, 1.0, 1.0], f
 s.addText([
   { text: "RMSE after the first lap, mm: the error once the start-up jump is over (steady tracking). Bold: best per column.", options: { breakLine: true } },
   { text: `The harness reports RMSE over the whole run, which includes the first seconds where the 7 mm circle starts 7 mm from the arm: PD ${M["PD corrected|scored circle"].planar_rmse_mm.toFixed(2)} vs ${M["PD corrected|scored circle"].planar_rmse_after_lap_mm.toFixed(2)}, delay-aware SMC ${M["Delay-aware SMC (Taylor preview)|scored circle"].planar_rmse_mm.toFixed(2)} vs ${M["Delay-aware SMC (Taylor preview)|scored circle"].planar_rmse_after_lap_mm.toFixed(2)}, MPC ${M["MPC (predicted reference)|scored circle"].planar_rmse_mm.toFixed(2)} vs ${M["MPC (predicted reference)|scored circle"].planar_rmse_after_lap_mm.toFixed(2)} mm (whole run vs after lap 1).`, options: { breakLine: true } },
-  { text: "Circles: 7 mm at 0.1 Hz (scored), 10 mm at 0.15 Hz (held-out, not used for tuning). Triangle: 7 mm, 10 s per lap. Circle size: traced path vs the reference, scored circle. Simulation, seed 0.", options: { breakLine: true } },
+  { text: "Circles: 7 mm at 0.1 Hz (scored), 10 mm at 0.15 Hz (held-out, not used for tuning). Triangle: 7 mm, 10 s per lap. Circle radius: smallest–largest distance of the traced path from its centre, scored circle (reference 7.0 mm; a wide range means the path is not a circle). Simulation, seed 0.", options: { breakLine: true } },
   { text: "* Reference case: the controller is given the future path, which the evaluation does not provide." },
 ], { x: 0.4, y: 3.85, w: 6.55, h: 1.3, fontFace: FONT, fontSize: 8.5, color: MUTED, valign: "top", margin: 0, isTextBox: true });
 

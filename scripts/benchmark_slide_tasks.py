@@ -267,6 +267,9 @@ def score(tip_mm: np.ndarray, ref_mm: np.ndarray, lap_s: float, cmds: np.ndarray
     out["shape_rms_after_lap_mm"] = float(np.sqrt(np.mean(near ** 2)))
     out["size_pct_after_lap"] = float(100 * np.mean(np.linalg.norm(tip - tip.mean(0), axis=1))
                                       / np.mean(np.linalg.norm(rf - rf.mean(0), axis=1)))
+    # size is an average: an oscillating path can average 100 %. The radius range shows that.
+    rad = np.linalg.norm(tip - tip.mean(0), axis=1)
+    out["radius_min_after_lap_mm"], out["radius_max_after_lap_mm"] = float(rad.min()), float(rad.max())
     if cmds is not None:
         out["saturated_pct"] = base["saturated_pct"]
     return out
