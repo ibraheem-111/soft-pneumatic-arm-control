@@ -261,11 +261,14 @@ class DelayAwareNDOSMC(PaperNDOSMC):
     effective pressure; the command inverts the lag (u = (p_des + tau p_des')/gain).
     The predictor runs the delay-free model internally and adds (model now - model delayed)
     to the measurement, so the outer loop sees an estimate of X(t + T). The reference is
-    extrapolated T ahead from its own backward differences.
+    extrapolated T ahead from its own backward differences, unless exact_preview=True: then
+    the caller passes r(t + T) itself as `ref` (possible only when the trajectory is known in
+    advance) and no extrapolation is done.
     """
 
-    def __init__(self, model: TaskSpaceModel, **kw):
+    def __init__(self, model: TaskSpaceModel, exact_preview: bool = False, **kw):
         super().__init__(model, **kw)
+        self.exact_preview = exact_preview
         act = model.actuator
         if act is None or model.B_measured is None or not model.axes_measured:
             raise ValueError("delay-aware controller needs the actuator and measured-pressure models")
@@ -282,8 +285,11 @@ class DelayAwareNDOSMC(PaperNDOSMC):
         q, _, r, r_dot, r_ddot = self._frame(t, obs, ref)
         T = self.n_delay * self.dt
         q_pred = q + self.x_model - self.x_hist[0]
-        r_pred = r + T * r_dot + 0.5 * T**2 * r_ddot
-        r_dot_pred = r_dot + T * r_ddot
+        if self.exact_preview:  # ref is already r(t + T)
+            r_pred, r_dot_pred = r, r_dot
+        else:
+            r_pred = r + T * r_dot + 0.5 * T**2 * r_ddot
+            r_dot_pred = r_dot + T * r_ddot
         rho = np.zeros(3)  # M2 mechanics are not scheduled
         d_hat = self.obs.estimate(q_pred) if self.use_observer else np.zeros(3)
         v, alpha, beta = self._law(q_pred, r_pred, r_dot_pred, rho, d_hat, t - self.t0,

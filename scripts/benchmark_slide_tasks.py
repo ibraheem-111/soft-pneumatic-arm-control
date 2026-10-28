@@ -30,6 +30,17 @@ RMSE whole run and after the first lap, z RMSE (meaningful where z is part of th
 reference), max planar error, % of commands at 0 or 9 psi, y-axis phase lag (package
 cross-correlation). Controllers and gains: scripts/compare_controllers.py, not retuned.
 
+Shape vs timing: the RMSE scores where the tip is at each instant. "shape" is the RMS
+distance from the tip to the nearest point of the reference path's last lap (time ignored),
+and "size" the tip path's mean distance from its centre as % of the reference's, both after
+the first lap. A late controller can trace the right shape; a controller on time can trace
+it too large.
+
+Extra controller: the delay-aware SMC with exact_preview=True, handed the true future
+reference r(t + T) instead of extrapolating r + T r' + T^2 r''/2 (which at 0.4 Hz enlarges a
+circle by |1 + iwT - (wT)^2/2| = 1.27). Only possible when the trajectory is known in
+advance; scored against r(t) like every other controller.
+
 Also reported: the open-loop replay of the generating commands (tasks axial, circle_ol;
 exactly 0 because the simulator's tip is deterministic, the seed only drives pressure-sensor
 noise), the score of a "perfect but delayed" tracker that does not predict the reference
@@ -75,7 +86,9 @@ SHOW = {  # controllers drawn in the per-task figures, with colours
     "PD, corrected allocator": "#8a8f93",
     "SMC (notebook model), corrected allocator + deviation, λ=8": "#1f6f7a",
 }
+SHOW["Delay-aware SMC, exact future reference (M2)"] = "#c2185b"
 BEST = "Delay-aware SMC, no observer (M2)"
+EXACT = "Delay-aware SMC, exact future reference (M2)"
 SHORT = {
     "PD, notebook allocator": "PD (as written)",
     "PD, corrected allocator": "PD corrected",
@@ -85,7 +98,30 @@ SHORT = {
     "Paper NDOSMC, eq. 12 (M1)": "Paper NDOSMC",
     "Delay-aware SMC, no observer (M2)": "Delay-aware SMC",
     "Delay-aware NDOSMC (M2)": "Delay-aware NDOSMC",
+    EXACT: "Delay-aware SMC, exact r(t+T)",
 }
+NO_PRED = "no prediction: reference delayed 0.5 s + lagged 0.6 s"
+
+
+class Ahead:
+    """Passes the controller the reference N steps ahead (N = its dead-time steps)."""
+
+    def __init__(self, ctl, ref_mm: np.ndarray):
+        self.c, self.d, self.k = ctl, ref_mm, 0
+
+    def compute(self, t, obs, ref):
+        k, n = self.k, self.c.n_delay
+        self.k += 1
+        return self.c.compute(t, obs, ref + (self.d[min(k + n, len(self.d) - 1)] - self.d[k]) / 1000.0)
+
+
+def controllers() -> list[tuple[str, object]]:
+    """compare_controllers' set (same gains) plus the exact-preview delay-aware SMC; make(ref_mm)."""
+    rows = [(nm, lambda ref, mk=mk: mk()) for nm, _, mk in C.controllers()]
+    m1 = C.N.TaskSpaceModel.load()
+    rows.append((EXACT, lambda ref: Ahead(C.N.DelayAwareNDOSMC(m1, lam=8.0, mu=1.0, eps=1.0, observer=False,
+                                                               exact_preview=True), ref)))
+    return rows
 
 
 # ----------------------------------------------------------------- model-based reach
@@ -224,6 +260,14 @@ def score(tip_mm: np.ndarray, ref_mm: np.ndarray, lap_s: float, cmds: np.ndarray
                max_planar_error_mm=float(np.linalg.norm(err[:, :2], axis=1).max()),
                max_planar_error_after_lap_mm=float(np.linalg.norm(err[late, :2], axis=1).max()),
                phase_lag_s=_phase_lag_seconds(ref_mm[:, 1], tip_mm[:, 1], HZ, max_lag_s=0.5 * lap_s))
+    k0 = int(round(lap_s * HZ))
+    path, tip, rf = ref_mm[-k0:, :2], tip_mm[k0:, :2], ref_mm[k0:, :2]  # last lap: open-loop refs start with a transient
+    near = np.full(len(tip), np.inf)
+    for i in range(0, len(tip), 500):  # chunked nearest-point search
+        near[i:i + 500] = np.sqrt(((tip[i:i + 500, None] - path[None]) ** 2).sum(-1)).min(1)
+    out["shape_rms_after_lap_mm"] = float(np.sqrt(np.mean(near ** 2)))
+    out["size_pct_after_lap"] = float(100 * np.mean(np.linalg.norm(tip - tip.mean(0), axis=1))
+                                      / np.mean(np.linalg.norm(rf - rf.mean(0), axis=1)))
     if cmds is not None:
         out["saturated_pct"] = base["saturated_pct"]
     return out
@@ -267,7 +311,7 @@ def task_figure(key: str, task: dict, runs: dict, path) -> None:
         ax.plot(t, e, color=col, lw=1.0, label=f"{SHORT[name]} ({task['controllers'][name]['planar_rmse_mm']:.2f})")
     fl = delayed_floor(ref, task["dead_s"], task["tau"], lag=True)
     ax.plot(t, np.linalg.norm(fl[:, :2] - ref[:, :2], axis=1), ":", color="black", lw=1.0,
-            label=f"ref via 0.5 s delay + 0.6 s lag ({task['floor_delay_lag']['planar_rmse_mm']:.2f})")
+            label=f"{NO_PRED} ({task['floor_delay_lag']['planar_rmse_mm']:.2f})")
     ax.set(xlabel="tracking time (s)", ylabel="planar error (mm)", title="Tracking error (xy RMSE mm)")
     ax.set_ylim(0, None)
     ax.legend(fontsize=7.5, loc="upper right")
@@ -280,8 +324,8 @@ def task_figure(key: str, task: dict, runs: dict, path) -> None:
 
 def summary_figure(out: dict, path) -> None:
     keys = list(out["tasks"])
-    names = [nm for nm, _, _ in C.controllers()]
-    cols = ["#c9cccf", "#8a8f93", "#9fd3d9", "#1f6f7a", "#9a6a12", "#e0b45c", "#6a4c9c", "#b39ddb"]
+    names = [nm for nm, _ in controllers()]
+    cols = ["#c9cccf", "#8a8f93", "#9fd3d9", "#1f6f7a", "#9a6a12", "#e0b45c", "#6a4c9c", "#b39ddb", "#c2185b"]
     fig, ax = plt.subplots(figsize=(13, 4.6))
     w = 0.8 / len(names)
     x = np.arange(len(keys))
@@ -291,7 +335,7 @@ def summary_figure(out: dict, path) -> None:
     for i, k in enumerate(keys):
         f = out["tasks"][k]["floor_delay_lag"]["planar_rmse_mm"]
         ax.plot([i - 0.42, i + 0.42], [f, f], color="black", lw=1.2, ls=":",
-                label="reference via 0.5 s delay + 0.6 s lag (no prediction)" if i == 0 else None)
+                label=NO_PRED if i == 0 else None)
     ax.set_xticks(x, [out["tasks"][k]["short"] for k in keys], fontsize=8.5)
     ax.set(ylabel="planar RMSE, whole run (mm)", title="Brief test motions: xy RMSE per controller "
            f"(make_calibrated_sim seed {SEED}, {out['track_s']:g} s)")
@@ -379,9 +423,9 @@ def main() -> None:
             res = B.track(OpenLoop(task["cmd"]), ref_fn, n)
             info["open_loop"] = score(1000.0 * (res["tips"] - res["home"]), ref, task["lap_s"], res["cmds"])
         runs = {}
-        for name, _, make in C.controllers():
+        for name, make in controllers():
             t0 = time.perf_counter()
-            res = B.track(make(), ref_fn, n)
+            res = B.track(make(ref), ref_fn, n)
             tip = 1000.0 * (res["tips"] - res["home"])
             row = score(tip, 1000.0 * (res["refs"] - res["home"]), task["lap_s"], res["cmds"])
             row["run_s"] = time.perf_counter() - t0
@@ -404,7 +448,8 @@ def main() -> None:
           f"z {lo['min'][2]:.2f}..{lo['max'][2]:.2f} mm")
     print(f"\n{out['sim']}, {args.track_s:g} s. xy / z RMSE mm whole run and after the first lap; "
           "max>lap = max planar error after the first lap; sat = % commands at 0 or 9 psi; lag = y phase lag s")
-    hdr = f"  {'':<28}{'xy':>7}{'xy>lap':>8}{'z':>7}{'z>lap':>7}{'max>lap':>8}{'sat%':>7}{'lag':>7}"
+    hdr = (f"  {'':<28}{'xy':>7}{'xy>lap':>8}{'z':>7}{'z>lap':>7}{'max>lap':>8}{'sat%':>7}{'lag':>7}"
+           f"{'shape':>7}{'size%':>7}")
     for key, info in out["tasks"].items():
         rg = info["reference_range_mm"]
         print(f"\n{key.upper()}: {info['title']}\n  reference x {rg['min'][0]:.2f}..{rg['max'][0]:.2f}, "
@@ -412,14 +457,14 @@ def main() -> None:
         print(hdr)
         rows = [("open loop (generating cmds)", info.get("open_loop")),
                 ("delayed, no prediction", info["floor_delay"]), ("delayed + lagged, no pred.", info["floor_delay_lag"])]
-        rows += [(SHORT[nm], info["controllers"][nm]) for nm, _, _ in C.controllers()]
+        rows += [(SHORT[nm], info["controllers"][nm]) for nm, _ in controllers()]
         for label, r in rows:
             if r is None:
                 continue
             sat = f"{r['saturated_pct']:>7.1f}" if "saturated_pct" in r else f"{'':>7}"
             print(f"  {label:<28}{r['planar_rmse_mm']:>7.2f}{r['planar_rmse_after_lap_mm']:>8.2f}"
                   f"{r['z_rmse_mm']:>7.2f}{r['z_rmse_after_lap_mm']:>7.2f}{r['max_planar_error_after_lap_mm']:>8.2f}"
-                  f"{sat}{r['phase_lag_s']:>7.2f}")
+                  f"{sat}{r['phase_lag_s']:>7.2f}{r['shape_rms_after_lap_mm']:>7.2f}{r['size_pct_after_lap']:>7.0f}")
     out["total_run_s"] = time.perf_counter() - t_start
     (FIG / "benchmark_slide_tasks.json").write_text(json.dumps(out, indent=2))
     print(f"\ntotal {out['total_run_s']:.0f} s; wrote {FIG / 'benchmark_slide_tasks.json'}, "

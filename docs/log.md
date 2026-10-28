@@ -3,6 +3,21 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-10-28
+
+- Shape vs timing on the brief's motions (`scripts/benchmark_slide_tasks.py`, now reports
+  shape = RMS distance to the reference path ignoring time, and size %). PD and Nikoletta's
+  SMC trace the right shape but 0.65-0.9 s late on the 0.4 Hz circle (shape 0.35 / 0.65 mm,
+  RMSE 7.48 / 5.71 mm); the delay-aware and paper SMCs are on time but 25-110 % too large.
+- Cause of the delay-aware overshoot, tested: the Taylor reference preview r + T r' + T^2 r''/2
+  (x1.27 on a 0.4 Hz circle; overshoots triangle corners by about edge speed x T). New option
+  `DelayAwareNDOSMC(exact_preview=True)` takes r(t + T) directly: 4.3 mm circle 2.35 -> 0.54 mm
+  (size 150 -> 112 %), triangle 1.99 -> 0.30 mm (128 -> 103 %), axial 2.73 -> 0.62 mm (after
+  the first lap). Needs the trajectory in advance; the harness passes r(t) only. Default
+  unchanged (`compare_controllers.py` output identical). Remaining 12 % on the circle:
+  hypothesis = M2 underestimates 0.4 Hz reach by ~9 %. Paper-SMC overshoot: hypothesis =
+  high-gain feedback through the unmodelled 1.1 s delay; not tested.
+
 ## 2026-10-26
 
 - `scripts/benchmark_slide_tasks.py`: every controller of `compare_controllers.py` (same gains)
