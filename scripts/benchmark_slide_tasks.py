@@ -67,6 +67,7 @@ import numpy as np
 
 import benchmark_all_tasks as B
 import compare_controllers as C
+import plot_style as P
 from soft_robotic_arm import make_calibrated_sim
 from soft_robotic_arm.evaluation import CircularTrackingTask, _phase_lag_seconds, make_reference
 
@@ -80,13 +81,11 @@ CIRCLE_OL_AMP = 3.0                            # psi: 1.5-7.5, the identified ra
 TRI_PERIOD = 7.5                               # slide 19-20, s per lap
 AZIMUTH = np.radians([90.0, 180.0, 270.0])     # S2, S3, S4
 
-SHOW = {  # controllers drawn in the per-task figures, with colours
-    "Delay-aware SMC, no observer (M2)": "#6a4c9c",
-    "Paper SMC, eq. 5 (M1)": "#9a6a12",
-    "PD, corrected allocator": "#8a8f93",
-    "SMC (notebook model), corrected allocator + deviation, λ=8": "#1f6f7a",
-}
-SHOW["Delay-aware SMC, exact future reference (M2)"] = "#c2185b"
+SHOW = (  # controllers drawn in the per-task figures, in two panels of at most 3 + reference
+    ["PD, corrected allocator", "SMC (notebook model), corrected allocator + deviation, λ=8",
+     "Paper SMC, eq. 5 (M1)"],
+    ["Delay-aware SMC, no observer (M2)", "Delay-aware SMC, exact future reference (M2)"],
+)
 BEST = "Delay-aware SMC, no observer (M2)"
 EXACT = "Delay-aware SMC, exact future reference (M2)"
 SHORT = {
@@ -273,98 +272,20 @@ def score(tip_mm: np.ndarray, ref_mm: np.ndarray, lap_s: float, cmds: np.ndarray
     return out
 
 
-# ------------------------------------------------------------------------ figures
+# ------------------------------------------------------------------------ tasks
 
-def task_figure(key: str, task: dict, runs: dict, path) -> None:
-    ref = task["ref_mm"]
-    t = np.arange(len(ref)) / HZ
-    last = t >= t[-1] - task["lap_s"]
-    axial = key == "axial"
-    fig = plt.figure(figsize=(15.5 if axial else 13.5, 4.4))
-    gs = fig.add_gridspec(1, 4 if axial else 3, width_ratios=[1, 1, 1.3, 1.5] if axial else [1, 1.3, 1.5])
-    planes = [(0, 1, "x"), (1, 2, "y")] if axial else [(0, 1, "x")]
-    for j, (i0, i1, _) in enumerate(planes):
-        ax = fig.add_subplot(gs[0, j])
-        ax.plot(ref[last, i0], ref[last, i1], "--", color="black", lw=1.2, label="reference")
-        for name, col in SHOW.items():
-            tip = runs[name]["tip_mm"]
-            ax.plot(tip[last, i0], tip[last, i1], color=col, lw=1.2, label=SHORT[name])
-        lab = "xyz"
-        ax.set(xlabel=f"{lab[i0]} − home (mm)", ylabel=f"{lab[i1]} − home (mm)",
-               title=f"Tip path, last lap ({lab[i0]}-{lab[i1]})")
-        if i1 != 2:
-            ax.set_aspect("equal", adjustable="datalim")
-        ax.grid(alpha=0.3)
-        if j == 0:
-            ax.legend(fontsize=7.5, loc="best")
-    ax = fig.add_subplot(gs[0, len(planes)])
-    cm = runs[EXACT]["cmds"]
-    for s, col in zip(range(3), ["#c0392b", "#2e86c1", "#27ae60"]):
-        ax.plot(t, cm[:, s], color=col, lw=0.9, label=f"S{s + 2}")
-    ax.set(xlabel="tracking time (s)", ylabel="command (psi)", ylim=(-0.3, 9.3),
-           title=f"{SHORT[EXACT]}: commands")
-    ax.legend(fontsize=8, ncol=3, loc="upper right")
-    ax.grid(alpha=0.3)
-    ax = fig.add_subplot(gs[0, len(planes) + 1])
-    for name, col in SHOW.items():
-        e = np.linalg.norm(runs[name]["tip_mm"][:, :2] - ref[:, :2], axis=1)
-        ax.plot(t, e, color=col, lw=1.0, label=f"{SHORT[name]} ({task['controllers'][name]['planar_rmse_mm']:.2f})")
-    fl = delayed_floor(ref, task["dead_s"], task["tau"], lag=True)
-    ax.plot(t, np.linalg.norm(fl[:, :2] - ref[:, :2], axis=1), ":", color="black", lw=1.0,
-            label=f"{NO_PRED} ({task['floor_delay_lag']['planar_rmse_mm']:.2f})")
-    ax.set(xlabel="tracking time (s)", ylabel="planar error (mm)", title="Planar error over time (legend: RMSE, mm)")
-    ax.set_ylim(0, None)
-    ax.legend(fontsize=7.5, loc="upper right")
-    ax.grid(alpha=0.3)
-    fig.suptitle(task["title"], fontsize=10)
-    fig.tight_layout()
-    fig.savefig(path, dpi=140)
-    plt.close(fig)
+def build_tasks(n: int, m: dict) -> tuple[dict, dict]:
+    """The five tasks' references (mm, relative to home; n samples) and the chosen sizes.
 
-
-def summary_figure(out: dict, path) -> None:
-    keys = list(out["tasks"])
-    names = [nm for nm, _ in controllers()]
-    cols = ["#c9cccf", "#8a8f93", "#9fd3d9", "#1f6f7a", "#9a6a12", "#e0b45c", "#6a4c9c", "#b39ddb", "#c2185b"]
-    fig, ax = plt.subplots(figsize=(13, 4.6))
-    w = 0.8 / len(names)
-    x = np.arange(len(keys))
-    for j, (nm, c) in enumerate(zip(names, cols)):
-        v = [out["tasks"][k]["controllers"][nm]["planar_rmse_mm"] for k in keys]
-        ax.bar(x - 0.4 + (j + 0.5) * w, v, w, color=c, label=SHORT[nm])
-    for i, k in enumerate(keys):
-        f = out["tasks"][k]["floor_delay_lag"]["planar_rmse_mm"]
-        ax.plot([i - 0.42, i + 0.42], [f, f], color="black", lw=1.2, ls=":",
-                label=NO_PRED if i == 0 else None)
-    ax.set_xticks(x, [out["tasks"][k]["short"] for k in keys], fontsize=8.5)
-    ax.set(ylabel="planar RMSE, whole run (mm)", title="Brief test motions: xy RMSE per controller "
-           f"(make_calibrated_sim seed {SEED}, {out['track_s']:g} s)")
-    ax.set_ylim(0, 1.4 * ax.get_ylim()[1])
-    ax.legend(fontsize=7.5, ncol=3, loc="upper left")
-    ax.grid(alpha=0.3, axis="y")
-    fig.tight_layout()
-    fig.savefig(path, dpi=140)
-    plt.close(fig)
-
-
-# --------------------------------------------------------------------------- main
-
-def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--track-s", type=float, default=30.0)
-    args = ap.parse_args()
-    n = int(round(args.track_s * HZ))
-    t_start = time.perf_counter()
-    m = load_m2()
+    m = load_m2(). Each task: ref_mm (n, 3), lap_s, short, title, and cmd (n, 3) for the
+    open-loop tasks. Open-loop references are deterministic, so a longer n only appends samples.
+    """
     bounds = reach_bounds(m)
-    checks = reach_checks(m)
     r_static, r_dyn = floor01(bounds["circle_static_mm"]), floor01(bounds["circle_dyn_0p4hz_mm"])
     r_tri = floor01(bounds["triangle_edge_mm"])
 
     # references (mm, relative to home), with their generating commands where open loop
     ax_disp, ax_cmd = open_loop(axial_cmd(BASE), n)
-    ax_low, _ = open_loop(axial_cmd(ID_RANGE_PSI[0]), n,
-                          settle=[ID_RANGE_PSI[0], ID_RANGE_PSI[0], AXIAL_MEAN])
     co_disp, co_cmd = open_loop(circle_ol_cmd, n)
     tt = np.arange(n) / HZ
     circ = lambda r: np.array([1000.0 * (make_reference(np.zeros(3), t,  # noqa: E731
@@ -389,6 +310,100 @@ def main() -> None:
                          title=f"Triangular: circumradius {r_tri:g} mm, vertices 0/120/240°, "
                                f"{TRI_PERIOD} s per lap"),
     }
+    return tasks, dict(circle_static_r_mm=r_static, circle_dyn_r_mm=r_dyn, triangle_R_mm=r_tri)
+
+
+# ------------------------------------------------------------------------ figures
+
+def task_figure(key: str, task: dict, runs: dict, path) -> None:
+    """Tip paths over the last lap, the exact-preview controller's commands, and the planar error
+    over time; controllers split over two panels per row (plot_style identities)."""
+    P.apply()
+    ref = task["ref_mm"]
+    t = np.arange(len(ref)) / HZ
+    last = t >= t[-1] - task["lap_s"]
+    planes = [(0, 1), (1, 2)] if key == "axial" else [(0, 1)]
+    nrow = len(planes) + 2
+    fig = plt.figure(figsize=(P.WIDTH, P.PANEL_H * nrow * 1.25), layout="constrained")
+    gs = fig.add_gridspec(nrow, 2)
+    lab = "xyz"
+    for r, (i0, i1) in enumerate(planes):
+        for c, group in enumerate(SHOW):
+            ax = fig.add_subplot(gs[r, c])
+            ax.plot(ref[last, i0], ref[last, i1], **P.REFERENCE)
+            for name in group:
+                tip = runs[name]["tip_mm"]
+                ax.plot(tip[last, i0], tip[last, i1], **P.line(name, int(last.sum())))
+            ax.set(xlabel=f"{lab[i0]} − home (mm)", ylabel=f"{lab[i1]} − home (mm)",
+                   title=f"Tip path, last lap ({lab[i0]}-{lab[i1]})")
+            if i1 != 2:
+                ax.set_aspect("equal", adjustable="datalim")
+            P.legend_below(ax, ncol=1)
+    ax = fig.add_subplot(gs[len(planes), :])
+    cm = runs[EXACT]["cmds"]
+    for s in range(3):
+        ax.plot(t, cm[:, s], **P.line(f"S{s + 2}", len(t)))
+    ax.set(xlabel="tracking time (s)", ylabel="command (psi)", ylim=(-0.3, 9.3),
+           title=f"{P.label(EXACT)}: commands")
+    P.legend_outside(ax)
+    fl = delayed_floor(ref, task["dead_s"], task["tau"], lag=True)
+    fl_err = np.linalg.norm(fl[:, :2] - ref[:, :2], axis=1)
+    for c, group in enumerate(SHOW):
+        ax = fig.add_subplot(gs[len(planes) + 1, c])
+        for name in group:
+            e = np.linalg.norm(runs[name]["tip_mm"][:, :2] - ref[:, :2], axis=1)
+            ax.plot(t, e, **P.line(name, len(t), label=f"{P.label(name)}: "
+                                   f"{task['controllers'][name]['planar_rmse_mm']:.2f} mm"))
+        ax.plot(t, fl_err, **P.NO_PREDICTION,
+                label=f"no prediction (0.5 s delay + 0.6 s lag): {task['floor_delay_lag']['planar_rmse_mm']:.2f} mm")
+        ax.set(xlabel="tracking time (s)", ylabel="planar error (mm)", title="Planar error (legend: RMSE)")
+        ax.set_ylim(0, None)
+        P.legend_below(ax, ncol=1, fontsize=11)
+    fig.suptitle(task["title"])
+    P.save(fig, path)
+
+
+def summary_figure(out: dict, path) -> None:
+    """One panel per task: whole-run planar RMSE per controller, value written on each bar."""
+    P.apply()
+    keys = list(out["tasks"])
+    names = [nm for nm, _ in controllers()]
+    fig, axs = P.figure(len(keys), 1, layout="constrained")
+    for ax, k in zip(axs[:, 0], keys):
+        v = np.array([out["tasks"][k]["controllers"][nm]["planar_rmse_mm"] for nm in names])
+        y = np.arange(len(names))
+        ax.barh(y, v, color=[P.identity(nm)[0] for nm in names], edgecolor="black", lw=0.8)
+        for yi, vi in zip(y, v):
+            ax.text(vi + 0.01 * v.max(), yi, f"{vi:.2f}", va="center", fontsize=12)
+        f = out["tasks"][k]["floor_delay_lag"]["planar_rmse_mm"]
+        ax.axvline(f, **P.NO_PREDICTION)
+        ax.text(f, len(names) - 0.4, f" {NO_PRED}: {f:.2f}", fontsize=11, va="bottom")
+        ax.set_yticks(y, [P.label(nm) for nm in names])
+        ax.invert_yaxis()
+        ax.set_xlim(0, 1.18 * max(v.max(), f))
+        ax.set_ylim(len(names) - 0.5 + 0.9, -0.6)
+        ax.set(xlabel="planar RMSE, whole run (mm)", title=out["tasks"][k]["short"].replace("\n", " "))
+        ax.grid(axis="y", visible=False)
+    fig.suptitle(f"Brief test motions: xy RMSE per controller (make_calibrated_sim seed {SEED}, "
+                 f"{out['track_s']:g} s)")
+    P.save(fig, path)
+
+
+# --------------------------------------------------------------------------- main
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--track-s", type=float, default=30.0)
+    args = ap.parse_args()
+    n = int(round(args.track_s * HZ))
+    t_start = time.perf_counter()
+    m = load_m2()
+    bounds = reach_bounds(m)
+    checks = reach_checks(m)
+    tasks, radii = build_tasks(n, m)
+    r_static, r_dyn, r_tri = radii["circle_static_r_mm"], radii["circle_dyn_r_mm"], radii["triangle_R_mm"]
+    ax_low, _ = open_loop(axial_cmd(ID_RANGE_PSI[0]), n,
+                          settle=[ID_RANGE_PSI[0], ID_RANGE_PSI[0], AXIAL_MEAN])
 
     out = dict(sim=f"make_calibrated_sim(control_hz={HZ}, seed={SEED})", track_s=args.track_s,
                settle=f"{B.SETTLE_S} s at {BASE} psi", m2=dict(tau_s=m["tau"], dead_s=m["dead_s"]),

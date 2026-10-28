@@ -75,6 +75,9 @@ Full detail in `docs/simulator.md`.
 - Read parameters from the package (`sim.cfg`, the MuJoCo model) rather than
   hard-coding numbers that already exist there.
 - Generated figures go in `docs/figures/` and must be reproducible by a script.
+- Figures use `scripts/plot_style.py` (`P.apply()`, `P.line(name, n)`): Okabe-Ito colours,
+  one fixed colour + line style + marker per controller, at most 4-5 series per panel,
+  readable sizes. Add new controllers to `plot_style.SERIES`.
 
 ## Notebooks
 

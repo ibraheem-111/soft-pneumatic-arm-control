@@ -139,6 +139,17 @@ def yaw_matrix(psi: float) -> np.ndarray:
     return np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
 
 
+def recorded_runs(upstream: Path, track_s: float) -> tuple[dict, dict, float]:
+    """Load the three runs, replay their commands open loop, fit the pooled mocap yaw (rad).
+
+    The reference for waveform w in the simulator frame is runs[w]["disp"] @ yaw_matrix(psi).T.
+    """
+    runs = {w: load_run(upstream, p, track_s) for w, p in RUNS.items()}
+    replays = {w: replay(r["cmd"]) for w, r in runs.items()}
+    psi = fit_yaw([runs[w]["disp"][1:] for w in RUNS], [replays[w] for w in RUNS])
+    return runs, replays, psi
+
+
 # --------------------------------------------------------------------------- tracking
 
 def track(controller, ref_fn, n_steps: int, seed: int = SIM_SEED) -> dict:
@@ -213,9 +224,7 @@ def main() -> None:
     print(f"harness check (scored circle, {C.controllers()[-1][0]}): "
           f"|track - evaluate_controller| = {check_harness():.2e} mm")
 
-    runs = {w: load_run(args.upstream, p, args.track_s) for w, p in RUNS.items()}
-    replays = {w: replay(r["cmd"]) for w, r in runs.items()}
-    psi = fit_yaw([runs[w]["disp"][1:] for w in RUNS], [replays[w] for w in RUNS])
+    runs, replays, psi = recorded_runs(args.upstream, args.track_s)
     Rz = yaw_matrix(psi)
     print(f"mocap -> sim yaw: {np.degrees(psi):.1f} deg (pooled fit, 3 runs)")
 

@@ -32,6 +32,7 @@ import numpy as np
 import benchmark_all_tasks as B
 import benchmark_slide_tasks as S
 import ndosmc as N
+import plot_style as P
 from soft_robotic_arm.evaluation import CircularTrackingTask, make_reference
 
 LAM_DELAY = (0.5, 1.0, 2.0, 4.0, 8.0)
@@ -76,31 +77,33 @@ def configurations(m1) -> list[dict]:
 
 
 def figure(runs: list[dict], path) -> None:
-    fig, axs = plt.subplots(2, 2, figsize=(11, 7), sharex="col")
-    styles = {("delay-aware SMC (M2)", "taylor"): ("#6a4c9c", "o-", "delay-aware, Taylor preview"),
-              ("delay-aware SMC (M2)", "exact"): ("#c2185b", "s-", "delay-aware, exact r(t+T)"),
-              ("paper SMC (M1)", "none"): ("#9a6a12", "^-", "paper SMC")}
+    P.apply()
+    fig, axs = P.figure(2, 2, sharex="col", layout="constrained")
+    styles = {("delay-aware SMC (M2)", "taylor"): ("Delay-aware SMC, no observer (M2)", "delay-aware, Taylor preview"),
+              ("delay-aware SMC (M2)", "exact"): ("Delay-aware SMC, exact future reference (M2)",
+                                                  "delay-aware, exact r(t+T) [diag]"),
+              ("paper SMC (M1)", "none"): ("Paper SMC, eq. 5 (M1)", "paper SMC")}
     for j, task in enumerate(("circle_dyn", "triangle")):
-        for (ctl, pv), (col, mk, lab) in styles.items():
+        for (ctl, pv), (name, lab) in styles.items():
             rs = sorted((r for r in runs if r["task"] == task and r["controller"] == ctl and r["preview"] == pv),
                         key=lambda r: r["params"]["lam"])
             lam = [r["params"]["lam"] for r in rs]
-            axs[0, j].plot(lam, [r["metrics"]["planar_rmse_after_lap_mm"] for r in rs], mk, color=col, label=lab)
-            axs[1, j].plot(lam, [r["metrics"]["size_pct_after_lap"] for r in rs], mk, color=col, label=lab)
+            axs[0, j].plot(lam, [r["metrics"]["planar_rmse_after_lap_mm"] for r in rs],
+                           **P.line(name, None, markevery=1, markersize=9, label=lab))
+            axs[1, j].plot(lam, [r["metrics"]["size_pct_after_lap"] for r in rs],
+                           **P.line(name, None, markevery=1, markersize=9, label=lab))
         axs[0, j].set(title={"circle_dyn": "Circle r = 4.3 mm, 0.4 Hz", "triangle": "Triangle R = 6 mm, 7.5 s lap"}[task],
-                      ylabel="planar RMSE after first lap (mm)", ylim=(0, None))
-        axs[1, j].axhline(100, color="black", lw=0.8, ls="--")
-        axs[1, j].set(xlabel="sliding gain λ (1/s)", ylabel="path size (% of reference)", xscale="log")
+                      ylabel="planar RMSE after\nfirst lap (mm)", ylim=(0, None))
+        axs[1, j].axhline(100, **{**P.REFERENCE, "label": "reference size (100 %)"})
+        axs[1, j].set(xlabel="sliding gain λ (1/s)", ylabel="path size\n(% of reference)", xscale="log")
         ticks = sorted(set(LAM_DELAY) | set(LAM_PAPER))
         for a in axs[:, j]:
-            a.grid(alpha=0.3)
             a.set_xticks(ticks, [f"{t:g}" for t in ticks])
             a.minorticks_off()
-    axs[0, 0].legend(fontsize=8)
-    fig.suptitle("Gain does not remove the overshoot; the exact preview does (make_calibrated_sim seed 0)", fontsize=10)
-    fig.tight_layout()
-    fig.savefig(path, dpi=140)
-    plt.close(fig)
+    h, lb = axs[1, 0].get_legend_handles_labels()
+    fig.legend(h, lb, loc="outside lower center", ncol=2)
+    fig.suptitle("Gain does not remove the overshoot; the exact preview does (make_calibrated_sim seed 0)")
+    P.save(fig, path)
 
 
 def main() -> None:
