@@ -5,6 +5,8 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-28
 
+- Professor (in class): the robot accepts up to 15 psi; we should probably limit commands to
+  10 psi. Noted only; all code and results still use the 0-9 psi clip.
 - Study guide `docs/reports/controller-study-guide.html`: every model (one-mode, M1, M2, M3, F)
   and controller (PD, notebook SMC, paper SMC/NDOSMC, delay-aware SMC with Taylor / exact /
   RefPredictor preview, MPC) derived step by step with file:line references, and the full

@@ -52,6 +52,7 @@ for simulation work; the disagreement is noted below.
 | Pre-inflation stiffens joints | Implemented (`set_pre_inflation`) but `make_sim()` leaves it at 0 |
 | Sensor model adds curvature and extension coupling plus noise | Extension coupling is 0; curvature coupling and noise only |
 | Pouches rated to 10 psi | Coursework command limit is 9 psi |
+| Robot takes up to 15 psi; professor suggests limiting to 10 psi (in class, 2026-10-28) | Code still clips at 9 psi; not changed |
 
 The slides also flag a modelling caveat worth repeating in our report: true PCC
 couples bending angle and arc length nonlinearly, while 5 independently rotating
