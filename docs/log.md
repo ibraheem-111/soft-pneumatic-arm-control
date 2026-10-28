@@ -5,6 +5,11 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-10-28
 
+- Study guide `docs/reports/controller-study-guide.html`: every model (one-mode, M1, M2, M3, F)
+  and controller (PD, notebook SMC, paper SMC/NDOSMC, delay-aware SMC with Taylor / exact /
+  RefPredictor preview, MPC) derived step by step with file:line references, and the full
+  `benchmark_unified.json` tables (generated from the JSON). Deck slide 6 now shows six
+  controllers on five tests, RMSE after the first lap, from the same JSON.
 - Unified benchmark (`uv run python scripts/benchmark_unified.py`, 156 runs, 2 min 45 s on 10
   workers; every run's gains, seed, test parameters, metrics and run time in
   `docs/figures/benchmark_unified.json`, heat maps in `benchmark_unified.png`): 12 controllers

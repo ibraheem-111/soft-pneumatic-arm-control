@@ -1,7 +1,8 @@
 // Builds docs/slides/soft_arm_models_controllers.pptx, the short deck for the
-// Nikoletta + Ibraheem discussion (6 slides). Numbers on slides 2 come from
+// Nikoletta + Ibraheem discussion (6 slides). Numbers on slide 2 come from
 // Nikoletta's slides; the rest from scripts/task_space_model.py,
-// scripts/stiffness_vs_pressure.py and scripts/compare_controllers.py.
+// scripts/stiffness_vs_pressure.py, scripts/compare_controllers.py and
+// scripts/benchmark_unified.py (slide 6).
 //
 // Usage (pptxgenjs is not a project dependency; install it anywhere and point NODE_PATH at it):
 //   npm install --prefix /some/dir pptxgenjs@3.12.0
@@ -154,25 +155,20 @@ eqCard(s, [
   "• The switching term η sat(σ/μ) covers what remains; measured: adding the observer changes RMSE by ≤ 0.03 mm",
 ], { x: 0.5, y: 4.0, w: 9.0, h: 1.45, fontSize: 11, face: BODY, space: 3, boldFirst: true });
 
-// 6 · Results and next step
+// 6 · Results: every controller on the same tests (scripts/benchmark_unified.py)
 s = pres.addSlide();
-header(s, "Results, and next: MPC or MPPI", "COMPARISON · SCORED TASK (7 mm CIRCLE, 0.1 Hz) · RMSE IN mm");
+header(s, "Results: same tests, same metric", "RMSE AFTER THE FIRST LAP, mm · make_calibrated_sim, seed 0 · bold = best");
 const hdr = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: ACCENT } } });
 s.addTable([
-  [hdr("Controller"), hdr("RMSE"), hdr("After 5 s")],
-  ["PD, fixed allocator", "4.08", "3.96"],
-  ["SMC + Smith (Nikoletta)", "1.97", "—"],
-  ["Paper SMC (M1)", "1.46", "0.87"],
-  [{ text: "Delay-aware SMC (M2)", options: { bold: true } }, { text: "1.23", options: { bold: true } }, { text: "0.09", options: { bold: true } }],
-], { x: 0.5, y: 1.45, w: 5.1, colW: [2.7, 1.2, 1.2], fontFace: BODY, fontSize: 14, color: INK, border: { type: "solid", pt: 0.5, color: "D0D6D8" }, rowH: 0.42 });
-s.addText("Held-out task (10 mm, 0.15 Hz): delay-aware SMC 2.00 mm, commands at 0 or 9 psi 21 % of the time. Nikoletta's 1.97 mm is from her slides.", { x: 0.5, y: 4.0, w: 5.1, h: 0.7, fontFace: BODY, fontSize: 11, color: MUTED, margin: 0, isTextBox: true });
-eqCard(s, [
-  "Why MPC / MPPI",
-  "• Delay and lag inside the model",
-  "• 0–9 psi limits in the optimization, not clipped after",
-  "• All 3 inputs chosen together",
-  "• MPPI: sampling-based, handles nonlinearity",
-  "First test: the held-out task, where saturation limits the SMC",
-], { x: 5.9, y: 1.45, w: 3.6, h: 3.2 });
+  [hdr("Controller"), hdr("Scored circle\n0.1 Hz"), hdr("Triangle\n10 s lap"), hdr("Axial\n0.1 Hz"), hdr("Fast circle\n0.4 Hz"), hdr("Robot\ncircle")],
+  ["PD", "3.96", "2.94", "2.77", "7.48", "4.75"],
+  ["SMC, one-mode (Nikoletta)", "2.13", "1.81", "1.48", "5.71", "2.95"],
+  ["Paper SMC (M1)", "0.87", "1.46", "0.61", "8.18", "2.62"],
+  ["Delay-aware SMC (M2)", "0.09", "1.46", "0.07", "2.35", { text: "1.56", options: { bold: true } }],
+  ["Delay-aware SMC + predictor", { text: "0.03", options: { bold: true } }, "1.78", "0.03", "0.55", "2.07"],
+  ["Delay-compensated MPC", "0.06", { text: "0.62", options: { bold: true } }, { text: "0.01", options: { bold: true } }, { text: "0.15", options: { bold: true } }, "3.56"],
+], { x: 0.4, y: 1.35, w: 9.2, colW: [3.2, 1.2, 1.2, 1.2, 1.2, 1.2], fontFace: BODY, fontSize: 12, color: INK, align: "center", valign: "middle",
+     border: { type: "solid", pt: 0.5, color: "D0D6D8" }, rowH: 0.33 });
+s.addText("Modelling the 0.5 s delay and 0.6 s lag is what matters; predicting the reference 0.5 s ahead decides fast and cornered motions. On the recorded robot path the reference never repeats, so the history-based predictor falls back to AR(2) and the plain delay-aware SMC is best.", { x: 0.4, y: 4.6, w: 9.2, h: 0.75, fontFace: BODY, fontSize: 11, color: MUTED, margin: 0, isTextBox: true });
 
 pres.writeFile({ fileName: path.join(__dirname, "soft_arm_models_controllers.pptx") }).then((f) => console.log("wrote", f));
