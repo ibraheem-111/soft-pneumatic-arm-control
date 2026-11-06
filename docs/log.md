@@ -5,6 +5,12 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-06
 
+- Professor: final test uses irregular random trajectories, known in advance. Added §6 to
+  `notebooks/Soft_robotic_arm_SMC_M2.ipynb`: smooth random (6 sines, 0.03-0.3 Hz, ±6 mm) and
+  random waypoints (straight lines, 1-2.5 s segments, ±6 mm), seeds 101-103, sim seed 0, 30 s.
+  Delay-aware NDOSMC (same gains), RMSE after 5 s: Taylor estimate 0.22-0.41 (smooth) /
+  2.05-2.87 mm (waypoints); known trajectory (exact_preview + KnownTrajectory wrapper)
+  0.06-0.10 / 0.27-0.36 mm. The notebook's track() reproduces evaluate_controller (1.21 mm).
 - `notebooks/Soft_robotic_arm_SMC_M2.ipynb` (Nikoletta): self-contained submission notebook for
   the delay-aware NDOSMC on M2 (model values embedded). Rerun here: 1.21 mm whole run, 0.102 mm
   after 5 s, held-out 1.97 mm, identical to `compare_controllers.py`. Its "MPC 0.92 mm did not

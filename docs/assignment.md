@@ -95,3 +95,13 @@ arm (S2-S4 only, 0-9 psi): open-loop paths of the slide-like axial and circular 
 geometric circles / triangle at the slide timing with radii from M2's reach (8.9 and 4.3 mm
 circles at 0.4 Hz, 6.0 mm triangle). Results: `docs/log.md` 2026-10-26 and
 `docs/figures/benchmark_slide_tasks.json`.
+
+## Final test conditions (professor, in class, by 2026-11-06)
+
+- The final evaluation uses random trajectories that are not very regular.
+- It is fair to assume the trajectory is known in advance, so a controller may read the
+  reference ahead (`r(t + T)`, T = 0.5 s dead time) instead of estimating it.
+- Commands: the robot accepts up to 15 psi; keep to at most 10 psi (code still clips at 9).
+
+Test added for this in `notebooks/Soft_robotic_arm_SMC_M2.ipynb` §6 (smooth random and random
+waypoints, ±6 mm, seeds 101-103).
