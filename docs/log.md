@@ -3,6 +3,15 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-11-06
+
+- `notebooks/Soft_robotic_arm_SMC_M2.ipynb` (Nikoletta): self-contained submission notebook for
+  the delay-aware NDOSMC on M2 (model values embedded). Rerun here: 1.21 mm whole run, 0.102 mm
+  after 5 s, held-out 1.97 mm, identical to `compare_controllers.py`. Its "MPC 0.92 mm did not
+  reproduce" note compares two different numbers: 0.92 mm is the MPC's held-out-circle RMSE
+  after the first lap (results slide), 1.22 mm its scored-circle whole-run RMSE; both reproduce
+  (`benchmark_unified.json`).
+
 ## 2026-10-28
 
 - Professor (in class): the robot accepts up to 15 psi; we should probably limit commands to
