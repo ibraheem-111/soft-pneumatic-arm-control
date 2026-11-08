@@ -4,11 +4,17 @@ Ground truth: make_calibrated_sim(control_hz=100, seed=0), 5 s settle at 4.5 psi
 excitation; tip = obs["tip_pos"] minus the settled tip, in mm (the tip has no sensor noise).
 Models, each simulated open loop (free run) from rest with the same commands u = cmd - 4.5 psi:
 
-  one-mode  Nikoletta's reduced model (scripts/smc_reduced_model.reduced_model, notebook §7):
-            y'' + c y' + k y = b dp per axis, corrected sign b = +|b|, no actuator dynamics,
-            no z. Plane inputs dp_x = -u3 (S1 sealed, S3 alone), dp_y = u2 - u4.
-  M2        scripts/task_space_model.py (docs/figures/task_space_model.json via ndosmc.TaskSpaceModel):
-            tau p' = -p + g u(t - T) per segment, y' = -a y + a (H p) for x, y, z.
+  one-mode    Nikoletta's reduced model, as in her latest notebook (Copy_of_soft_robotic_arm_
+              SMC_Smith-2.ipynb §7, same as scripts/smc_reduced_model.reduced_model):
+              y'' + c y' + k y = b dp per axis, k = 10.60, c = 9.231, corrected sign b = +|b|,
+              no actuator dynamics, no z. Plane inputs dp_x = -u3 (S1 sealed), dp_y = u2 - u4.
+  one-mode+g  the same derivation with the hanging chain's gravity stiffness added
+              (reduced_model(include_gravity=True): k = 51.45, c = 9.409); from the review of
+              her model, not in her notebooks.
+  M2          scripts/task_space_model.py (docs/figures/task_space_model.json via ndosmc.TaskSpaceModel):
+              tau p' = -p + g u(t - T) per segment, y' = -a y + a (H p) for x, y, z.
+  M3          M2's actuator with second-order mechanics (task_space_model.json M3_mechanics):
+              y'' + 2 zeta w y' + w^2 y = w^2 (H p) per axis.
   F         scripts/sysid_frf.py (models/sysid_calibrated_v2.json): per-axis state space with the
             identified delay, channels nu_x = -u3, nu_y = u2 - u4 (the identification map), no z.
 All are ZOH-discretised at 100 Hz; the model output after step k is compared with the simulator's
@@ -19,7 +25,9 @@ Excitations (seeds differ from every identification and validation seed in the r
   chirp         S2-S4 = 4.5 + 2.5 sin(phase + 0, 120, 240 deg), frequency swept 0.02 -> 1 Hz
                 (logarithmic) over 60 s
 
-Metrics per axis, whole run: RMSE (mm) and fit = 100 (1 - |y_model - y| / |y - mean(y)|) %.
+Metrics per axis, whole run: RMSE, max |error| and bias = mean error (mm), and
+fit = 100 (1 - |y_model - y| / |y - mean(y)|) %. Static gains (mm/psi): the tip change 10 s after
+a +1 psi step on S3 (x) and on S2 (y) from the 4.5 psi baseline, for the simulator and each model.
 Writes docs/figures/model_comparison.json (metrics, settings), model_comparison_data.npz (time
 series) and model_comparison_<excitation>.png.
 
@@ -35,6 +43,7 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import cont2discrete
@@ -49,9 +58,11 @@ ROOT = Path(__file__).resolve().parent.parent
 FIG = ROOT / "docs" / "figures"
 F_MODEL = ROOT / "models" / "sysid_calibrated_v2.json"
 HZ, DT, BASE, SETTLE_S = 100.0, 0.01, 4.5, 5.0
-MODELS = ("one-mode", "M2", "F")
+MODELS = ("one-mode", "one-mode+g", "M2", "M3", "F")
+DERIVED, IDENTIFIED = ("one-mode", "one-mode+g"), ("M2", "M3", "F")
 LABELS = {"truth": "MuJoCo simulator (truth)", "one-mode": "One-mode model (Nikoletta)",
-          "M2": "M2 (task-space, identified)", "F": "F (frequency-identified)"}
+          "one-mode+g": "One-mode + gravity", "M2": "M2 (task-space, identified)",
+          "M3": "M3 (M2 + inertia)", "F": "F (frequency-identified)"}
 
 
 # ---------------------------------------------------------------------------- excitations
@@ -113,8 +124,8 @@ def plane_inputs(u: np.ndarray) -> np.ndarray:
     return np.column_stack([-u[:, 1], u[:, 0] - u[:, 2]])
 
 
-def simulate_one_mode(u: np.ndarray) -> np.ndarray:
-    k, c, b = S.reduced_model(include_gravity=False)
+def simulate_one_mode(u: np.ndarray, gravity: bool = False) -> np.ndarray:
+    k, c, b = S.reduced_model(include_gravity=gravity)
     b = abs(b)                                   # corrected sign (notebook §13)
     A, B, C = np.array([[0.0, 1.0], [-k, -c]]), np.array([[0.0], [b]]), np.array([[1.0, 0.0]])
     dp = plane_inputs(u)
@@ -135,6 +146,22 @@ def simulate_m2(u: np.ndarray) -> np.ndarray:
     return _lsim(A, B, C, u, delay=int(round(act.delay_s * HZ)))
 
 
+def simulate_m3(u: np.ndarray) -> np.ndarray:
+    m = N.TaskSpaceModel.load()
+    act = m.actuator
+    mech = json.loads(N.MODEL_JSON.read_text())["M3_mechanics"]
+    w = np.array([mech[a]["wn"] for a in "xyz"])
+    z = np.array([mech[a]["zeta"] for a in "xyz"])
+    H = np.array([mech[a]["H"] for a in "xyz"])
+    tau, g, O = act.tau_s, act.gain, np.zeros((3, 3))
+    A = np.block([[O, np.eye(3), O],
+                  [-np.diag(w**2), -np.diag(2 * z * w), np.diag(w**2) @ H],
+                  [O, O, -np.eye(3) / tau]])
+    B = np.vstack([O, O, np.diag(g) / tau])
+    C = np.hstack([np.eye(3), O, O])
+    return _lsim(A, B, C, u, delay=int(round(act.delay_s * HZ)))
+
+
 def simulate_f(u: np.ndarray) -> np.ndarray:
     axes = json.loads(F_MODEL.read_text())["axes"]
     nu = plane_inputs(u)
@@ -146,7 +173,26 @@ def simulate_f(u: np.ndarray) -> np.ndarray:
     return out
 
 
-SIMULATE = {"one-mode": simulate_one_mode, "M2": simulate_m2, "F": simulate_f}
+SIMULATE = {"one-mode": simulate_one_mode, "one-mode+g": lambda u: simulate_one_mode(u, gravity=True),
+            "M2": simulate_m2, "M3": simulate_m3, "F": simulate_f}
+
+
+def step_commands(seg: int, seconds: float = 10.0) -> np.ndarray:
+    """+1 psi on one segment (0 = S2, 1 = S3, 2 = S4) from the 4.5 psi baseline."""
+    c = np.full((int(round(seconds * HZ)), 3), BASE)
+    c[:, seg] += 1.0
+    return c
+
+
+def static_gains() -> dict:
+    """Tip change 10 s after +1 psi on S3 (x) and on S2 (y), mm/psi, simulator and models."""
+    out = {}
+    for name, seg, axis in (("x per psi on S3", 1, 0), ("y per psi on S2", 0, 1)):
+        cmds = step_commands(seg)
+        out[name] = {"truth": float(simulate_truth(cmds)[-1, axis])}
+        for m in MODELS:
+            out[name][m] = float(SIMULATE[m](cmds - BASE)[-1, axis])
+    return out
 
 
 # ---------------------------------------------------------------------------- metrics, figure
@@ -158,29 +204,60 @@ def metrics(truth: np.ndarray, model: np.ndarray) -> dict:
             out[ax] = None
             continue
         err = model[:, i] - truth[:, i]
-        out[ax] = dict(rmse_mm=float(np.sqrt(np.mean(err**2))),
+        out[ax] = dict(rmse_mm=float(np.sqrt(np.mean(err**2))), max_abs_mm=float(np.abs(err).max()),
+                       bias_mm=float(err.mean()),
                        fit_pct=float(100 * (1 - np.linalg.norm(err) / np.linalg.norm(truth[:, i] - truth[:, i].mean()))))
     return out
 
 
-def figure(kind: str, t: np.ndarray, cmds: np.ndarray, truth: np.ndarray, sims: dict, path: Path) -> None:
+def figure(kind: str, t: np.ndarray, cmds: np.ndarray, truth: np.ndarray, sims: dict, path: Path,
+           met: dict | None = None) -> None:
+    """Row 0: commands | RMSE per model and axis (numbers printed on the bars). Rows 1-3: x, y, z;
+    left = models derived from the simulator's internals, right = models identified from data.
+    The simulator is the thick black dashed line in every panel; at most 3 models per panel."""
     P.apply()
-    fig, axs = P.figure(4, 1, sharex=True)
+    fig, axs = P.figure(4, 2, sharex=False, layout="constrained")
+    fig.set_size_inches(P.WIDTH * 1.5, P.PANEL_H * 4)
     for j, seg in enumerate(("S2", "S3", "S4")):
         axs[0, 0].plot(t, cmds[:, j], **P.line(seg, len(t)))
-    axs[0, 0].set(ylabel="command (psi)", title=f"Excitation: {kind}")
-    P.legend_outside(axs[0, 0])
+    axs[0, 0].set(ylabel="command (psi)", xlabel="time (s)", title=f"Excitation: {kind}")
+    axs[0, 0].legend(loc="upper right", fontsize=10)
+    met = met or {m: metrics(truth, sims[m]) for m in MODELS}
+    ax = axs[0, 1]
+    hatches = {"one-mode": "//", "one-mode+g": "..", "M2": "", "M3": "\\\\", "F": "xx"}
+    w = 0.16
+    for k, m in enumerate(MODELS):
+        col = P.identity(LABELS[m])[0]
+        for i, a in enumerate("xyz"):
+            v = met[m][a]
+            if v is None:
+                continue
+            x = i + (k - 2) * w
+            ax.bar(x, v["rmse_mm"], w, color=col, hatch=hatches[m], edgecolor="black", lw=0.6)
+            ax.text(x, v["rmse_mm"] * 1.15, f"{v['rmse_mm']:.2f}", ha="center", va="bottom", fontsize=9, rotation=90)
+    ax.set_yscale("log")
+    ax.set_xticks(range(3), ["x", "y", "z"])
+    ax.set(ylabel="free-run RMSE (mm, log scale)", title="Error per model and axis (no bar: no output)")
+    handles = [matplotlib.patches.Patch(facecolor=P.identity(LABELS[m])[0], hatch=hatches[m], edgecolor="black",
+                                        label=LABELS[m]) for m in MODELS]
+    ax.legend(handles=handles, loc="upper right", fontsize=9, ncol=1)
+    ax.set_xlim(-0.5, 3.6)
+    ax.set_ylim(None, ax.get_ylim()[1] * 3)
     for i, ax_name in enumerate("xyz"):
-        ax = axs[i + 1, 0]
-        ax.plot(t, truth[:, i], **{**P.REFERENCE, "label": LABELS["truth"]})
-        for m in MODELS:
-            if not np.isnan(sims[m][:, i]).all():
-                ax.plot(t, sims[m][:, i], **P.line(LABELS[m], len(t)))
-        ax.set(ylabel=f"tip {ax_name} − settled (mm)", title=f"{ax_name} axis")
-        P.legend_outside(ax)
-    axs[-1, 0].set_xlabel("time (s)")
+        for col, group, title in ((0, DERIVED, "derived from the simulator's internals"),
+                                  (1, IDENTIFIED, "identified from data")):
+            ax = axs[i + 1, col]
+            ax.plot(t, truth[:, i], **{**P.REFERENCE, "label": LABELS["truth"]})
+            for m in group:
+                if not np.isnan(sims[m][:, i]).all():
+                    ax.plot(t, sims[m][:, i], **P.line(LABELS[m], len(t)))
+            ax.set(ylabel=f"tip {ax_name} − settled (mm)", xlabel="time (s)", title=f"{ax_name} axis: {title}")
+            if all(np.isnan(sims[m][:, i]).all() for m in group):
+                ax.text(0.5, 0.9, "these models have no z output", transform=ax.transAxes, ha="center", fontsize=11)
+            ax.legend(loc="upper right", fontsize=9)
     for row in axs:
-        row[0].grid(alpha=0.3)
+        for ax in row:
+            ax.grid(alpha=0.3)
     P.save(fig, path)
 
 
@@ -190,9 +267,9 @@ def run(kind: str, seconds: float) -> dict:
     truth = simulate_truth(cmds)
     sims = {m: SIMULATE[m](u) for m in MODELS}
     t = np.arange(len(cmds)) * DT
-    figure(kind, t, cmds, truth, sims, FIG / f"model_comparison_{kind}.png")
-    return dict(cmds=cmds, truth=truth, sims=sims, t=t,
-                metrics={m: metrics(truth, sims[m]) for m in MODELS})
+    met = {m: metrics(truth, sims[m]) for m in MODELS}
+    figure(kind, t, cmds, truth, sims, FIG / f"model_comparison_{kind}.png", met)
+    return dict(cmds=cmds, truth=truth, sims=sims, t=t, metrics=met)
 
 
 def main() -> None:
@@ -213,6 +290,8 @@ def main() -> None:
             cells = [f"{a}: {v['rmse_mm']:.3f} ({v['fit_pct']:.1f} %)" if v else f"{a}: no z output"
                      for a, v in r["metrics"][m].items()]
             print(f"  {LABELS[m]:<30}" + "   ".join(cells))
+    out["static_gains_mm_per_psi"] = static_gains()
+    print("\nstatic gains, mm/psi:", json.dumps(out["static_gains_mm_per_psi"], indent=1))
     (FIG / "model_comparison.json").write_text(json.dumps(out, indent=1))
     np.savez_compressed(FIG / "model_comparison_data.npz", **arrays)
     print("\nwrote docs/figures/model_comparison.json, model_comparison_data.npz, model_comparison_<excitation>.png")

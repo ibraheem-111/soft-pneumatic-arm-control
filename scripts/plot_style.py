@@ -73,6 +73,8 @@ SERIES = {
     # models (compare_models_excitation.py); the simulator itself is drawn with REFERENCE
     "One-mode model (Nikoletta)": (GREEN, DASHED, "s", "One-mode model (Nikoletta)"),
     "M2 (task-space, identified)": (BLUE, SOLID, "o", "M2 (task-space, identified)"),
+    "One-mode + gravity": (ORANGE, DOTTED, "D", "One-mode + gravity"),
+    "M3 (M2 + inertia)": (SKY, DASHED, "v", "M3 (M2 + inertia)"),
     "F (frequency-identified)": (VERMILLION, DASHDOT, "^", "F (frequency-identified)"),
     # segments (command plots)
     "S2": (ORANGE, SOLID, "o", "S2"),

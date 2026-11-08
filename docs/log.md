@@ -5,6 +5,17 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- Model check extended to five models. Added one-mode + gravity (Nikoletta's derivation with the
+  chain's gravity stiffness, `reduced_model(True)`, k = 51.45; our review, not in her notebooks) and
+  M3 (M2's actuator + second-order mechanics). Checked that the one-mode model used is her latest
+  (Copy_of_soft_robotic_arm_SMC_Smith-2.ipynb cell 16: k = 10.6024, c = 9.2309, b = -0.08204, same
+  as `reduced_model(False)`). Free-run RMSE x / y, mm, steps | chirp: one-mode + gravity 2.64 / 3.89
+  | 2.86 / 5.03; M3 0.08 / 0.06 | 0.07 / 0.08 (z 0.09 | 0.11, same as M2). Static gain x per psi
+  on S3: simulator 2.01, one-mode 7.74, + gravity 1.54, M2 1.99, M3 1.95, F 1.96 mm/psi. Gravity
+  fixes most of the gain error but the one-mode models still have no delay or lag. Figures split
+  per axis into derived vs identified panels; the notebook ends with a full error table (RMSE,
+  max, bias, fit, static gains).
+
 - Model check (`scripts/compare_models_excitation.py`, notebook `notebooks/model_check_excitation.ipynb`):
   same commands into `make_calibrated_sim` (seed 0) and three models run open loop. Free-run RMSE
   x / y / z, mm: random steps (seed 31, 60 s) one-mode 7.33 / 11.11 / -, M2 0.12 / 0.14 / 0.08,
