@@ -3,12 +3,12 @@
  "settle_s": 5.0,
  "seconds": 60.0,
  "labels": {
-  "truth": "MuJoCo simulator (truth)",
-  "one-mode": "One-mode model (Nikoletta)",
+  "truth": "Simulator",
+  "one-mode": "One-mode",
   "one-mode+g": "One-mode + gravity",
-  "M2": "M2 (task-space, identified)",
-  "M3": "M3 (M2 + inertia)",
-  "F": "F (frequency-identified)"
+  "M2": "M2",
+  "M3": "M3",
+  "F": "F"
  },
  "results": {
   "random_steps": {

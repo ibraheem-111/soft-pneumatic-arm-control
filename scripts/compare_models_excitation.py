@@ -55,7 +55,6 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import cont2discrete
@@ -71,10 +70,10 @@ FIG = ROOT / "docs" / "figures"
 F_MODEL = ROOT / "models" / "sysid_calibrated_v2.json"
 HZ, DT, BASE, SETTLE_S = 100.0, 0.01, 4.5, 5.0
 MODELS = ("one-mode", "one-mode+g", "M2", "M3", "F")
-DERIVED, IDENTIFIED = ("one-mode", "one-mode+g"), ("M2", "M3", "F")
-LABELS = {"truth": "MuJoCo simulator (truth)", "one-mode": "One-mode model (Nikoletta)",
-          "one-mode+g": "One-mode + gravity", "M2": "M2 (task-space, identified)",
-          "M3": "M3 (M2 + inertia)", "F": "F (frequency-identified)"}
+LABELS = {"truth": "Simulator", "one-mode": "One-mode", "one-mode+g": "One-mode + gravity",
+          "M2": "M2", "M3": "M3", "F": "F"}
+SLUG = {"one-mode": "onemode", "one-mode+g": "onemode_gravity", "M2": "M2", "M3": "M3", "F": "F"}
+SIM_STYLE = dict(color=P.BLACK, ls="-", lw=3.2, alpha=0.85, label="Simulator")
 
 
 # ---------------------------------------------------------------------------- excitations
@@ -294,55 +293,123 @@ def metrics(truth: np.ndarray, model: np.ndarray) -> dict:
     return out
 
 
-def figure(kind: str, t: np.ndarray, cmds: np.ndarray, truth: np.ndarray, sims: dict, path: Path,
-           met: dict | None = None) -> None:
-    """Row 0: commands | RMSE per model and axis (numbers printed on the bars). Rows 1-3: x, y, z;
-    left = models derived from the simulator's internals, right = models identified from data.
-    The simulator is the thick black dashed line in every panel; at most 3 models per panel."""
+def _axis_panels(axs, t, truth, sims: dict, names) -> None:
+    for i, ax_name in enumerate("xyz"):
+        ax = axs[i]
+        ax.plot(t, truth[:, i], **SIM_STYLE)
+        for m in names:
+            if not np.isnan(sims[m][:, i]).all():
+                ax.plot(t, sims[m][:, i], **P.line(LABELS[m], len(t)))
+        ax.set(ylabel=f"tip {ax_name} (mm)")
+        ax.grid(alpha=0.3)
+
+
+def figure_overview(kind: str, t, cmds, truth, sims: dict, path: Path | None = None):
+    """Commands, then x, y, z with the simulator and every model on the same axes."""
     P.apply()
-    fig, axs = P.figure(4, 2, sharex=False, layout="constrained")
-    fig.set_size_inches(P.WIDTH * 1.5, P.PANEL_H * 4)
+    fig, axs = P.figure(4, 1, sharex=True, layout="constrained")
     for j, seg in enumerate(("S2", "S3", "S4")):
         axs[0, 0].plot(t, cmds[:, j], **P.line(seg, len(t)))
-    axs[0, 0].set(ylabel="command (psi)", xlabel="time (s)", title=f"Excitation: {kind}")
-    axs[0, 0].legend(loc="upper right", fontsize=10)
-    met = met or {m: metrics(truth, sims[m]) for m in MODELS}
-    ax = axs[0, 1]
-    hatches = {"one-mode": "//", "one-mode+g": "..", "M2": "", "M3": "\\\\", "F": "xx"}
+    axs[0, 0].set(ylabel="command (psi)", title=f"{kind}: commands and tip, all models")
+    axs[0, 0].grid(alpha=0.3)
+    P.legend_outside(axs[0, 0])
+    _axis_panels(axs[1:, 0], t, truth, sims, MODELS)
+    P.legend_outside(axs[1, 0])
+    axs[-1, 0].set_xlabel("time (s)")
+    if path:
+        P.save(fig, path)
+    return fig
+
+
+def figure_model(kind: str, m: str, t, truth, sims: dict, met: dict, path: Path | None = None):
+    """x, y, z: the simulator and one model, RMSE in each title."""
+    P.apply()
+    fig, axs = P.figure(3, 1, sharex=True, layout="constrained")
+    _axis_panels(axs[:, 0], t, truth, sims, [m])
+    for i, a in enumerate("xyz"):
+        v = met[m][a]
+        axs[i, 0].set_title(f"{LABELS[m]} vs simulator, {a}: " + (f"RMSE {v['rmse_mm']:.3f} mm, fit {v['fit_pct']:.1f} %"
+                                                                 if v else "this model has no z output"))
+    axs[0, 0].legend(loc="upper right")
+    axs[-1, 0].set_xlabel("time (s)")
+    if path:
+        P.save(fig, path)
+    return fig
+
+
+def figure_rmse(results: dict, path: Path | None = None):
+    """Free-run RMSE per model and axis, one panel per excitation, value on every bar."""
+    P.apply()
+    fig, axs = P.figure(1, len(results), layout="constrained")
     w = 0.16
-    for k, m in enumerate(MODELS):
-        col = P.identity(LABELS[m])[0]
-        for i, a in enumerate("xyz"):
-            v = met[m][a]
-            if v is None:
-                continue
-            x = i + (k - 2) * w
-            ax.bar(x, v["rmse_mm"], w, color=col, hatch=hatches[m], edgecolor="black", lw=0.6)
-            ax.text(x, v["rmse_mm"] * 1.15, f"{v['rmse_mm']:.2f}", ha="center", va="bottom", fontsize=9, rotation=90)
-    ax.set_yscale("log")
-    ax.set_xticks(range(3), ["x", "y", "z"])
-    ax.set(ylabel="free-run RMSE (mm, log scale)", title="Error per model and axis (no bar: no output)")
-    handles = [matplotlib.patches.Patch(facecolor=P.identity(LABELS[m])[0], hatch=hatches[m], edgecolor="black",
-                                        label=LABELS[m]) for m in MODELS]
-    ax.legend(handles=handles, loc="upper right", fontsize=9, ncol=1)
-    ax.set_xlim(-0.5, 3.6)
-    ax.set_ylim(None, ax.get_ylim()[1] * 3)
-    for i, ax_name in enumerate("xyz"):
-        for col, group, title in ((0, DERIVED, "derived from the simulator's internals"),
-                                  (1, IDENTIFIED, "identified from data")):
-            ax = axs[i + 1, col]
-            ax.plot(t, truth[:, i], **{**P.REFERENCE, "label": LABELS["truth"]})
-            for m in group:
-                if not np.isnan(sims[m][:, i]).all():
-                    ax.plot(t, sims[m][:, i], **P.line(LABELS[m], len(t)))
-            ax.set(ylabel=f"tip {ax_name} − settled (mm)", xlabel="time (s)", title=f"{ax_name} axis: {title}")
-            if all(np.isnan(sims[m][:, i]).all() for m in group):
-                ax.text(0.5, 0.9, "these models have no z output", transform=ax.transAxes, ha="center", fontsize=11)
-            ax.legend(loc="upper right", fontsize=9)
-    for row in axs:
-        for ax in row:
+    for col, (kind, met) in enumerate(results.items()):
+        ax = axs[0, col]
+        for k, m in enumerate(MODELS):
+            c = P.identity(LABELS[m])[0]
+            for i, a in enumerate("xyz"):
+                v = met[m][a]
+                if v is None:
+                    continue
+                x = i + (k - 2) * w
+                ax.bar(x, v["rmse_mm"], w, color=c, edgecolor="black", lw=0.6, label=LABELS[m] if i == 0 else None)
+                ax.text(x, v["rmse_mm"] * 1.12, f"{v['rmse_mm']:.2f}", ha="center", va="bottom", fontsize=9, rotation=90)
+        ax.set_yscale("log")
+        ax.set_ylim(0.02, 80)
+        ax.set_xticks(range(3), ["x", "y", "z"])
+        ax.set(title=kind, ylabel="free-run RMSE (mm, log scale)")
+        ax.grid(alpha=0.3, axis="y")
+    axs[0, 0].legend(loc="upper right", fontsize=10)
+    if path:
+        P.save(fig, path)
+    return fig
+
+
+def figure_actuator(act: dict, path: Path | None = None):
+    P.apply()
+    fig, axs = P.figure(1, 1, layout="constrained")
+    ax = axs[0, 0]
+    ax.plot(act["t"], act["p"], **{**SIM_STYLE, "label": "measured pouch pressure, S3 column"})
+    ax.plot(act["t"], act["fit"], color=P.ORANGE, ls=P.DASHED, lw=P.LW, label="fit: p0 + G (1 − e^(−(t−T)/τ))")
+    ax.axvline(0, color="black", lw=1)
+    ax.axvline(act["dead_time_s"], color="black", lw=1, ls=":")
+    ax.text(0.03, act["p0"] + 0.04, "command +1 psi", fontsize=11)
+    ax.text(act["dead_time_s"] + 0.05, act["p0"] + 0.5,
+            f"T = {act['dead_time_s']:.2f} s\nτ = {act['tau_s']:.2f} s\nG = {act['gain']:.2f}", fontsize=11)
+    ax.set(xlabel="time since the command step (s)", ylabel="pressure (psi)", xlim=(-1, 6),
+           title="Actuator step response")
+    ax.grid(alpha=0.3)
+    ax.legend(loc="lower right")
+    if path:
+        P.save(fig, path)
+    return fig
+
+
+def figure_prediction(t, truth, u, path: Path | None = None, l1: float = 0.1):
+    """Left: error of the 0.5 s-ahead prediction, M2 vs M2 + NDO. Right: the observer's d_hat."""
+    P.apply()
+    pred = predict_ahead(truth, u, l1)
+    nd = m2_parts()[4]
+    tt, target = t[nd:], truth[nd:]
+    fig, axs = P.figure(3, 2, sharex=True, layout="constrained")
+    fig.set_size_inches(P.WIDTH * 1.5, P.PANEL_H * 3)
+    st = {"M2": dict(color=P.BLUE, ls="-", lw=P.LW, label="M2 (Smith prediction)"),
+          "M2 + NDO": dict(color=P.ORANGE, ls=P.DASHED, lw=P.LW, label=f"M2 + NDO, l1 = {l1:g}")}
+    for i, a in enumerate("xyz"):
+        for k, kw in st.items():
+            axs[i, 0].plot(tt, pred[k][:, i] - target[:, i], **kw)
+        axs[i, 0].axhline(0, color="black", lw=1)
+        axs[i, 0].set(ylabel=f"{a} error (mm)", title=f"{a}: prediction 0.5 s ahead − simulator")
+        axs[i, 1].plot(t, pred["d_hat"][:, i], color=P.ORANGE, ls=P.DASHED, lw=P.LW, label="d̂")
+        axs[i, 1].axhline(0, color="black", lw=1)
+        axs[i, 1].set(ylabel=f"d̂ {a} (mm/s)", title=f"{a}: observer estimate d̂")
+        for ax in axs[i]:
             ax.grid(alpha=0.3)
-    P.save(fig, path)
+    axs[0, 0].legend(loc="upper right", fontsize=10)
+    for ax in axs[-1]:
+        ax.set_xlabel("time (s)")
+    if path:
+        P.save(fig, path)
+    return fig
 
 
 def run(kind: str, seconds: float) -> dict:
@@ -353,7 +420,11 @@ def run(kind: str, seconds: float) -> dict:
     t = np.arange(len(cmds)) * DT
     met = {m: metrics(truth, sims[m]) for m in MODELS}
     met["prediction_one_dead_time_ahead"] = prediction_metrics(truth, u)
-    figure(kind, t, cmds, truth, sims, FIG / f"model_comparison_{kind}.png", met)
+    figure_overview(kind, t, cmds, truth, sims, FIG / f"model_comparison_{kind}.png")
+    for m in MODELS:
+        figure_model(kind, m, t, truth, sims, met, FIG / f"model_comparison_{kind}_{SLUG[m]}.png")
+    if kind == "random_steps":
+        figure_prediction(t, truth, u, FIG / "model_prediction_random_steps.png")
     return dict(cmds=cmds, truth=truth, sims=sims, t=t, metrics=met)
 
 
@@ -378,7 +449,9 @@ def main() -> None:
         print(f"  predicting the tip one dead time ahead from the measured tip, RMSE mm:")
         for name, v in r["metrics"]["prediction_one_dead_time_ahead"].items():
             print(f"    {name:<26}" + "   ".join(f"{a}: {e:.3f}" for a, e in v.items()))
+    figure_rmse(out["results"], FIG / "model_comparison_rmse.png")
     act = identify_actuator()
+    figure_actuator(act, FIG / "model_actuator_step.png")
     out["actuator_identified_from_step"] = {k: v for k, v in act.items() if not isinstance(v, np.ndarray)}
     print("\nactuator from a +1 psi step on S3:", out["actuator_identified_from_step"])
     out["static_gains_mm_per_psi"] = static_gains()

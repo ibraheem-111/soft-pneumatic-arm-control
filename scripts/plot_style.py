@@ -73,11 +73,12 @@ SERIES = {
     "MPC (F), horizon 300 steps = 3.00 s": (SKY, LONGDASH, "P", "MPC (F), horizon 300 steps = 3.00 s"),
     "Delay-aware SMC (M2, Taylor preview)": (ORANGE, DOTTED, "D", "Delay-aware SMC (M2, Taylor preview)"),
     # models (compare_models_excitation.py); the simulator itself is drawn with REFERENCE
-    "One-mode model (Nikoletta)": (GREEN, DASHED, "s", "One-mode model (Nikoletta)"),
-    "M2 (task-space, identified)": (BLUE, SOLID, "o", "M2 (task-space, identified)"),
-    "One-mode + gravity": (ORANGE, DOTTED, "D", "One-mode + gravity"),
-    "M3 (M2 + inertia)": (SKY, DASHED, "v", "M3 (M2 + inertia)"),
-    "F (frequency-identified)": (VERMILLION, DASHDOT, "^", "F (frequency-identified)"),
+    # red-green safe: no green; each model also has its own line style and marker
+    "One-mode": (VERMILLION, DOTTED, "s", "One-mode"),
+    "One-mode + gravity": (PURPLE, LONGDASH, "D", "One-mode + gravity"),
+    "M2": (BLUE, SOLID, "o", "M2"),
+    "M3": (ORANGE, DASHED, "^", "M3"),
+    "F": (SKY, DASHDOT, "v", "F"),
     # segments (command plots)
     "S2": (ORANGE, SOLID, "o", "S2"),
     "S3": (SKY, DASHED, "s", "S3"),

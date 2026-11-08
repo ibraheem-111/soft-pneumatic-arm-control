@@ -5,6 +5,12 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- Model comparison report: `scripts/report_model_comparison.py` -> `docs/reports/model-comparison.html`
+  (artifact https://claude.ai/artifact/MrteR559Xf4EBi69sWjqNs). Figures reworked for red-green colour
+  blindness: no green, plain model names on plots, one overview with all models plus one figure per
+  model against the simulator (`model_comparison_<excitation>_<model>.png`), RMSE bars, actuator step
+  and prediction figures.
+
 - M2 controller comparison: added the delay-aware SMC at λ = 4 without the observer (suggested by
   the models session), so the NDOSMC row differs from it only by the observer. After settling, λ = 4
   without → with observer (mm): held-out 0.938 → 0.904, scored 0.046 → 0.050, triangle 0.225 →

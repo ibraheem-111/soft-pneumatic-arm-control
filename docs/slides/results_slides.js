@@ -89,8 +89,8 @@ const MC = MCJ.results;
 const G = Object.fromEntries(Object.entries(MCJ.static_gains_mm_per_psi["x per psi on S3"]).map(([k, v]) => [k, Math.abs(v)]));
 s = pres.addSlide();
 title(s, "Model check: same excitation");
-const MODELS = [["One-mode model (Nikoletta)", "one-mode"], ["One-mode + gravity stiffness", "one-mode+g"],
-  ["M2 (task-space, identified)", "M2"], ["M3 (M2 + inertia)", "M3"], ["F (frequency-identified)", "F"]];
+const MODELS = [["One-mode", "one-mode"], ["One-mode + gravity", "one-mode+g"],
+  ["M2", "M2"], ["M3", "M3"], ["F", "F"]];
 const COLS = [["random_steps", "x"], ["random_steps", "y"], ["random_steps", "z"], ["chirp", "x"], ["chirp", "y"], ["chirp", "z"]];
 const mcBest = COLS.map(([e, a]) => Math.min(...MODELS.map(([, m]) => (MC[e][m][a] ? Number(MC[e][m][a].rmse_mm.toFixed(2)) : Infinity))));
 const mcRows = [[th("Model"), th("Steps x"), th("Steps y"), th("Steps z"), th("Chirp x"), th("Chirp y"), th("Chirp z")]];
