@@ -61,6 +61,15 @@ SERIES = {
     "Delay-aware SMC, exact future reference (M2)": (PURPLE, DOTTED, "*", "Delay-aware SMC, exact r(t+T) [diag]"),
     "MPC, predicted reference": (VERMILLION, SOLID, "s", "MPC (predicted reference)"),
     "MPC, true future reference [diagnostic]": (VERMILLION, DOTTED, "P", "MPC, true future ref [diag]"),
+    # scripts/compare_m2_controllers.py (reference known in advance, all on M2)
+    "Delay-aware SMC (M2, known ref)": (BLUE, SOLID, "o", "Delay-aware SMC (M2, known ref)"),
+    "Delay-aware NDOSMC (M2, known ref)": (GREEN, DASHED, "^", "Delay-aware NDOSMC (M2, known ref)"),
+    "MPC (M2), horizon 25 steps = 0.25 s": (SKY, DOTTED, "v", "MPC (M2), horizon 25 steps = 0.25 s"),
+    "MPC (M2), horizon 100 steps = 1.00 s": (VERMILLION, SOLID, "s", "MPC (M2), horizon 100 steps = 1.00 s"),
+    "MPC (M2), horizon 300 steps = 3.00 s": (GREEN, DASHDOT, "D", "MPC (M2), horizon 300 steps = 3.00 s"),
+    "MPC (M2), horizon 25 steps = 0.25 s, R_u = 10": (SKY, DOTTED, "v", "MPC (M2), horizon 25 steps = 0.25 s, R_u = 10"),
+    "MPC (M2), horizon 100 steps = 1.00 s, R_u = 10": (VERMILLION, SOLID, "s", "MPC (M2), horizon 100 steps = 1.00 s, R_u = 10"),
+    "MPC (M2), horizon 300 steps = 3.00 s, R_u = 10": (GREEN, DASHDOT, "D", "MPC (M2), horizon 300 steps = 3.00 s, R_u = 10"),
     # models (compare_models_excitation.py); the simulator itself is drawn with REFERENCE
     "One-mode model (Nikoletta)": (GREEN, DASHED, "s", "One-mode model (Nikoletta)"),
     "M2 (task-space, identified)": (BLUE, SOLID, "o", "M2 (task-space, identified)"),

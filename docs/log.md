@@ -13,6 +13,18 @@ person (or agent) can pick up without asking. Keep entries short and dated.
   gravity stiffness) and has no delay or lag. Data: docs/figures/model_comparison.json, .npz.
   JupyterLab + ipykernel added as dev dependencies (`uv run jupyter lab`).
 
+## 2026-11-08
+
+- `scripts/compare_m2_controllers.py`: controllers on M2 with the reference known in advance:
+  delay-aware SMC, delay-aware NDOSMC (Nikoletta's gains) and a new MPC on M2 (`M2MPC`: delay
+  predictor, model-error correction, closed form, horizons 25/100/300 steps = 0.25/1/3 s).
+  RMSE after settling: MPC 0.029 (scored), 0.071 (squiggle), 0.167 (waypoints), 0.905 mm
+  (held-out); SMC 0.034 / 0.091 / 0.295 / 0.924. With R_u tuned on a separate circle
+  (1e-5, edge of the grid; 1e-5..1e-1 within 0.002 mm) the horizon has no effect; at
+  R_u = 10 the 0.25 s horizon is worse and 1 s = 3 s (waypoints 0.137 mm, better than tuned).
+  Held-out circle is reach-limited in x (8.2 of 10 mm for every controller).
+  Page: docs/reports/m2-controller-comparison.html.
+
 ## 2026-11-06
 
 - Professor: final test uses irregular random trajectories, known in advance. Added §6 to
