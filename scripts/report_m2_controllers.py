@@ -19,10 +19,11 @@ ROOT = Path(__file__).resolve().parent.parent
 FIG = ROOT / "docs" / "figures"
 OUT = ROOT / "docs" / "reports" / "m2-controller-comparison.html"
 
+SMC_L4 = "Delay-aware SMC (M2, known ref), λ = 4"
 SMC, NDO, TAYLOR = "Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)", "Delay-aware SMC (M2, Taylor preview)"
 MPC_F = "MPC (F), horizon 300 steps = 3.00 s"
 M2 = [f"MPC (M2), horizon {h} steps = {h / 100:.2f} s" for h in (25, 100, 300)]
-ROWS = [SMC, NDO, *M2, MPC_F, TAYLOR]
+ROWS = [SMC, SMC_L4, NDO, *M2, MPC_F, TAYLOR]
 ORDER = ["scored circle", "held-out circle", "triangle", "square", "squiggle", "random waypoints"]
 ABOUT = {
     "scored circle": "7 mm circle, 0.1 Hz (10 s per lap), sim seed 0; the course harness task.",
@@ -130,6 +131,12 @@ r(t + T) estimated from the reference's slope and curvature (the earlier setting
 {sz('triangle', TAYLOR):.0f} % size, square {v('square', TAYLOR):.2f} mm and {sz('square', TAYLOR):.0f} %, against
 {v('triangle', SMC):.2f} / {sz('triangle', SMC):.0f} % and {v('square', SMC):.2f} / {sz('square', SMC):.0f} % with the known
 reference. The estimate overshoots each corner for the 0.5 s dead time.</li>
+<li><b>At equal gain the disturbance observer lowers whole-run RMSE on every test, but not always the settled error:</b>
+SMC at λ = 4 without vs with the observer, whole-run RMSE
+""" + ", ".join(f"{t} {R[(t, SMC_L4)]['rmse_whole_mm']:.2f} → {R[(t, NDO)]['rmse_whole_mm']:.2f}" for t in ORDER) + """ mm
+(after settling: """ + ", ".join(f"{t} {v(t, SMC_L4):.3f} → {v(t, NDO):.3f}" for t in ORDER) + """); it mostly removes the start-up
+and corner errors, and is slightly worse once settled on the scored circle and the squiggle. The λ = 8 SMC without the
+observer is close to the NDOSMC, so a higher gain recovers most of what the observer adds.</li>
 <li><b>MPC horizon on M2:</b> with the tuned weight (R<sub>u</sub> = {d['r_u']['100']:g}) 25, 100 and 300 steps give identical results.
 When command changes are penalised (R<sub>u</sub> = 10) 25 steps (0.25 s) is worse and 100 steps (1 s) equals 300 steps (3 s).</li>
 <li><b>Whole-run RMSE is dominated by the start:</b> each reference starts away from, or accelerating from, the settled tip,
@@ -147,6 +154,8 @@ of tracking scored like the course harness. Metrics are planar (x–y) and in mm
 r(t + 0.5 s) from the trajectory.</li>
 <li><b>Delay-aware NDOSMC</b>: the same with the disturbance observer and Nikoletta's notebook gains (λ = 4, l₁ = 0.1,
 μ = 1 mm, Φ = 1, ε = 1).</li>
+<li><b>Delay-aware SMC, λ = 4</b>: the SMC at the NDOSMC's gain without the observer, so comparing it with the NDOSMC
+isolates the observer (the λ = 8 SMC differs from the NDOSMC in both gain and observer).</li>
 <li><b>MPC (M2)</b>: state \(X = (y, p)\) (tip and measured S2–S4 pressure, deviations from the settled pose), M2
 discretised at 10 ms. Each step: predict 50 steps across the dead time with the commands already sent; add a model-error
 correction \(w\) (measured tip minus the tip predicted 0.5 s earlier, low-pass 0.5 s); minimise over the next H commands

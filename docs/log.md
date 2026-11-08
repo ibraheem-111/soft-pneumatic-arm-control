@@ -5,6 +5,11 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- M2 controller comparison: added the delay-aware SMC at λ = 4 without the observer (suggested by
+  the models session), so the NDOSMC row differs from it only by the observer. After settling, λ = 4
+  without → with observer (mm): held-out 0.938 → 0.904, scored 0.046 → 0.050, triangle 0.225 →
+  0.196, square 0.284 → 0.213, squiggle 0.086 → 0.095, waypoints 0.374 → 0.274; whole-run RMSE
+  improves on all six. Report now built by `scripts/report_m2_controllers.py`.
 - Actuator identified blind from a +1 psi step on S3 (measured pouch pressure,
   `compare_models_excitation.identify_actuator`): first rise 0.50 s, least-squares T = 0.490 s,
   tau = 0.599 s, G = 1.098 psi/psi, matching the assumed 0.5 s / 0.6 s. M2 + NDO scored on predicting

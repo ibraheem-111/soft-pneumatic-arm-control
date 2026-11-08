@@ -9,6 +9,8 @@ Controllers (all on M2: docs/figures/task_space_model.json):
                                       compare_controllers.py)
   Delay-aware NDOSMC (M2, known ref)  same with the observer, Nikoletta's notebook gains
                                       (lam=4, l1=0.1, mu=1 mm, Phi=1, eps=1)
+  Delay-aware SMC (M2, known ref),    the SMC at the NDOSMC's lam=4 without the observer, so the
+  lambda = 4                          observer's effect is separated from the gain change
   MPC (M2), horizon H steps           M2MPC below, H in HORIZONS (H steps x 10 ms after the
                                       0.5 s dead time)
 Also run, for comparison:
@@ -233,6 +235,8 @@ def controllers(r_u: dict) -> dict:
             m, lam=8.0, mu=1.0, eps=1.0, observer=False, exact_preview=True), d),
         "Delay-aware NDOSMC (M2, known ref)": lambda d: BS.Ahead(N.DelayAwareNDOSMC(
             m, lam=4.0, l1=0.1, l2=0.0, mu=1.0, Phi=1.0, eps=1.0, exact_preview=True), d),
+        SMC_L4: lambda d: BS.Ahead(N.DelayAwareNDOSMC(
+            m, lam=4.0, mu=1.0, eps=1.0, observer=False, exact_preview=True), d),
         TAYLOR: lambda d: N.DelayAwareNDOSMC(m, lam=8.0, mu=1.0, eps=1.0, observer=False),
         MPC_F: mpc_f,
     }
@@ -245,6 +249,7 @@ def controllers(r_u: dict) -> dict:
 
 
 TAYLOR = "Delay-aware SMC (M2, Taylor preview)"
+SMC_L4 = "Delay-aware SMC (M2, known ref), λ = 4"         # NDOSMC's gain without the observer
 MPC_F = f"MPC (F), horizon {F.HORIZON} steps = {F.HORIZON * DT:.2f} s"
 
 
