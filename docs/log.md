@@ -5,6 +5,10 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- `notebooks/model_comparison_colab.ipynb`: standalone model comparison for Google Colab (installs
+  soft-robotic-arm 0.4.2 and scipy if missing; all model parameters inlined, no repo imports). Checked
+  by running it in a fresh venv outside the repo: same numbers as `compare_models_excitation.py`.
+
 - Model comparison report: `scripts/report_model_comparison.py` -> `docs/reports/model-comparison.html`
   (artifact https://claude.ai/artifact/MrteR559Xf4EBi69sWjqNs). Figures reworked for red-green colour
   blindness: no green, plain model names on plots, one overview with all models plus one figure per
