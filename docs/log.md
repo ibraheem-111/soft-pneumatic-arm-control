@@ -3,6 +3,16 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-11-08
+
+- Model check (`scripts/compare_models_excitation.py`, notebook `notebooks/model_check_excitation.ipynb`):
+  same commands into `make_calibrated_sim` (seed 0) and three models run open loop. Free-run RMSE
+  x / y / z, mm: random steps (seed 31, 60 s) one-mode 7.33 / 11.11 / -, M2 0.12 / 0.14 / 0.08,
+  F 0.08 / 0.09 / -; chirp 0.02-1 Hz one-mode 7.86 / 14.47 / -, M2 0.15 / 0.25 / 0.11, F 0.08 /
+  0.08 / -. The one-mode model is about 4x too large (static gain 7.7 vs about 2.0 mm/psi: no
+  gravity stiffness) and has no delay or lag. Data: docs/figures/model_comparison.json, .npz.
+  JupyterLab + ipykernel added as dev dependencies (`uv run jupyter lab`).
+
 ## 2026-11-06
 
 - Professor: final test uses irregular random trajectories, known in advance. Added §6 to

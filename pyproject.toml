@@ -11,5 +11,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "ipykernel>=7.4.0",
+    "jupyterlab>=4.6.6",
     "nbstripout>=0.9.1",
 ]

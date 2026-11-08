@@ -83,6 +83,31 @@ s.addText([
   { text: "PD, one-mode SMC: no overshoot, but late and small", options: { bullet: true } },
 ], { x: 7.15, y: 1.15, w: 2.5, h: 2.6, fontFace: FONT, fontSize: 11, color: INK, valign: "top", margin: 0, paraSpaceAfter: 4, isTextBox: true });
 
+// ---------------------------------------------------------------- slide: model check
+const MC = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "figures", "model_comparison.json"), "utf8")).results;
+s = pres.addSlide();
+title(s, "Model check: same excitation");
+const MODELS = [["One-mode model (Nikoletta)", "one-mode"], ["M2 (task-space, identified)", "M2"], ["F (frequency-identified)", "F"]];
+const COLS = [["random_steps", "x"], ["random_steps", "y"], ["random_steps", "z"], ["chirp", "x"], ["chirp", "y"], ["chirp", "z"]];
+const mcBest = COLS.map(([e, a]) => Math.min(...MODELS.map(([, m]) => (MC[e][m][a] ? Number(MC[e][m][a].rmse_mm.toFixed(2)) : Infinity))));
+const mcRows = [[th("Model"), th("Steps x"), th("Steps y"), th("Steps z"), th("Chirp x"), th("Chirp y"), th("Chirp z")]];
+for (const [label, m] of MODELS) {
+  const row = [{ text: label, options: { align: "left", valign: "middle", color: INK } }];
+  COLS.forEach(([e, a], j) => {
+    const v = MC[e][m][a];
+    if (!v) { row.push({ text: "no z", options: { align: "center", valign: "middle", color: MUTED, italic: true } }); return; }
+    const r = Number(v.rmse_mm.toFixed(2)), isBest = r === mcBest[j];
+    row.push({ text: r.toFixed(2), options: { align: "center", valign: "middle", color: INK, bold: isBest, fill: isBest ? { color: BEST } : undefined } });
+  });
+  mcRows.push(row);
+}
+s.addTable(mcRows, { x: 0.4, y: 1.2, w: 9.2, colW: [3.2, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], fontFace: FONT, fontSize: 12,
+  border: { type: "solid", pt: 0.75, color: RULE }, rowH: 0.42, margin: [2, 4, 2, 4] });
+s.addText([
+  { text: "Free-run tip error, RMSE in mm: each model gets the same commands as the MuJoCo simulator and runs open loop from rest. 60 s each; random steps (1.5–7.5 psi, held 0.5–3 s) and a phased chirp (0.02 → 1 Hz). Bold: best per column.", options: { breakLine: true } },
+  { text: "The one-mode model moves the right way but about 4× too far and with no delay: static gain 7.7 mm/psi (no gravity stiffness) vs about 2.0 mm/psi in the simulator, and no 0.5 s dead time or 0.6 s lag. M2 and F include both and follow the simulator to about 0.1 mm." },
+], { x: 0.4, y: 3.0, w: 9.2, h: 1.6, fontFace: FONT, fontSize: 11, color: MUTED, valign: "top", margin: 0, isTextBox: true });
+
 // ---------------------------------------------------------------- slide 2: conclusion
 s = pres.addSlide();
 title(s, "Conclusion and future plan");

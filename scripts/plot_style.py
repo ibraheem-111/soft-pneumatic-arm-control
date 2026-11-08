@@ -61,6 +61,10 @@ SERIES = {
     "Delay-aware SMC, exact future reference (M2)": (PURPLE, DOTTED, "*", "Delay-aware SMC, exact r(t+T) [diag]"),
     "MPC, predicted reference": (VERMILLION, SOLID, "s", "MPC (predicted reference)"),
     "MPC, true future reference [diagnostic]": (VERMILLION, DOTTED, "P", "MPC, true future ref [diag]"),
+    # models (compare_models_excitation.py); the simulator itself is drawn with REFERENCE
+    "One-mode model (Nikoletta)": (GREEN, DASHED, "s", "One-mode model (Nikoletta)"),
+    "M2 (task-space, identified)": (BLUE, SOLID, "o", "M2 (task-space, identified)"),
+    "F (frequency-identified)": (VERMILLION, DASHDOT, "^", "F (frequency-identified)"),
     # segments (command plots)
     "S2": (ORANGE, SOLID, "o", "S2"),
     "S3": (SKY, DASHED, "s", "S3"),
