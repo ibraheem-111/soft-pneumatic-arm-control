@@ -70,6 +70,8 @@ SERIES = {
     "MPC (M2), horizon 25 steps = 0.25 s, R_u = 10": (SKY, DOTTED, "v", "MPC (M2), horizon 25 steps = 0.25 s, R_u = 10"),
     "MPC (M2), horizon 100 steps = 1.00 s, R_u = 10": (VERMILLION, SOLID, "s", "MPC (M2), horizon 100 steps = 1.00 s, R_u = 10"),
     "MPC (M2), horizon 300 steps = 3.00 s, R_u = 10": (GREEN, DASHDOT, "D", "MPC (M2), horizon 300 steps = 3.00 s, R_u = 10"),
+    "MPC (F), horizon 300 steps = 3.00 s": (SKY, LONGDASH, "P", "MPC (F), horizon 300 steps = 3.00 s"),
+    "Delay-aware SMC (M2, Taylor preview)": (ORANGE, DOTTED, "D", "Delay-aware SMC (M2, Taylor preview)"),
     # models (compare_models_excitation.py); the simulator itself is drawn with REFERENCE
     "One-mode model (Nikoletta)": (GREEN, DASHED, "s", "One-mode model (Nikoletta)"),
     "M2 (task-space, identified)": (BLUE, SOLID, "o", "M2 (task-space, identified)"),

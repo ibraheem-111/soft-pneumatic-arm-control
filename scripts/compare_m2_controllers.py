@@ -11,6 +11,14 @@ Controllers (all on M2: docs/figures/task_space_model.json):
                                       (lam=4, l1=0.1, mu=1 mm, Phi=1, eps=1)
   MPC (M2), horizon H steps           M2MPC below, H in HORIZONS (H steps x 10 ms after the
                                       0.5 s dead time)
+Also run, for comparison:
+  MPC (F), horizon 300 steps          scripts/mpc_controller.py DelayMPCController on the
+                                      frequency-identified model F (models/sysid_calibrated_v2.json),
+                                      its own tuned rho = 1e-5 m^2/psi^2, given the true future
+                                      reference (preview="oracle")
+  Delay-aware SMC (M2, Taylor preview) the same SMC and gains as above, but estimating
+                                      r(t+T) = r + T r' + T^2 r''/2 from the reference's past
+                                      (the reference not known in advance)
 
 M2MPC, every 10 ms step k (state X = (y, p): tip mm and measured S2-S4 pressure psi, both as
 deviations from the settled pose; input u = command - 4.5 psi):
@@ -34,16 +42,23 @@ Tests (make_calibrated_sim(control_hz=100), harness loop benchmark_all_tasks.tra
   squiggle          smooth random: per axis 6 sines, random 0.03-0.3 Hz, phases, weights,
                     +-6 mm, seed 101, sim seed 0, 30 s (as notebooks/Soft_robotic_arm_SMC_M2)
   random waypoints  straight lines between random points (+-6 mm, 1-2.5 s), seed 101
+  triangle          vertices on a 7 mm circle (first at +x), 10 s per lap, seed 0
+                    (as scripts/motion_tests.py)
+  square            axis-aligned, vertices on a 7 mm circle (side 9.9 mm), 10 s per lap, seed 0
 Metrics (planar x-y): RMSE whole run; RMSE after settling (first lap for circles, 5 s for
 the random paths); shape error = RMS distance from the tip to the nearest point of the
 reference path after settling (timing ignored); max error after settling; radius range
-(circles); % of commands at 0 or 9 psi; y phase lag.
+(circles); path size % (polygons: RMS distance from the centre of the traced path over that of
+the reference, 100 = right size); % of commands at 0 or 9 psi; y phase lag.
 
 Writes docs/figures/m2_controllers.json (every run: controller, all gains, test, metrics, and
 the tip/reference x-y traces every 50 ms) and docs/figures/m2ctrl_<test>.png.
 
+The notebook notebooks/m2_controller_comparison.ipynb runs the same comparison and shows the
+tables and figures inline; this module holds the code it calls.
+
 Usage:
-    uv run python scripts/compare_m2_controllers.py            # tune R_u, run, write (about 3 min)
+    uv run python scripts/compare_m2_controllers.py            # tune R_u, run, write (about 30 s)
 """
 
 import json
@@ -67,6 +82,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import benchmark_all_tasks as B  # noqa: E402
 import benchmark_slide_tasks as BS  # noqa: E402
 import ndosmc as N  # noqa: E402
+import mpc_controller as F  # noqa: E402
 import plot_style as P  # noqa: E402
 from soft_robotic_arm.evaluation import CircularTrackingTask, _phase_lag_seconds, make_reference  # noqa: E402
 
@@ -177,16 +193,29 @@ def random_waypoints(seed: int, span_mm: float = 6.0, seg_lo: float = 1.0, seg_h
     return lambda tau: np.array([np.interp(tau, times, pts[:, 0]), np.interp(tau, times, pts[:, 1]), 0.0])
 
 
+def polygon(n: int, radius_m: float, lap_s: float, first_deg: float = 0.0):
+    """Offset from home (m): regular n-gon with vertices on radius_m, one lap per lap_s."""
+    th = np.radians(first_deg) + 2 * np.pi * np.arange(n + 1) / n
+    v = radius_m * np.column_stack([np.cos(th), np.sin(th)])
+    def fn(tau):
+        s = (tau / lap_s % 1.0) * n
+        k = int(s)
+        return np.append(v[k] + (s - k) * (v[k + 1] - v[k]), 0.0)
+    return fn
+
+
 def circle(radius_m: float, freq: float):
     task = CircularTrackingTask(radius_m=radius_m, frequency_hz=freq)
     return lambda tau: make_reference(np.zeros(3), tau, task)
 
 
-TESTS = {  # name: (offset_fn(tau) -> m, sim seed, settle_s for "after settling", circle?)
-    "held-out circle": (circle(0.010, 0.15), 5, 1 / 0.15, True),
-    "scored circle": (circle(0.007, 0.10), 0, 10.0, True),
-    "squiggle": (smooth_random(101), 0, 5.0, False),
-    "random waypoints": (random_waypoints(101), 0, 5.0, False),
+TESTS = {  # name: (offset_fn(tau) -> m, sim seed, settle_s for "after settling", kind)
+    "held-out circle": (circle(0.010, 0.15), 5, 1 / 0.15, "circle"),
+    "scored circle": (circle(0.007, 0.10), 0, 10.0, "circle"),
+    "triangle": (polygon(3, 0.007, 10.0), 0, 10.0, "polygon"),
+    "square": (polygon(4, 0.007, 10.0, 45.0), 0, 10.0, "polygon"),
+    "squiggle": (smooth_random(101), 0, 5.0, "open"),
+    "random waypoints": (random_waypoints(101), 0, 5.0, "open"),
 }
 
 
@@ -204,6 +233,8 @@ def controllers(r_u: dict) -> dict:
             m, lam=8.0, mu=1.0, eps=1.0, observer=False, exact_preview=True), d),
         "Delay-aware NDOSMC (M2, known ref)": lambda d: BS.Ahead(N.DelayAwareNDOSMC(
             m, lam=4.0, l1=0.1, l2=0.0, mu=1.0, Phi=1.0, eps=1.0, exact_preview=True), d),
+        TAYLOR: lambda d: N.DelayAwareNDOSMC(m, lam=8.0, mu=1.0, eps=1.0, observer=False),
+        MPC_F: mpc_f,
     }
     for h in HORIZONS:
         out[mpc_label(h)] = lambda d, h=h: M2MPC(d, h, r_u[h], m)
@@ -213,6 +244,17 @@ def controllers(r_u: dict) -> dict:
     return out
 
 
+TAYLOR = "Delay-aware SMC (M2, Taylor preview)"
+MPC_F = f"MPC (F), horizon {F.HORIZON} steps = {F.HORIZON * DT:.2f} s"
+
+
+def mpc_f(ref_mm: np.ndarray) -> F.DelayMPCController:
+    """MPC on F with the true future reference; tip0 (the settled tip) is set on its first call."""
+    ctl = F.DelayMPCController(preview="oracle")
+    ctl.oracle = lambda n: ctl.tip0 + ref_mm[n, :2] / 1000.0
+    return ctl
+
+
 def mpc_label(h: int, r_u: float | None = None) -> str:
     return f"MPC (M2), horizon {h} steps = {h * DT:.2f} s" + ("" if r_u is None else f", R_u = {r_u:g}")
 
@@ -220,6 +262,9 @@ def mpc_label(h: int, r_u: float | None = None) -> str:
 def gains_of(ctl) -> dict:
     if isinstance(ctl, M2MPC):
         return ctl.gains
+    if isinstance(ctl, F.DelayMPCController):
+        return dict(horizon_steps=F.HORIZON, horizon_s=F.HORIZON * DT, rho_m2_per_psi2=F.RHO, preview="oracle",
+                    dead_time_steps=ctl.axes[0].d, model=F.MODEL_PATH.name)
     c = ctl.c if hasattr(ctl, "c") else ctl
     return dict(lam=c.lam, mu=c.mu, eps=c.eps, observer=c.use_observer, Phi=c.Phi,
                 l1=c.obs.l1, l2=c.obs.l2, exact_preview=c.exact_preview, dead_time_steps=c.n_delay)
@@ -227,10 +272,10 @@ def gains_of(ctl) -> dict:
 
 # ----------------------------------------------------------------------------- scoring
 
-def score(tip: np.ndarray, ref: np.ndarray, settle_s: float, cmds: np.ndarray, is_circle: bool) -> dict:
+def score(tip: np.ndarray, ref: np.ndarray, settle_s: float, cmds: np.ndarray, kind: str) -> dict:
     e = np.linalg.norm(tip[:, :2] - ref[:, :2], axis=1)
     k0 = int(round(settle_s * HZ))
-    path = ref[k0:, :2] if not is_circle else ref[-k0:, :2]
+    path = ref[k0:, :2] if kind == "open" else ref[-k0:, :2]      # periodic: one lap of the path
     dense = np.vstack([np.linspace(a, b, 5, endpoint=False) for a, b in zip(path[:-1], path[1:])])
     t = tip[k0:, :2]
     near = np.concatenate([np.sqrt(((t[i:i + 300, None] - dense[None]) ** 2).sum(-1)).min(1)
@@ -239,7 +284,10 @@ def score(tip: np.ndarray, ref: np.ndarray, settle_s: float, cmds: np.ndarray, i
                shape_mm=float(np.sqrt(np.mean(near ** 2))), max_settled_mm=float(e[k0:].max()),
                saturated_pct=float(100 * np.mean((cmds <= 0.0) | (cmds >= 9.0))),
                lag_s=float(_phase_lag_seconds(ref[:, 1], tip[:, 1], HZ, max_lag_s=1.0)), settle_s=settle_s)
-    if is_circle:
+    if kind == "polygon":
+        rms = lambda a: np.sqrt(np.mean(np.sum((a - a.mean(0)) ** 2, 1)))  # noqa: E731
+        out.update(size_pct=float(100 * rms(t) / rms(ref[k0:, :2])))
+    if kind == "circle":
         rad = np.linalg.norm(t - t.mean(0), axis=1)
         out.update(radius_min_mm=float(rad.min()), radius_max_mm=float(rad.max()),
                    radius_ref_mm=float(np.linalg.norm(ref[0, :2] - ref[:, :2].mean(0))))
@@ -248,14 +296,14 @@ def score(tip: np.ndarray, ref: np.ndarray, settle_s: float, cmds: np.ndarray, i
 
 def run(job):
     test, name, r_u = job
-    fn, seed, settle_s, is_circle = TESTS[test]
+    fn, seed, settle_s, kind = TESTS[test]
     d = ref_array(fn)
     ctl = controllers(r_u)[name](d)
     t0 = time.perf_counter()
     res = B.track(ctl, lambda home, k: home + d[k] / 1000.0, int(round(TRACK_S * HZ)), seed=seed)
     tip, ref = 1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"])
     return dict(test=test, controller=name, seed=seed, gains=gains_of(ctl), run_s=time.perf_counter() - t0,
-                metrics=score(tip, ref, settle_s, res["cmds"], is_circle),
+                metrics=score(tip, ref, settle_s, res["cmds"], kind),
                 tip_mm=tip[:, :2].round(4).tolist(), ref_mm=ref[:, :2].round(4).tolist())
 
 
@@ -272,28 +320,30 @@ def tune_job(job):
 # ----------------------------------------------------------------------------- figures
 
 PANELS = [  # never blue next to reddish purple, or green next to orange, in one panel
-    ("SMC vs MPC (tuned R_u; all MPC horizons identical)",
-     ["Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)", mpc_label(100)]),
-    ("MPC horizons at R_u = 10", [mpc_label(h, 10.0) for h in HORIZONS]),
+    ("SMC vs MPC, known reference",
+     ["Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)", mpc_label(100), MPC_F]),
+    ("MPC (M2) horizons at R_u = 10", [mpc_label(h, 10.0) for h in HORIZONS]),
+    ("Same SMC and gains: known vs estimated r(t+T)", ["Delay-aware SMC (M2, known ref)", TAYLOR]),
 ]
 
 
-def figure(rows: list, test: str, path: Path) -> None:
+def figure(rows: list, test: str, path: Path | None = None):
+    """Tip paths and error over time for one test; saved to path if given, returned otherwise."""
     R = {r["controller"]: r for r in rows if r["test"] == test}
-    _, _, settle_s, is_circle = TESTS[test]
+    _, _, settle_s, kind = TESTS[test]
     k0 = int(round(settle_s * HZ))
-    fig, axs = P.figure(2, 2, layout="constrained")
-    fig.set_size_inches(P.WIDTH * 1.2, P.PANEL_H * 2 * 1.35)
+    fig, axs = P.figure(len(PANELS), 2, layout="constrained")
+    fig.set_size_inches(P.WIDTH * 1.2, P.PANEL_H * len(PANELS) * 1.35)
     for row, (title, names) in enumerate(PANELS):
         ax = axs[row, 0]
         ref = np.array(next(iter(R.values()))["ref_mm"])
-        sl = slice(len(ref) - k0, None) if is_circle else slice(k0, None)
+        sl = slice(k0, None) if kind == "open" else slice(len(ref) - k0, None)
         ax.plot(ref[sl, 0], ref[sl, 1], **P.REFERENCE)
         for nm in names:
             tip = np.array(R[nm]["tip_mm"])
             ax.plot(tip[sl, 0], tip[sl, 1], **P.line(nm, len(tip[sl])))
         ax.set(xlabel="x − home (mm)", ylabel="y − home (mm)",
-               title=f"{title}: {'last lap' if is_circle else 'after 5 s'}")
+               title=f"{title}: {'after 5 s' if kind == 'open' else 'last lap'}")
         ax.set_aspect("equal", adjustable="datalim")
         ax.grid(alpha=0.3)
         ax.legend(["reference"] + [P.label(n) for n in names], loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=1)
@@ -307,31 +357,53 @@ def figure(rows: list, test: str, path: Path) -> None:
         ax.grid(alpha=0.3)
         P.legend_below(ax, ncol=1)
     fig.suptitle(f"{test} (make_calibrated_sim, seed {TESTS[test][1]})", fontsize=16)
+    if path is None:
+        return fig
     P.save(fig, path)
 
 
 # -------------------------------------------------------------------------------- main
 
+def tune(workers: int = 10) -> tuple[dict, list]:
+    """Sweep R_u per horizon on the tuning circle; return ({horizon: best R_u}, all results)."""
+    with mp.get_context("fork").Pool(workers) as pool:
+        tuned = pool.map(tune_job, [(h, r) for h in HORIZONS for r in RU_GRID])
+    r_u = {h: min(((r, e) for hh, r, e in tuned if hh == h), key=lambda x: x[1])[0] for h in HORIZONS}
+    return r_u, tuned
+
+
+def run_all(r_u: dict, workers: int = 10) -> list:
+    """Every controller on every test; one dict per run (see run())."""
+    names = list(controllers(r_u))
+    with mp.get_context("fork").Pool(workers) as pool:
+        return pool.map(run, [(t, n, r_u) for t in TESTS for n in names])
+
+
+def save(rows: list, r_u: dict, tuned: list, total_s: float) -> None:
+    out = dict(description=__doc__.split("\n\n")[0], dt_s=DT, track_s=TRACK_S, horizons_steps=HORIZONS,
+               r_u_tuning=[dict(horizon_steps=h, r_u=r, rmse_after_lap_mm=e) for h, r, e in tuned], r_u=r_u,
+               tune_task=TUNE, trace_step_s=TRACE_EVERY * DT,
+               runs=[{**r, "tip_mm": r["tip_mm"][::TRACE_EVERY], "ref_mm": r["ref_mm"][::TRACE_EVERY]} for r in rows],
+               total_run_s=total_s)
+    (FIG / "m2_controllers.json").write_text(json.dumps(out))
+
+
 def main() -> None:
     t0 = time.perf_counter()
     P.apply()
-    with mp.get_context("fork").Pool(10) as pool:
-        tuned = pool.map(tune_job, [(h, r) for h in HORIZONS for r in RU_GRID])
-    r_u = {}
+    r_u, tuned = tune()
     print("R_u tuning (tuning circle 5 mm, 0.07 Hz, seed 5; RMSE after the first lap, mm):")
     for h in HORIZONS:
         row = [(r, e) for hh, r, e in tuned if hh == h]
-        r_u[h] = min(row, key=lambda x: x[1])[0]
         print(f"  {mpc_label(h):<40}" + "  ".join(f"{r:g}: {e:.3f}" for r, e in row) + f"   -> R_u = {r_u[h]:g}")
-    names = list(controllers(r_u))
-    with mp.get_context("fork").Pool(10) as pool:
-        rows = pool.map(run, [(t, n, r_u) for t in TESTS for n in names])
+    rows = run_all(r_u)
     print()
     for t in TESTS:
-        print(f"{t}:  RMSE whole / RMSE settled / shape / max settled / sat % / lag s" + ("  / radius" if TESTS[t][3] else ""))
+        print(f"{t}:  RMSE whole / RMSE settled / shape / max settled / sat % / lag s / radius or size")
         for r in (r for r in rows if r["test"] == t and "R_u =" not in r["controller"]):
             m = r["metrics"]
-            rad = f"  {m['radius_min_mm']:.1f}-{m['radius_max_mm']:.1f}" if "radius_min_mm" in m else ""
+            rad = (f"  {m['radius_min_mm']:.1f}-{m['radius_max_mm']:.1f}" if "radius_min_mm" in m
+                   else f"  {m['size_pct']:.0f}%" if "size_pct" in m else "")
             print(f"  {r['controller']:<40}{m['rmse_whole_mm']:7.2f}{m['rmse_settled_mm']:8.3f}{m['shape_mm']:8.3f}"
                   f"{m['max_settled_mm']:8.2f}{m['saturated_pct']:7.1f}{m['lag_s']:+7.2f}{rad}")
         figure(rows, t, FIG / f"m2ctrl_{t.replace(' ', '_')}.png")
@@ -341,13 +413,8 @@ def main() -> None:
             nm = mpc_label(h, ru)
             print(f"  {nm:<52}" + "  ".join(f"{t}: {r['metrics']['rmse_settled_mm']:.3f}"
                                              for t in TESTS for r in rows if r['test'] == t and r['controller'] == nm))
-    out = dict(description=__doc__.split("\n\n")[0], dt_s=DT, track_s=TRACK_S, horizons_steps=HORIZONS,
-               r_u_tuning=[dict(horizon_steps=h, r_u=r, rmse_after_lap_mm=e) for h, r, e in tuned], r_u=r_u,
-               tune_task=TUNE, trace_step_s=TRACE_EVERY * DT,
-               runs=[{**r, "tip_mm": r["tip_mm"][::TRACE_EVERY], "ref_mm": r["ref_mm"][::TRACE_EVERY]} for r in rows],
-               total_run_s=time.perf_counter() - t0)
-    (FIG / "m2_controllers.json").write_text(json.dumps(out))
-    print(f"\ntotal {out['total_run_s']:.0f} s; wrote docs/figures/m2_controllers.json and m2ctrl_<test>.png")
+    save(rows, r_u, tuned, time.perf_counter() - t0)
+    print(f"\ntotal {time.perf_counter() - t0:.0f} s; wrote docs/figures/m2_controllers.json and m2ctrl_<test>.png")
 
 
 if __name__ == "__main__":

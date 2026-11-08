@@ -5,6 +5,14 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- M2 controller comparison moved into `notebooks/m2_controller_comparison.ipynb` (code stays in
+  `scripts/compare_m2_controllers.py`). Added a triangle and a square (vertices on 7 mm, 10 s/lap,
+  seed 0), the MPC on F (`mpc_controller.DelayMPCController`, ρ = 1e-5, 3 s horizon) given the true
+  future reference, and the same delay-aware SMC with the Taylor preview. RMSE after the first lap,
+  triangle / square (mm): SMC known ref 0.193 / 0.225, MPC on M2 0.129 / 0.124, MPC on F 0.066 /
+  0.068, SMC Taylor preview 1.456 / 1.555 (path size 119 % / 118 %). The SMC's earlier overshoot
+  came from the Taylor preview, not the gain: same λ = 8 with the known reference gives 102 %. MPC
+  on F is also best on the random waypoints (0.086 vs 0.167 mm on M2).
 - Model check extended to five models. Added one-mode + gravity (Nikoletta's derivation with the
   chain's gravity stiffness, `reduced_model(True)`, k = 51.45; our review, not in her notebooks) and
   M3 (M2's actuator + second-order mechanics). Checked that the one-mode model used is her latest
