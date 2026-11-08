@@ -5,6 +5,9 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- Controller block diagrams: `docs/diagrams/controllers.drawio` (draw.io, one page per controller in
+  the M2 comparison: SMC known ref, NDOSMC, SMC Taylor preview, MPC on M2, MPC on F), generated from
+  `scripts/draw_controller_diagrams.py` and drawn from the code, not from the paper.
 - `notebooks/model_comparison_colab.ipynb`: standalone model comparison for Google Colab (installs
   soft-robotic-arm 0.4.2 and scipy if missing; all model parameters inlined, no repo imports). Checked
   by running it in a fresh venv outside the repo: same numbers as `compare_models_excitation.py`.
