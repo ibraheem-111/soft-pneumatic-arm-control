@@ -5,6 +5,19 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- Actuator identified blind from a +1 psi step on S3 (measured pouch pressure,
+  `compare_models_excitation.identify_actuator`): first rise 0.50 s, least-squares T = 0.490 s,
+  tau = 0.599 s, G = 1.098 psi/psi, matching the assumed 0.5 s / 0.6 s. M2 + NDO scored on predicting
+  the tip one dead time (0.5 s) ahead from the measured tip (a free run gives an observer nothing to
+  observe): RMSE x / y / z mm, steps: hold 1.36 / 1.98 / 0.60, M2 0.180 / 0.218 / 0.038, M2 + NDO
+  (l1 = 0.1) 0.187 / 0.222 / 0.069; chirp: M2 0.238 / 0.417 / 0.029, + NDO 0.244 / 0.423 / 0.099.
+  d_hat is a slow drift (level mismatch of M2's absolute equations), which the Smith predictor already
+  has from the measurement. In closed loop the observer does help: delay-aware NDOSMC at lam = 4,
+  observer on vs off, whole-run RMSE mm: scored circle 1.286 -> 1.206, held-out 2.047 -> 1.948,
+  triangle 1.069 -> 1.012, square 1.125 -> 1.049, squiggle 0.361 -> 0.308, waypoints 0.363 -> 0.274
+  (the compare_m2_controllers.py SMC row uses lam = 8, so its gap to the NDOSMC row mixes gain and
+  observer). Notebook gained sections on S1-S4 and excitations, the actuator model, and the NDO.
+
 - M2 controller comparison moved into `notebooks/m2_controller_comparison.ipynb` (code stays in
   `scripts/compare_m2_controllers.py`). Added a triangle and a square (vertices on 7 mm, 10 s/lap,
   seed 0), the MPC on F (`mpc_controller.DelayMPCController`, ρ = 1e-5, 3 s horizon) given the true

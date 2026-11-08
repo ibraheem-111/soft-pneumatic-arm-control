@@ -25,6 +25,18 @@ Excitations (seeds differ from every identification and validation seed in the r
   chirp         S2-S4 = 4.5 + 2.5 sin(phase + 0, 120, 240 deg), frequency swept 0.02 -> 1 Hz
                 (logarithmic) over 60 s
 
+M2 + NDO is not a free-run model: a disturbance observer needs the measured tip, so with no
+measurement it adds nothing. It is scored on what the delay-aware controllers use the model for,
+predicting the tip one dead time T ahead from the tip measured up to now:
+  hold      y_hat(t+T) = y(t)
+  M2        y_hat(t+T) = y(t) + x_m(t) - x_m(t-T)   (Smith predictor; x_m = M2 without the dead time)
+  M2 + NDO  M2 + d_hat (1 - exp(-a T)) / a           (observer estimate of the unmodelled rate, held
+            over T; ndosmc.NDOB with l2 = 0: d_hat = z + l1 y, z' = l1 (a y - a H p_hat - d_hat))
+
+The actuator identification (identify_actuator) steps one input by +1 psi and fits dead time, lag
+and gain to the measured pouch pressure of that column, the way it would be done without
+knowing them.
+
 Metrics per axis, whole run: RMSE, max |error| and bias = mean error (mm), and
 fit = 100 (1 - |y_model - y| / |y - mean(y)|) %. Static gains (mm/psi): the tip change 10 s after
 a +1 psi step on S3 (x) and on S2 (y) from the 4.5 psi baseline, for the simulator and each model.
@@ -177,6 +189,78 @@ SIMULATE = {"one-mode": simulate_one_mode, "one-mode+g": lambda u: simulate_one_
             "M2": simulate_m2, "M3": simulate_m3, "F": simulate_f}
 
 
+def m2_parts():
+    """M2's mechanics rate a (1/s), pressure map H (mm/psi), lag tau (s), gain g, dead time (samples)."""
+    m = N.TaskSpaceModel.load()
+    a = np.array([ax.params(0.0)[0] for ax in m.axes_measured])
+    return a, m.B_measured, m.actuator.tau_s, m.actuator.gain, int(round(m.actuator.delay_s * HZ))
+
+
+PREDICTORS = ("hold", "M2", "M2 + NDO")
+NDO_L1 = (0.1, 1.0)            # 0.1 1/s: the gain of the delay-aware NDOSMC (Nikoletta's notebook)
+
+
+def predict_ahead(truth: np.ndarray, u: np.ndarray, l1: float = 0.1) -> dict:
+    """Tip predicted one dead time T ahead from the tip measured up to t (module docstring).
+    Returns name -> (n - T, 3) predictions of truth[T:], plus "d_hat" (n, 3), mm/s."""
+    a, H, tau, g, nd = m2_parts()
+    A = np.block([[-np.diag(a), np.diag(a) @ H], [np.zeros((3, 3)), -np.eye(3) / tau]])
+    B = np.vstack([np.zeros((3, 3)), np.diag(g) / tau])
+    xp = _lsim(A, B, np.eye(6), u)               # M2 with the dead time removed: [x_m, p_m]
+    x_m, p_m = xp[:, :3], xp[:, 3:]
+    n = len(truth)
+    x_back = np.vstack([np.zeros((nd, 3)), x_m])[:n]          # x_m(t - T)
+    p_now = np.vstack([np.zeros((nd, 3)), p_m])[:n]           # model pressure acting now: p_m(t - T)
+    d_hat, z = np.zeros((n, 3)), -l1 * truth[0]
+    for k in range(n):
+        d_hat[k] = z + l1 * truth[k]
+        z = z + DT * l1 * (a * truth[k] - a * (H @ p_now[k]) - d_hat[k])
+    smith = truth + x_m - x_back
+    T = nd * DT
+    return {"hold": truth[:n - nd], "M2": smith[:n - nd],
+            "M2 + NDO": (smith + d_hat * (1 - np.exp(-a * T)) / a)[:n - nd], "d_hat": d_hat}
+
+
+def prediction_metrics(truth: np.ndarray, u: np.ndarray) -> dict:
+    """RMSE (mm) of each T-ahead predictor per axis, NDO at each gain in NDO_L1."""
+    nd = m2_parts()[4]
+    target = truth[nd:]
+    rm = lambda p: {ax: float(np.sqrt(np.mean((p[:, i] - target[:, i]) ** 2))) for i, ax in enumerate("xyz")}  # noqa: E731
+    pr = predict_ahead(truth, u, NDO_L1[0])
+    out = {"hold": rm(pr["hold"]), "M2": rm(pr["M2"])}
+    for l1 in NDO_L1:
+        out[f"M2 + NDO (l1 = {l1:g})"] = rm(predict_ahead(truth, u, l1)["M2 + NDO"])
+    return out
+
+
+def identify_actuator(seg: int = 1, seconds: float = 6.0, pre_s: float = 2.0) -> dict:
+    """+1 psi step on one input (0 = S2, 1 = S3, 2 = S4) after settling at 4.5 psi; measured pouch
+    pressure of that column (mean of its 5 pouches). Dead time = first sample outside the pre-step
+    band (mean +- 5 std); then least squares on p = p0 + G (1 - exp(-(t - T) / tau)) for T, tau, G."""
+    from scipy.optimize import curve_fit
+    sim = make_calibrated_sim(control_hz=HZ, seed=0)
+    sim.reset()
+    col = None
+    p = []
+    n_pre = int(round(pre_s * HZ))
+    for k in range(int(round((SETTLE_S + pre_s + seconds) * HZ))):
+        c = np.full(3, BASE)
+        if k >= int(round((SETTLE_S + pre_s) * HZ)):
+            c[seg] += 1.0
+        obs = sim.step(c)
+        col = int(np.asarray(obs["actuator_columns"])[seg])
+        p.append(float(np.mean(obs["pouch_pressures"][col])))
+    sim.close()
+    p = np.array(p[-(n_pre + int(round(seconds * HZ))):])
+    t = (np.arange(len(p)) - n_pre) * DT                     # 0 = first sample with the new command
+    p0, sd = p[:n_pre].mean(), p[:n_pre].std()
+    k_first = int(np.argmax(np.abs(p[n_pre:] - p0) > 5 * sd))
+    model = lambda tt, T, tau, G: p0 + G * (1 - np.exp(-np.clip(tt - T, 0, None) / tau))  # noqa: E731
+    (T, tau, G), _ = curve_fit(model, t[n_pre:], p[n_pre:], p0=(k_first * DT, 0.5, 1.0))
+    return dict(t=t, p=p, fit=model(t, T, tau, G), p0=float(p0), noise_std=float(sd),
+                dead_time_first_rise_s=k_first * DT, dead_time_s=float(T), tau_s=float(tau), gain=float(G))
+
+
 def step_commands(seg: int, seconds: float = 10.0) -> np.ndarray:
     """+1 psi on one segment (0 = S2, 1 = S3, 2 = S4) from the 4.5 psi baseline."""
     c = np.full((int(round(seconds * HZ)), 3), BASE)
@@ -268,6 +352,7 @@ def run(kind: str, seconds: float) -> dict:
     sims = {m: SIMULATE[m](u) for m in MODELS}
     t = np.arange(len(cmds)) * DT
     met = {m: metrics(truth, sims[m]) for m in MODELS}
+    met["prediction_one_dead_time_ahead"] = prediction_metrics(truth, u)
     figure(kind, t, cmds, truth, sims, FIG / f"model_comparison_{kind}.png", met)
     return dict(cmds=cmds, truth=truth, sims=sims, t=t, metrics=met)
 
@@ -290,6 +375,12 @@ def main() -> None:
             cells = [f"{a}: {v['rmse_mm']:.3f} ({v['fit_pct']:.1f} %)" if v else f"{a}: no z output"
                      for a, v in r["metrics"][m].items()]
             print(f"  {LABELS[m]:<30}" + "   ".join(cells))
+        print(f"  predicting the tip one dead time ahead from the measured tip, RMSE mm:")
+        for name, v in r["metrics"]["prediction_one_dead_time_ahead"].items():
+            print(f"    {name:<26}" + "   ".join(f"{a}: {e:.3f}" for a, e in v.items()))
+    act = identify_actuator()
+    out["actuator_identified_from_step"] = {k: v for k, v in act.items() if not isinstance(v, np.ndarray)}
+    print("\nactuator from a +1 psi step on S3:", out["actuator_identified_from_step"])
     out["static_gains_mm_per_psi"] = static_gains()
     print("\nstatic gains, mm/psi:", json.dumps(out["static_gains_mm_per_psi"], indent=1))
     (FIG / "model_comparison.json").write_text(json.dumps(out, indent=1))
