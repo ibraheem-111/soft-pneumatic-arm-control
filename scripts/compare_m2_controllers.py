@@ -18,9 +18,6 @@ Also run, for comparison:
                                       frequency-identified model F (models/sysid_calibrated_v2.json),
                                       its own tuned rho = 1e-5 m^2/psi^2, given the true future
                                       reference (preview="oracle")
-  Delay-aware SMC (M2, Taylor preview) the same SMC and gains as above, but estimating
-                                      r(t+T) = r + T r' + T^2 r''/2 from the reference's past
-                                      (the reference not known in advance)
 
 M2MPC, every 10 ms step k (state X = (y, p): tip mm and measured S2-S4 pressure psi, both as
 deviations from the settled pose; input u = command - 4.5 psi):
@@ -237,7 +234,6 @@ def controllers(r_u: dict) -> dict:
             m, lam=4.0, l1=0.1, l2=0.0, mu=1.0, Phi=1.0, eps=1.0, exact_preview=True), d),
         SMC_L4: lambda d: BS.Ahead(N.DelayAwareNDOSMC(
             m, lam=4.0, mu=1.0, eps=1.0, observer=False, exact_preview=True), d),
-        TAYLOR: lambda d: N.DelayAwareNDOSMC(m, lam=8.0, mu=1.0, eps=1.0, observer=False),
         MPC_F: mpc_f,
     }
     for h in HORIZONS:
@@ -248,7 +244,6 @@ def controllers(r_u: dict) -> dict:
     return out
 
 
-TAYLOR = "Delay-aware SMC (M2, Taylor preview)"
 SMC_L4 = "Delay-aware SMC (M2, known ref), λ = 4"         # NDOSMC's gain without the observer
 MPC_F = f"MPC (F), horizon {F.HORIZON} steps = {F.HORIZON * DT:.2f} s"
 
@@ -328,7 +323,6 @@ PANELS = [  # never blue next to reddish purple, or green next to orange, in one
     ("SMC vs MPC, known reference",
      ["Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)", mpc_label(100), MPC_F]),
     ("MPC (M2) horizons at R_u = 10", [mpc_label(h, 10.0) for h in HORIZONS]),
-    ("Same SMC and gains: known vs estimated r(t+T)", ["Delay-aware SMC (M2, known ref)", TAYLOR]),
 ]
 
 

@@ -20,10 +20,10 @@ FIG = ROOT / "docs" / "figures"
 OUT = ROOT / "docs" / "reports" / "m2-controller-comparison.html"
 
 SMC_L4 = "Delay-aware SMC (M2, known ref), λ = 4"
-SMC, NDO, TAYLOR = "Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)", "Delay-aware SMC (M2, Taylor preview)"
+SMC, NDO = "Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)"
 MPC_F = "MPC (F), horizon 300 steps = 3.00 s"
 M2 = [f"MPC (M2), horizon {h} steps = {h / 100:.2f} s" for h in (25, 100, 300)]
-ROWS = [SMC, SMC_L4, NDO, *M2, MPC_F, TAYLOR]
+ROWS = [SMC, SMC_L4, NDO, *M2, MPC_F]
 ORDER = ["scored circle", "held-out circle", "triangle", "square", "squiggle", "random waypoints"]
 ABOUT = {
     "scored circle": "7 mm circle, 0.1 Hz (10 s per lap), sim seed 0; the course harness task.",
@@ -103,10 +103,10 @@ def test_section(test: str, R: dict, kind: str) -> str:
         rows.append((n, cells))
     last = "last lap" if kind != "open" else "after 5 s"
     return (f'<section><h2>{escape(test)}</h2><p class="meta">{escape(ABOUT[test])} 30 s tracked after a 5 s settle.</p>'
-            + table(head, rows, {0, 1, 2, 3}, {TAYLOR})
+            + table(head, rows, {0, 1, 2, 3}, set())
             + f'<figure><div class="scroll">{img(test)}</div><figcaption>Top: SMC, NDOSMC, the tuned MPC on M2 (all three '
-            f'horizons give the same path, so one is drawn) and the MPC on F. Middle: the M2 MPC horizons at R_u = 10, where '
-            f'they differ. Bottom: the same SMC with the known vs the estimated r(t + T). Left: tip path ({last}); right: '
+            f'horizons give the same path, so one is drawn) and the MPC on F. Bottom: the M2 MPC horizons at R_u = 10, where '
+            f'they differ. Left: tip path ({last}); right: '
             f'planar error over the whole run. Thick black dashed: reference.</figcaption></figure></section>')
 
 
@@ -124,13 +124,8 @@ square {v('square', MPC_F):.3f} vs {v('square', M2[1]):.3f} and {v('square', SMC
 {v('random waypoints', MPC_F):.3f} vs {v('random waypoints', M2[1]):.3f} and {v('random waypoints', SMC):.3f}; squiggle
 {v('squiggle', MPC_F):.3f} vs {v('squiggle', M2[1]):.3f} and {v('squiggle', SMC):.3f}.</li>
 <li><b>On the circles the MPC on M2 is best:</b> scored circle {v('scored circle', M2[1]):.3f} mm vs {v('scored circle', MPC_F):.3f}
-(F) and {v('scored circle', SMC):.3f} (SMC). The held-out circle is a tie ({min(v('held-out circle', n) for n in ROWS[:-1]):.2f}–{max(v('held-out circle', n) for n in ROWS[:-1]):.2f} mm):
+(F) and {v('scored circle', SMC):.3f} (SMC). The held-out circle is a tie ({min(v('held-out circle', n) for n in ROWS):.2f}–{max(v('held-out circle', n) for n in ROWS):.2f} mm):
 it is limited by reach, about 8.2 mm in x against 10 mm for every controller, with 19–23 % of commands saturated.</li>
-<li><b>The SMC is not more damped than before; it is given the true future reference.</b> Same controller and gains with
-r(t + T) estimated from the reference's slope and curvature (the earlier setting): triangle {v('triangle', TAYLOR):.2f} mm and
-{sz('triangle', TAYLOR):.0f} % size, square {v('square', TAYLOR):.2f} mm and {sz('square', TAYLOR):.0f} %, against
-{v('triangle', SMC):.2f} / {sz('triangle', SMC):.0f} % and {v('square', SMC):.2f} / {sz('square', SMC):.0f} % with the known
-reference. The estimate overshoots each corner for the 0.5 s dead time.</li>
 <li><b>At equal gain the disturbance observer lowers whole-run RMSE on every test, but not always the settled error:</b>
 SMC at λ = 4 without vs with the observer, whole-run RMSE
 """ + ", ".join(f"{t} {R[(t, SMC_L4)]['rmse_whole_mm']:.2f} → {R[(t, NDO)]['rmse_whole_mm']:.2f}" for t in ORDER) + """ mm
@@ -165,18 +160,10 @@ dead time, so 25 steps = 0.25 s (looks 0.5–0.75 s ahead), 100 steps = 1 s (0.5
 (0.5–3.5 s ahead). R<sub>u</sub> (mm²/psi²) tuned per horizon on a separate circle (5 mm, 0.07 Hz, seed 5).</li>
 <li><b>MPC (F)</b>: <code>mpc_controller.DelayMPCController</code> on the frequency-identified model F: one model per
 planar channel (ν<sub>x</sub> = −u₃, ν<sub>y</sub> = u₂ − u₄), Kalman filter on tip and channel pressure, same delay
-predictor, same cost with ρ = 10⁻⁵ m²/psi² (its own tuning), horizon 300 steps = 3 s; given the true future reference.</li>
-<li><b>Delay-aware SMC, Taylor preview</b> (reference row, not starred): the first SMC with the same gains, estimating
-r(t + T) ≈ r + T ṙ + T² r̈ / 2 from the reference's past instead of reading it.</li></ul>
+predictor, same cost with ρ = 10⁻⁵ m²/psi² (its own tuning), horizon 300 steps = 3 s; given the true future reference.</li></ul>
 <p class="meta">Run interactively: <code>notebooks/m2_controller_comparison.ipynb</code>. Regenerate:
 <code>uv run python scripts/compare_m2_controllers.py</code> (about 45 s), then <code>uv run python scripts/report_m2_controllers.py</code>.
 Every run's gains, metrics and traces: <code>docs/figures/m2_controllers.json</code>.</p></section>"""
-    pv = table(["Test", "SMC, known reference", "SMC, estimated reference"],
-               [(t, [(f"{v(t, n):.3f}" + (f" ({sz(t, n):.0f} %)" if kind[t] == "polygon" else ""), None)
-                     for n in (SMC, TAYLOR)]) for t in ORDER], set(), set())
-    preview = ('<section><h2>Why the SMC no longer overshoots</h2><p>Same controller, same gains (λ = 8, μ = 1 mm, no '
-               'observer). Only the preview differs. RMSE after settling (mm), with path size for the triangle and square:</p>'
-               + pv + '</section>')
     hz = []
     for ru, lab in ((None, "tuned R_u = {:g}"), (1.0, "R_u = 1"), (10.0, "R_u = 10")):
         for h, n in zip((25, 100, 300), M2):
@@ -206,7 +193,7 @@ MPC on the frequency-identified model F, each given the true future reference (c
 two circles, a triangle, a square and two random paths.</p></header>
 """
     html = head + CSS + "\n" + intro + findings + setup + "".join(test_section(t, R, kind[t]) for t in ORDER) \
-        + preview + horizon + "\n</div>\n"
+        + horizon + "\n</div>\n"
     OUT.write_text(html)
     print(f"wrote {OUT.relative_to(ROOT)} ({len(html) / 1e6:.1f} MB)")
 

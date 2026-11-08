@@ -5,6 +5,10 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-08
 
+- Dropped the Taylor-preview SMC from the M2 controller comparison (figures, tables, notebook,
+  report) and from the controller diagrams: we no longer use it; the reference is known in advance.
+  Its result stays recorded above (triangle 1.456 mm, 119 % size, vs 0.193 mm with the known
+  reference).
 - Controller block diagrams: `docs/diagrams/controllers.drawio` (draw.io, one page per controller in
   the M2 comparison: SMC known ref, NDOSMC, SMC Taylor preview, MPC on M2, MPC on F), generated from
   `scripts/draw_controller_diagrams.py` and drawn from the code, not from the paper.

@@ -4,9 +4,8 @@ One page per controller, drawn from the code (scripts/ndosmc.py DelayAwareNDOSMC
 scripts/compare_m2_controllers.py M2MPC, scripts/mpc_controller.py DelayMPCController):
   1. Delay-aware SMC, reference known (lambda = 8 and the lambda = 4 row; observer off)
   2. Delay-aware NDOSMC, reference known (observer on)
-  3. Delay-aware SMC, Taylor preview (reference not known)
-  4. MPC on M2, reference known
-  5. MPC on F, reference known
+  3. MPC on M2, reference known
+  4. MPC on F, reference known
 Blue blocks run in the controller every 10 ms, dashed blocks are models the controller runs
 internally, grey is the simulator. Signals are in mm (tip) and psi (pressure).
 
@@ -81,18 +80,13 @@ PLANT_LABEL = ("<b>Plant</b>: make_calibrated_sim<br>dead time T = 0.5 s<br>→ 
                "→ pouches → MuJoCo arm")
 
 
-def smc_page(name: str, title: str, preview: str, observer: bool, note: str) -> Page:
-    """Delay-aware (ND)OSMC: look-ahead or Taylor preview, Smith predictor on M2, lag inverse."""
+def smc_page(name: str, title: str, observer: bool, note: str) -> Page:
+    """Delay-aware (ND)OSMC: look-ahead on the known reference, Smith predictor on M2, lag inverse."""
     p = Page(name, title)
     p.box("grp", "Controller (every 10 ms, per axis x, y, z)", 110, 70, 1300, 560, GROUP)
-    if preview == "known":
-        p.box("ref", "Known trajectory<br>r(t), all t", 150, 95, 150, 60, TEXT)
-        p.box("look", "<b>Look-ahead</b><br>r(t+T), ṙ(t+T) read from the trajectory<br>T = 0.5 s (N = 50 steps)",
-              480, 90, 290, 70)
-    else:
-        p.box("ref", "Reference r(t) only<br>(future unknown)", 150, 95, 150, 60, TEXT)
-        p.box("look", "<b>Taylor preview</b><br>r̂(t+T) = r + T ṙ + ½T² r̈<br>ṙ, r̈: backward differences of r",
-              480, 90, 290, 70)
+    p.box("ref", "Known trajectory<br>r(t), all t", 150, 95, 150, 60, TEXT)
+    p.box("look", "<b>Look-ahead</b><br>r(t+T), ṙ(t+T) read from the trajectory<br>T = 0.5 s (N = 50 steps)",
+          480, 90, 290, 70)
     p.edge("ref", "look")
     d_term = " − d̂" if observer else ""
     eta = "η = Φ e<sup>−l₁t</sup> + ε / l₁" if observer else "η = ε"
@@ -218,20 +212,15 @@ def mpc_f_page() -> Page:
 def main() -> None:
     pages = [
         smc_page("SMC known ref", "Delay-aware SMC (M2), reference known",
-                 "known", False,
+                 False,
                  "Code: scripts/ndosmc.py DelayAwareNDOSMC(observer=False, exact_preview=True), fed r(t+T) by "
                  "benchmark_slide_tasks.Ahead. Rows: λ = 8 s⁻¹ and λ = 4 s⁻¹; μ = 1 mm, ε = 1. "
                  "a, b, H, G, τ from M2 (docs/figures/task_space_model.json); the observer is off (d̂ = 0)."),
         smc_page("NDOSMC known ref", "Delay-aware NDOSMC (M2), reference known",
-                 "known", True,
+                 True,
                  "Code: scripts/ndosmc.py DelayAwareNDOSMC(exact_preview=True) with the observer on. "
                  "Nikoletta's gains: λ = 4 s⁻¹, l₁ = 0.1, l₂ = 0, μ = 1 mm, Φ = 1, ε = 1. Same structure as the "
                  "SMC page plus the observer, which acts on the predicted tip q̂."),
-        smc_page("SMC Taylor preview", "Delay-aware SMC (M2), Taylor preview (reference not known)",
-                 "taylor", False,
-                 "Code: scripts/ndosmc.py DelayAwareNDOSMC(observer=False), λ = 8 s⁻¹, μ = 1 mm, ε = 1. "
-                 "Identical to the known-reference SMC except the look-ahead: r(t+T) is extrapolated from the "
-                 "reference's past, which overshoots corners (triangle path size 119 %)."),
         mpc_m2_page(),
         mpc_f_page(),
     ]

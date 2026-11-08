@@ -71,7 +71,6 @@ SERIES = {
     "MPC (M2), horizon 100 steps = 1.00 s, R_u = 10": (VERMILLION, SOLID, "s", "MPC (M2), horizon 100 steps = 1.00 s, R_u = 10"),
     "MPC (M2), horizon 300 steps = 3.00 s, R_u = 10": (GREEN, DASHDOT, "D", "MPC (M2), horizon 300 steps = 3.00 s, R_u = 10"),
     "MPC (F), horizon 300 steps = 3.00 s": (SKY, LONGDASH, "P", "MPC (F), horizon 300 steps = 3.00 s"),
-    "Delay-aware SMC (M2, Taylor preview)": (ORANGE, DOTTED, "D", "Delay-aware SMC (M2, Taylor preview)"),
     # models (compare_models_excitation.py); the simulator itself is drawn with REFERENCE
     # red-green safe: no green; each model also has its own line style and marker
     "One-mode": (VERMILLION, DOTTED, "s", "One-mode"),
