@@ -78,6 +78,14 @@ SERIES = {
     "M2": (BLUE, SOLID, "o", "M2"),
     "M3": (ORANGE, DASHED, "^", "M3"),
     "F": (SKY, DASHDOT, "v", "F"),
+    # disturbance on M2 (smc_signals.py): actual model residual d and the observer's estimate d_hat
+    "d x": (BLUE, DOTTED, "o", "actual d, x"),
+    "d y": (VERMILLION, DOTTED, "s", "actual d, y"),
+    "d_hat x": (BLUE, SOLID, "^", "observer d̂, x"),
+    "d_hat y": (VERMILLION, SOLID, "D", "observer d̂, y"),
+    # error-space phase portrait (smc_signals.py)
+    "E x": (BLUE, SOLID, "o", "x axis"),
+    "E y": (VERMILLION, DASHED, "s", "y axis"),
     # segments (command plots)
     "S2": (ORANGE, SOLID, "o", "S2"),
     "S3": (SKY, DASHED, "s", "S3"),

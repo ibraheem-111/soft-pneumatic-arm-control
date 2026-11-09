@@ -3,6 +3,18 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-11-09
+
+- SMC on M2 explained (`docs/reports/smc-on-m2.html`, built by `scripts/report_smc_explained.py`)
+  with pressures, disturbance and error-space phase portraits per test (`scripts/smc_signals.py`,
+  `docs/figures/smc_signals_*.png`, `smc_phase_*.png`).
+- Correction to the 2026-11-08 observer finding: the NDOSMC's switching gain is η = Φe^(−l₁t) + ε/l₁
+  → 10, not 1. The SMC at λ = 4 with η = 10 and no observer matches the NDOSMC on all six tests
+  (e.g. waypoints 0.273 vs 0.274 mm, square 0.210 vs 0.213 mm after settling), so the gain over the
+  λ = 4, η = 1 SMC comes from η, not from d̂. With l₁ = 0.1 the observer is a 10 s filter (d̂˙ =
+  l₁(d − d̂)); its d̂ is about a fifth of the actual disturbance (RMS ≈ 0.1 vs 0.6 mm/s). Measured
+  with `scripts/smc_signals.py`.
+
 ## 2026-11-08
 
 - Dropped the Taylor-preview SMC from the M2 controller comparison (figures, tables, notebook,
