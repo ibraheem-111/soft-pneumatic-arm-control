@@ -5,6 +5,14 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-09
 
+- MPC counterpart of the SMC page: `docs/reports/mpc-on-m2-and-f.html`
+  (`scripts/report_mpc_explained.py`), with pressures, actual disturbance, each MPC's offset
+  estimate and error-space phase portraits per test (`scripts/mpc_signals.py`,
+  `docs/figures/mpc_signals_*.png`, `mpc_phase_*.png`). Logged runs reproduce the comparison RMSEs
+  exactly. Observed: the M2 MPC's commands jitter (R_u = 1e-5, near model inverse) where F's are
+  smooth; on the triangle the M2 MPC's own predicted error stays within ±0.07 mm while its real
+  error is 0.129 mm (model error its offset w does not catch), against ±0.25 mm predicted and 0.066
+  mm real for F.
 - SMC on M2 explained (`docs/reports/smc-on-m2.html`, built by `scripts/report_smc_explained.py`)
   with pressures, disturbance and error-space phase portraits per test (`scripts/smc_signals.py`,
   `docs/figures/smc_signals_*.png`, `smc_phase_*.png`).
