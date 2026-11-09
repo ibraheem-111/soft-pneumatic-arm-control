@@ -165,7 +165,7 @@ with the simulator's on x, y and z, for two excitations of 60 s each.</p>
 {r('chirp','M3','x'):.2f} / {r('chirp','M3','y'):.2f} mm on the chirp. F is close behind; M2 is up to 3× worse on y in the chirp.</span></div>
 <div><b>M2 and M3 are the only models with z</b><span>Both reach {r('random_steps','M2','z'):.2f} mm on random steps. On the chirp the z motion is tiny (under 0.3 mm) and both miss its shape (fit {ch['M2']['z']['fit_pct']:.0f} %).</span></div>
 <div><b>The one-mode models are off by millimetres</b><span>One-mode: 7–14 mm RMSE, static gain {abs(g['x per psi on S3']['one-mode']):.1f} mm/psi vs the simulator's {abs(g['x per psi on S3']['truth']):.2f}. Adding gravity cuts the error about 3×, but with no dead time and no actuator lag the model still moves before the simulator does.</span></div>
-<div><b>The disturbance observer does not improve the model's prediction</b><span>Predicting the tip 0.5 s ahead, M2 + NDO is slightly worse than M2 alone. The observer still helps the controller (see the last section).</span></div>
+<div><b>The disturbance observer does not improve the model's prediction</b><span>Predicting the tip 0.5 s ahead, M2 + NDO is slightly worse than M2 alone. The NDOSMC's edge over the plain SMC comes from its larger switching gain, not from the observer (see the last section).</span></div>
 </div>
 </section>
 
@@ -260,11 +260,12 @@ The question here is narrower: does d̂ also make the 0.5 s forecast better?</p>
 <li><b>It does not.</b> d̂ is a slow drift (x to about −0.3 mm/s, z to about 1.2 mm/s over 60 s): the gap between where
 M2's equations say the tip settles and where the simulator settles. The Smith prediction starts from the measured tip,
 so it already has that offset, and adding d̂ counts it twice.</li>
-<li><b>It still helps the controller.</b> The sliding-mode law uses M2's equations directly, so the same offset
-would leave a steady tracking error, and d̂ cancels it, like integral action. Same controller at λ = 4, observer off → on,
-whole-run RMSE (mm): scored circle 1.286 → 1.206, held-out circle 2.047 → 1.948, triangle 1.069 → 1.012,
-square 1.125 → 1.049, squiggle 0.361 → 0.308, random waypoints 0.363 → 0.274. After settling it is mixed
-(scored circle 0.046 → 0.050, squiggle 0.086 → 0.095; better on the other four).</li>
+<li><b>The controller improvement is not from the observer either.</b> With the observer on, the code sets the
+switching gain to η = Φe^(−l₁t) + ε/l₁ → 10 instead of η = 1. An SMC at λ = 4 with η = 10 and no observer matches the
+NDOSMC on all six tests (whole-run RMSE mm, η = 1 → η = 10 → NDOSMC): scored circle 1.286 → 1.211 → 1.206,
+held-out circle 2.047 → 1.956 → 1.948, triangle 1.069 → 1.014 → 1.012, square 1.125 → 1.051 → 1.049,
+squiggle 0.361 → 0.311 → 0.308, random waypoints 0.363 → 0.273 → 0.274. With l₁ = 0.1 the observer is a 10 s
+filter; in closed loop d̂ is about a fifth of the actual model residual (RMS ≈ 0.1 vs 0.6 mm/s).</li>
 </ul>
 </section>
 

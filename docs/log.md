@@ -14,6 +14,12 @@ person (or agent) can pick up without asking. Keep entries short and dated.
   λ = 4, η = 1 SMC comes from η, not from d̂. With l₁ = 0.1 the observer is a 10 s filter (d̂˙ =
   l₁(d − d̂)); its d̂ is about a fifth of the actual disturbance (RMS ≈ 0.1 vs 0.6 mm/s). Measured
   with `scripts/smc_signals.py`.
+- Confirmed the correction above independently (`DelayAwareNDOSMC`, exact preview, all six M2
+  comparison tests): SMC at λ = 4 with η = 10, no observer, whole-run RMSE 1.211 / 1.956 / 1.014 /
+  1.051 / 0.311 / 0.273 mm vs NDOSMC 1.206 / 1.948 / 1.012 / 1.049 / 0.308 / 0.274 (scored, held-out,
+  triangle, square, squiggle, waypoints). The 2026-11-08 model-check entry's "in closed loop the
+  observer does help" is wrong for the same reason; the model-check notebooks and
+  `docs/reports/model-comparison.html` now say so.
 
 ## 2026-11-08
 
