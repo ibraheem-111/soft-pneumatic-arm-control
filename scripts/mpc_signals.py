@@ -14,6 +14,8 @@ horizon 100 steps = 1 s) and the MPC on F (mpc_controller.DelayMPCController, ho
 Writes docs/figures/mpc_signals.json (traces every 50 ms), docs/figures/mpc_signals_<test>.png and
 docs/figures/mpc_phase_<test>.png.
 
+The functions also take the MPC on M3 (scripts/mpc_m3.py); notebooks/mpc_m3.ipynb runs all three.
+
 Usage:
     uv run python scripts/mpc_signals.py
 """
@@ -34,10 +36,12 @@ import numpy as np  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import benchmark_all_tasks as B  # noqa: E402
 import compare_m2_controllers as C  # noqa: E402
+import mpc_m3  # noqa: E402
 import ndosmc as N  # noqa: E402
 import plot_style as P  # noqa: E402
 
-M2, F = C.mpc_label(100), C.MPC_F
+M2, F, M3 = C.mpc_label(100), C.MPC_F, mpc_m3.M3_LABEL
+M3_RU = 1e-5            # mpc_m3.tune() on the tuning circle (5 mm, 0.07 Hz, seed 5)
 EVERY = 5
 
 
@@ -50,7 +54,8 @@ class Recorder:
 
     def __init__(self, name: str, ref_mm: np.ndarray):
         self.name, self.d = name, ref_mm
-        self.ctl = C.M2MPC(ref_mm, 100, r_u_tuned()) if name == M2 else C.mpc_f(ref_mm)
+        self.ctl = (C.M2MPC(ref_mm, 100, r_u_tuned()) if name == M2 else mpc_m3.make_m3_mpc(ref_mm, M3_RU)
+                    if name == M3 else C.mpc_f(ref_mm))
         self.p, self.x, self.v, self.off, self.E = [], [], [], [], []
         if name == F:
             self.f_pred = [0.0, 0.0]
@@ -74,7 +79,7 @@ class Recorder:
         self.x.append(np.asarray(obs["tip_pos"], float))
         self.v.append(np.asarray(obs["tip_vel"], float))
         c = self.ctl
-        if self.name == M2:
+        if self.name in (M2, M3):
             k = c.k - 1                                            # compute() has already advanced k
             self.off.append(c.w[:2].copy())
             self.E.append(c.pred_hist[-1][:2] + c.w[:2] - self.d[min(k + c.nd, len(self.d) - 1), :2])
@@ -85,6 +90,9 @@ class Recorder:
 
 
 def gains(name: str) -> dict:
+    if name == M3:
+        return dict(horizon_steps=mpc_m3.HORIZON, horizon_s=mpc_m3.HORIZON * C.DT, r_u_mm2_per_psi2=M3_RU,
+                    dead_time_steps=50, offset_tau_s=0.5, model="M3")
     if name == M2:
         return dict(horizon_steps=100, horizon_s=1.0, r_u_mm2_per_psi2=r_u_tuned(), dead_time_steps=50, offset_tau_s=0.5)
     return dict(horizon_steps=C.F.HORIZON, horizon_s=C.F.HORIZON * C.DT, rho_m2_per_psi2=C.F.RHO, dead_time_steps=50)
@@ -110,14 +118,16 @@ def run(job):
                 t_s=(np.arange(len(p)) * C.DT)[s].round(3).tolist(), u_psi=res["cmds"][s].round(4).tolist(),
                 p_psi=p[s].round(4).tolist(), d_mm_s=dist[s, :2].round(4).tolist(),
                 offset_mm=np.array(rec.off)[s].round(5).tolist(), E_mm=E[s].round(5).tolist(),
-                E_dot_mm_s=Ed[s].round(5).tolist())
+                E_dot_mm_s=Ed[s].round(5).tolist(),
+                tip_mm=(1000.0 * (res["tips"] - res["home"]))[s, :2].round(4).tolist(),
+                ref_mm=(1000.0 * (res["refs"] - res["home"]))[s, :2].round(4).tolist())
 
 
-def figure(rows: list, test: str, path: Path) -> None:
+def figure(rows: list, test: str, path: Path | None = None, names: tuple = (M2, F)):
     R = {r["controller"]: r for r in rows if r["test"] == test}
-    fig, axs = P.figure(4, 2, sharex=True, layout="constrained")
-    fig.set_size_inches(P.WIDTH * 1.2, P.PANEL_H * 4 * 1.05)
-    for j, name in enumerate((M2, F)):
+    fig, axs = P.figure(4, len(names), sharex=True, layout="constrained")
+    fig.set_size_inches(P.WIDTH * 0.6 * len(names), P.PANEL_H * 4 * 1.05)
+    for j, name in enumerate(names):
         r = R[name]
         t = np.array(r["t_s"])
         for k, seg in enumerate(("S2", "S3", "S4")):
@@ -126,7 +136,7 @@ def figure(rows: list, test: str, path: Path) -> None:
         for k, axn in enumerate("xy"):
             axs[2, j].plot(t, np.array(r["d_mm_s"])[:, k], **P.line(f"d {axn}", len(t)))
             axs[3, j].plot(t, np.array(r["offset_mm"])[:, k], **P.line(f"E {axn}", len(t)))
-        off = "w (low-passed prediction error)" if name == M2 else "o (Kalman tip offset)"
+        off = "o (Kalman tip offset)" if name == F else "w (low-passed prediction error)"
         axs[0, j].set(title=f"{P.label(name)}\ncommanded pressure u", ylabel="psi", ylim=(-0.3, 9.3))
         axs[1, j].set(title="measured segment pressure p", ylabel="psi")
         axs[2, j].set(title="actual disturbance d (M2 model residual)", ylabel="mm/s")
@@ -138,14 +148,43 @@ def figure(rows: list, test: str, path: Path) -> None:
     h3, l3 = axs[3, 0].get_legend_handles_labels()
     fig.legend(h0 + h2 + h3, l0 + l2 + [f"offset, {s}" for s in l3], loc="outside lower center", ncol=7)
     fig.suptitle(f"{test}: MPC pressures and disturbance (make_calibrated_sim, seed {C.TESTS[test][1]})", fontsize=16)
+    if path is None:
+        return fig
     P.save(fig, path)
 
 
-def phase(rows: list, test: str, path: Path) -> None:
+def figure_one(rows: list, test: str, name: str):
+    """One MPC on one test, 2 x 2: commanded and measured pressure, actual disturbance, offset estimate."""
+    r = next(r for r in rows if r["test"] == test and r["controller"] == name)
+    fig, axs = P.figure(2, 2, sharex=True, layout="constrained")
+    fig.set_size_inches(P.WIDTH * 1.2, P.PANEL_H * 2 * 1.2)
+    t = np.array(r["t_s"])
+    for k, seg in enumerate(("S2", "S3", "S4")):
+        axs[0, 0].plot(t, np.array(r["u_psi"])[:, k], **P.line(seg, len(t)))
+        axs[0, 1].plot(t, np.array(r["p_psi"])[:, k], **P.line(seg, len(t)))
+    for k, axn in enumerate("xy"):
+        axs[1, 0].plot(t, np.array(r["d_mm_s"])[:, k], **P.line(f"d {axn}", len(t)))
+        axs[1, 1].plot(t, np.array(r["offset_mm"])[:, k], **P.line(f"E {axn}", len(t), label=f"offset, {axn}"))
+    off = "o (Kalman tip offset)" if name == F else "w (low-passed prediction error)"
+    axs[0, 0].set(title="commanded pressure u", ylabel="psi", ylim=(-0.3, 9.3))
+    axs[0, 1].set(title="measured segment pressure p", ylabel="psi")
+    axs[1, 0].set(title="actual disturbance d (M2 model residual)", ylabel="mm/s", xlabel="tracking time (s)")
+    axs[1, 1].set(title=f"offset estimate {off}", ylabel="mm", xlabel="tracking time (s)")
+    for a in axs.ravel():
+        a.grid(alpha=0.3)
+    h0, l0 = axs[0, 0].get_legend_handles_labels()
+    h2, l2 = axs[1, 0].get_legend_handles_labels()
+    h3, l3 = axs[1, 1].get_legend_handles_labels()
+    fig.legend(h0 + h2 + h3, l0 + l2 + l3, loc="outside lower center", ncol=7)
+    fig.suptitle(f"{test}: {P.label(name)}", fontsize=16)
+    return fig
+
+
+def phase(rows: list, test: str, path: Path | None = None, names: tuple = (M2, F)):
     R = {r["controller"]: r for r in rows if r["test"] == test}
-    fig, axs = P.figure(2, 2, layout="constrained")
-    fig.set_size_inches(P.WIDTH * 1.2, P.PANEL_H * 2 * 1.5)
-    for i, name in enumerate((M2, F)):
+    fig, axs = P.figure(len(names), 2, layout="constrained")
+    fig.set_size_inches(P.WIDTH * 1.2, P.PANEL_H * len(names) * 1.5)
+    for i, name in enumerate(names):
         r = R[name]
         E, Ed = np.array(r["E_mm"]), np.array(r["E_dot_mm_s"])
         k0 = int(round(r["settle_s"] / (EVERY * C.DT)))
@@ -159,16 +198,22 @@ def phase(rows: list, test: str, path: Path) -> None:
             ax.set(xlim=(-lim, lim), ylim=(-ylim, ylim), xlabel="E = predicted tip at t+T + offset − x_d(t+T) (mm)",
                    ylabel="Ė (mm/s)", title=f"{P.label(name)}\n{'whole run' if j == 0 else 'after settling'}")
             ax.grid(alpha=0.3)
-    h, lb = axs[1, 0].get_legend_handles_labels()
+    h, lb = axs[-1, 0].get_legend_handles_labels()
     fig.legend(h, lb, loc="outside lower center", ncol=2)
     fig.suptitle(f"{test}: MPC error-space phase portrait (make_calibrated_sim, seed {C.TESTS[test][1]})", fontsize=16)
+    if path is None:
+        return fig
     P.save(fig, path)
+
+
+def run_all(names: tuple = (M2, F)) -> list:
+    with mp.get_context("fork").Pool(12) as pool:
+        return pool.map(run, [(t, n) for t in C.TESTS for n in names])
 
 
 def main() -> None:
     P.apply()
-    with mp.get_context("fork").Pool(12) as pool:
-        rows = pool.map(run, [(t, n) for t in C.TESTS for n in (M2, F)])
+    rows = run_all()
     rms = lambda a: np.sqrt(np.mean(np.asarray(a) ** 2, axis=0))  # noqa: E731
     for t in C.TESTS:
         figure(rows, t, C.FIG / f"mpc_signals_{t.replace(' ', '_')}.png")

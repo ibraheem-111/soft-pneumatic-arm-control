@@ -5,6 +5,14 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-09
 
+- MPC on M3 (`scripts/mpc_m3.py`, notebook `notebooks/mpc_m3.ipynb`): M2MPC's law on M3, state (y,
+  ẏ, p) with ẏ from the differenced tip, horizon 100 steps = 1 s, R_u tuned on the tuning circle to
+  1e-5 (0.037 mm there vs 0.015 for M2). RMSE after settling, M2 / M3 / F MPC (mm): held-out 0.905 /
+  0.906 / 0.916, scored 0.029 / 0.074 / 0.057, triangle 0.129 / 0.069 / 0.066, square 0.124 / 0.069
+  / 0.068, squiggle 0.071 / 0.041 / 0.063, waypoints 0.167 / 0.105 / 0.086. M3 saturates far more
+  (6–46 % of commands vs 1–23 % for M2, 0–19 % for F). The velocity estimate is not the limit: the
+  simulator's tip_vel gives the same tuning score; ẏ = 0 scores 0.030. One rerun moved M3's square
+  by 0.001 mm (0.070 to 0.069); cause not checked.
 - MPC counterpart of the SMC page: `docs/reports/mpc-on-m2-and-f.html`
   (`scripts/report_mpc_explained.py`), with pressures, actual disturbance, each MPC's offset
   estimate and error-space phase portraits per test (`scripts/mpc_signals.py`,
