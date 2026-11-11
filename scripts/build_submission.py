@@ -1,6 +1,10 @@
-"""Write the group's submission notebook, built on the professor's template (notebooks/soft_robotic_arm_v2.ipynb).
+"""Write the group's submission notebooks, built on the professor's template (notebooks/soft_robotic_arm_v2.ipynb).
 
-    notebooks/Soft_robotic_arm_MPC_M3sim.ipynb   (MPC on M3's structure, identified on make_sim)
+    notebooks/Soft_robotic_arm_MPC_M3sim.ipynb   MPC on M3's structure (second-order mechanics), identified on make_sim
+    notebooks/Soft_robotic_arm_MPC_M2sim.ipynb   MPC on M2's structure (first-order mechanics), identified on make_sim
+
+The two are identical except for the model: every model-specific text and code block below is written for M3sim,
+and M2SIM_EDITS turns it into the M2sim version by exact replacement (each must match once).
 
 The template's assessment interface is kept exactly: a clearly labelled controller cell defines
 student_controller(reference, obs) -> finite (4, 5) absolute pouch psi in [0, 9] and reset_controller();
@@ -23,7 +27,7 @@ import nbformat as nbf
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "notebooks" / "soft_robotic_arm_v2.ipynb"   # the professor's template, copied unchanged
-OUT = ROOT / "notebooks" / "Soft_robotic_arm_MPC_M3sim.ipynb"
+OUT = {v: ROOT / "notebooks" / f"Soft_robotic_arm_MPC_{v}.ipynb" for v in ("M3sim", "M2sim")}
 md, code = nbf.v4.new_markdown_cell, nbf.v4.new_code_cell
 
 
@@ -600,17 +604,98 @@ SUMMARY = r"""## 11 — Summary and limitations
   a raw backward difference, which real sensor noise would amplify."""
 
 
-def build() -> nbf.NotebookNode:
+M2SIM_EDITS = {   # name of the text block -> [(M3sim text, M2sim text), ...]
+    "INTRO": [
+        ("# Group 5 — Soft Robotic Arm: Model-Predictive Control with Trajectory Preview",
+         "# Group 5 — Soft Robotic Arm: Model-Predictive Control with Trajectory Preview (M2 model)"),
+        ("pneumatic lag $\\tau\\dot p = -p + Gu$ and second-order tip mechanics per axis.",
+         "pneumatic lag $\\tau\\dot p = -p + Gu$ and first-order tip mechanics per axis (the structure of our model M2)."),
+        ("RMSE; on our runs **0.09 mm RMSE**", "RMSE; on our runs **0.12 mm RMSE**"),
+    ],
+    "ID_MD": [
+        ("""Per planar axis the tip follows its pressure input as a
+  damped second-order system:
+$$\\ddot y_i + 2\\zeta_i\\omega_i\\,\\dot y_i + \\omega_i^2\\,y_i = \\omega_i^2\\,(Hp)_i, \\qquad i \\in \\{x, y\\}$$""",
+         """Per planar axis the tip follows its pressure input as a
+  first-order lag (the structure of our model M2):
+$$\\dot y_i = -a_i\\,y_i + a_i\\,(Hp)_i, \\qquad i \\in \\{x, y\\}$$"""),
+        ("""A first-order mechanics model ($\\dot y_i = -a_i y_i + a_i (Hp)_i$) is fitted for comparison. The controller cell
+(§5) contains these numbers, rounded.""",
+         """A second-order mechanics model ($\\ddot y_i + 2\\zeta_i\\omega_i\\dot y_i + \\omega_i^2 y_i = \\omega_i^2 (Hp)_i$) is
+fitted for comparison; it fits these data more closely (see the table), and a companion notebook uses it. The
+controller cell (§5) contains the first-order numbers, rounded."""),
+    ],
+    "MPC_MD": [
+        ("""$X = (y, \\dot y, p - 4.5) \\in \\mathbb R^8$: tip x-y (mm, measured), tip velocity (backward
+difference of the measured tip), and the four measured segment pressures""",
+         """$X = (y, p - 4.5) \\in \\mathbb R^6$: tip x-y (mm, measured) and the four measured segment pressures"""),
+        ("$R_u = 0.01$ mm²/psi² is tuned in §7", "$R_u = 0.1$ mm²/psi² is tuned in §7"),
+        ("""The controller keeps its last prediction, offset, previous correction and previous tip;""",
+         """The controller keeps its last prediction, offset and previous correction;"""),
+    ],
+    "CONTROLLER": [
+        ("""    "wn": np.array([7.081, 7.101]),                    # natural frequency, rad/s
+    "zeta": np.array([0.699, 0.702]),                  # damping ratio
+    "H": np.array([[1.794, -0.009, -1.792, 0.008],     # mm per psi of S1..S4, x row
+                   [0.005, 1.794, 0.003, -1.803]]),    # y row""",
+         """    "a": np.array([4.662, 4.694]),                     # rate of the first-order tip response, 1/s
+    "H": np.array([[1.837, 0.011, -1.847, -0.002],     # mm per psi of S1..S4, x row
+                   [0.004, 1.838, -0.001, -1.839]]),   # y row"""),
+        ("""    def __init__(self, horizon=100, r_u=0.01, offset_tau_s=0.5):
+        w, z, H, tau = MODEL["wn"], MODEL["zeta"], MODEL["H"], MODEL["tau_s"]
+        O = np.zeros
+        Ac = np.block([[O((2, 2)), np.eye(2), O((2, 4))],
+                       [-np.diag(w ** 2), -np.diag(2 * z * w), np.diag(w ** 2) @ H],
+                       [O((4, 4)), -np.eye(4) / tau]])
+        Bc = np.vstack([O((4, 4)), np.diag(MODEL["gain"]) / tau]) @ PAIRS
+        n, m, h = 8, 2, horizon""",
+         """    def __init__(self, horizon=100, r_u=0.1, offset_tau_s=0.5):
+        a, H, tau = MODEL["a"], MODEL["H"], MODEL["tau_s"]
+        O = np.zeros
+        Ac = np.block([[-np.diag(a), np.diag(a) @ H],
+                       [O((4, 2)), -np.eye(4) / tau]])
+        Bc = np.vstack([O((2, 4)), np.diag(MODEL["gain"]) / tau]) @ PAIRS
+        n, m, h = 6, 2, horizon"""),
+        ("""        self.C = np.hstack([np.eye(2), O((2, 6))])""", """        self.C = np.hstack([np.eye(2), O((2, 4))])"""),
+        ("""        self.tip_prev, self.x_pred = None, None""", """        self.x_pred = None"""),
+        ("""        vel = np.zeros(2) if self.tip_prev is None else (tip - self.tip_prev) / DT_S
+        self.tip_prev = tip
+        X = np.concatenate([tip, vel, np.asarray(obs["segment_pressures"], float) - BIAS_PSI])""",
+         """        X = np.concatenate([tip, np.asarray(obs["segment_pressures"], float) - BIAS_PSI])"""),
+    ],
+    "TUNE_MD": [("$R_u = 0.01$, the value in the controller cell.", "$R_u = 0.1$, the value in the controller cell.")],
+    "TUNE": [('("second order (submitted)"', '("first order, M2 (submitted)"')],
+    "SUMMARY": [
+        ("tracks the instructor's example to about 0.09 mm RMSE", "tracks the instructor's example to about 0.12 mm RMSE"),
+        ("""  model parameters are identified in simulation (§3) and would need re-identifying on hardware; the tip velocity is
+  a raw backward difference, which real sensor noise would amplify.""",
+         """  model parameters are identified in simulation (§3) and would need re-identifying on hardware.
+- **Model choice:** the second-order model of §3 fits `make_sim` more closely; the companion notebook
+  `Soft_robotic_arm_MPC_M3sim.ipynb` runs the same MPC on it."""),
+    ],
+}
+
+
+def text(name: str, variant: str) -> str:
+    out = globals()[name]
+    for old, new in (M2SIM_EDITS.get(name, []) if variant == "M2sim" else []):
+        assert out.count(old) == 1, (name, old[:60])
+        out = out.replace(old, new)
+    return out
+
+
+def build(variant: str) -> nbf.NotebookNode:
     T = template_cells()
-    cells = [md(INTRO),
+    t = lambda name: text(name, variant)  # noqa: E731
+    cells = [md(t("INTRO")),
              md(T[1]), code(T[2]),                    # 1 - install (template)
              md("## 2 — Simulator setup (template)"), code(T[4] + "\n\nfrom IPython.display import Markdown"),
-             md(ID_MD), code(ID_CODE),
-             md(MPC_MD),
-             md("## 5 — Controller cell\n\nSelf-contained: it runs on its own after the setup cell."), code(CONTROLLER),
+             md(t("ID_MD")), code(ID_CODE),
+             md(t("MPC_MD")),
+             md("## 5 — Controller cell\n\nSelf-contained: it runs on its own after the setup cell."), code(t("CONTROLLER")),
              md("## 6 — Instructor evaluation (template, unchanged)\n\n" + T[15].split("\n", 1)[1]),
              code(T[17]), code(T[18]), md(T[19]), code(T[20]),
-             md(TUNE_MD), code(TRAJ), code(TUNE),
+             md(t("TUNE_MD")), code(TRAJ), code(t("TUNE")),
              md(COMPARE_MD), code(COMPARE), code(OVERLAY),
              md("## 9 — Render the controller simulation video (optional, template)\n\n"
                 "Set `RENDER_VIDEO = True` to record our controller on the instructor's example (needs a GPU-less EGL "
@@ -622,11 +707,12 @@ def build() -> nbf.NotebookNode:
                           "student_controller(instructor_reference, video_obs)")
                  .replace("soft_arm_pd_tracking.mp4", "group5_mpc_tracking.mp4").splitlines())),
              md(CALIB_MD), code(CALIB_CODE),
-             md(SUMMARY)]
+             md(t("SUMMARY"))]
     return nbf.v4.new_notebook(cells=cells, metadata={
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}, "colab": {"provenance": []}})
 
 
 if __name__ == "__main__":
-    nbf.write(build(), OUT)
-    print(f"wrote {OUT.relative_to(ROOT)}")
+    for variant, path in OUT.items():
+        nbf.write(build(variant), path)
+        print(f"wrote {path.relative_to(ROOT)}")

@@ -5,6 +5,12 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-11
 
+- Second submission notebook `notebooks/Soft_robotic_arm_MPC_M2sim.ipynb`, identical to the M3sim
+  one except the model: M2's first-order mechanics identified on `make_sim` (a 4.66/4.69 1/s, H ≈
+  1.84 mm/psi), R_u = 0.1 tuned on the same three non-test paths (mean 0.464 mm vs 0.404 for M3sim).
+  Instructor's example 0.121 mm (M3sim 0.090, template PID 1.259); beats the PID on all 12
+  trajectories; waypoints 0.19-0.30 mm vs 0.03-0.05 for M3sim. Both notebooks come from
+  `scripts/build_submission.py` (M2sim by exact text replacements of the M3sim blocks).
 - M2 controller comparison, MPC signals and the MPC on M3 moved into `softarm.experiments`
   (`m2_comparison`, `mpc_signals`, `mpc_m3`); `scripts/compare_m2_controllers.py`, `mpc_signals.py`
   and `mpc_m3.py` are thin runners, and `notebooks/m2_controller_comparison.ipynb` and
