@@ -48,7 +48,7 @@ Full detail in `docs/simulator.md`.
 
 ## Controllers and experiments
 
-- Use the package harness's interface: `compute(t, obs, ref) -> finite (3,)` array of
+- Use the package harness's interface (`softarm.controllers.Controller`): `compute(t, obs, ref) -> finite (3,)` array of
   absolute psi for S2–S4. Controllers never call `sim.step()` and use only
   hardware-available signals (tip, pouch pressures), never `p_actual` or `q`.
 - Benchmark with `soft_robotic_arm.evaluation.evaluate_controller` on
@@ -66,18 +66,41 @@ Full detail in `docs/simulator.md`.
 - Validate identified models on multi-step (free-run) simulation error, not
   one-step prediction.
 
+## Code layout
+
+- Reusable code lives in the package `src/softarm/` (installed by `uv sync`; import it
+  as `softarm`). Models, controllers and the evaluation harness are defined there once
+  and nowhere else:
+  - `softarm.models`: `Model`, `LinearModel` (continuous `(A, B, C)`, dead time,
+    `measured_state`), `FirstOrderModel`; `M1`/`TaskSpaceModel`, `M2`, `M3`, `F`, `OneMode`.
+    Each loads its own identified parameters (`M2.load()`).
+  - `softarm.controllers`: `Controller` base (`compute(t, obs, ref)`), `PDController`,
+    the SMC family, `DelayMPC` (any `LinearModel` with a measured state: M2, M3),
+    `KalmanDelayMPC` (F), preview wrappers (`Ahead`, `Predicted`), and `presets` (the
+    project's tuned configurations). A controller checks at construction that the model
+    is one it can use.
+  - `softarm.evaluation`: `track()` (the harness loop for any reference), `evaluate()`,
+    references, the comparison `TESTS`, metrics. `softarm.constants`: rates, 4.5 psi
+    baseline, 9 psi limit, paths. `softarm.plotting`: the figure style.
+- `scripts/` holds runnable experiments, identification pipelines and report builders
+  only, each runnable as `uv run python scripts/<name>.py` with a module docstring that
+  states purpose and usage. Scripts import `softarm`; they do not define models or
+  controllers and do not import each other. Code two scripts need goes into `softarm`.
+- A new model is a `softarm.models` class (subclass `LinearModel` and/or
+  `FirstOrderModel`); a new controller is a `softarm.controllers` class (subclass
+  `Controller`). Register a new controller's plot identity in `softarm.plotting.SERIES`.
+
 ## Code style
 
-- Scripts go in `scripts/`, runnable as `uv run python scripts/<name>.py`, with a
-  module docstring that states purpose and usage.
 - Match the existing style: plain NumPy/Matplotlib, type hints on public functions,
   comments only where intent is not obvious.
 - Read parameters from the package (`sim.cfg`, the MuJoCo model) rather than
   hard-coding numbers that already exist there.
 - Generated figures go in `docs/figures/` and must be reproducible by a script.
-- Figures use `scripts/plot_style.py` (`P.apply()`, `P.line(name, n)`): Okabe-Ito colours,
-  one fixed colour + line style + marker per controller, at most 4-5 series per panel,
-  readable sizes. Add new controllers to `plot_style.SERIES`.
+- Figures use `softarm.plotting` (`from softarm import plotting as P`; `P.apply()`,
+  `P.line(name, n)`): Okabe-Ito colours, one fixed colour + line style + marker per
+  controller, at most 4-5 series per panel, readable sizes. Add new controllers to
+  `P.SERIES`.
 
 ## Notebooks
 
@@ -87,8 +110,9 @@ Full detail in `docs/simulator.md`.
 - Git silently ignores the filter if it isn't configured, so before committing a
   notebook check `git config filter.nbstripout.clean` prints a command. If it prints
   nothing, run the setup script first. Never bypass the filter.
-- Prefer putting reusable code in `scripts/` (or a package module) and keeping
-  notebooks for exploration and presentation.
+- Notebooks import `softarm` for models, controllers and evaluation, and keep
+  exploration and presentation. Submission/Colab notebooks are standalone (they
+  pip-install the simulator and inline parameters) and must not import `softarm`.
 
 ## Git and GitHub
 

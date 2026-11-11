@@ -72,7 +72,7 @@ correction \(w\) (measured tip minus the tip predicted 0.5 s earlier, low-pass 0
 in closed form (unconstrained), apply the first move, clip to 0–9 psi. <b>Horizon</b>: H steps of 10 ms after the 0.5 s
 dead time, so 25 steps = 0.25 s (looks 0.5–0.75 s ahead), 100 steps = 1 s (0.5–1.5 s ahead), 300 steps = 3 s
 (0.5–3.5 s ahead). R<sub>u</sub> (mm²/psi²) tuned per horizon on a separate circle (5 mm, 0.07 Hz, seed 5).</li>
-<li><b>MPC (F)</b>: <code>mpc_controller.DelayMPCController</code> on the frequency-identified model F: one model per
+<li><b>MPC (F)</b>: <code>softarm.controllers.KalmanDelayMPC</code> on the frequency-identified model F: one model per
 planar channel (ν<sub>x</sub> = −u₃, ν<sub>y</sub> = u₂ − u₄), Kalman filter on tip and channel pressure, same delay
 predictor, same cost with ρ = 10⁻⁵ m²/psi² (its own tuning), horizon 300 steps = 3 s; given the true future reference.</li></ul>
 <p class="meta">Run interactively: <code>notebooks/m2_controller_comparison.ipynb</code>. Regenerate:

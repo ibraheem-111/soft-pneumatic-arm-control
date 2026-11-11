@@ -1,39 +1,27 @@
 """Build docs/reports/smc-on-m2.html: the delay-aware SMC and NDOSMC on M2, derived and plotted.
 
-Equations follow scripts/ndosmc.py DelayAwareNDOSMC (the code, not the paper). Numbers and
+Equations follow softarm.controllers.DelayAwareNDOSMC (the code, not the paper). Numbers and
 figures come from scripts/smc_signals.py (docs/figures/smc_signals.json, smc_signals_<test>.png,
-smc_phase_<test>.png). Same page style as report_m2_controllers.py.
+smc_phase_<test>.png). Same page style as report_m2_controllers.py (softarm.reports).
 
 Usage:
     uv run python scripts/smc_signals.py          # results first
     uv run python scripts/report_smc_explained.py
 """
 
-import base64
 import json
 from html import escape
-from pathlib import Path
 
 import numpy as np
 
-import report_m2_controllers as R
+from softarm.constants import FIG, ROOT
+from softarm.reports import ABOUT, CSS, head, tbl
+from softarm.reports import img as _img
+from softarm.labels import NDOSMC_KNOWN, SMC_KNOWN
 
-FIG = R.FIG
-OUT = R.ROOT / "docs" / "reports" / "smc-on-m2.html"
-SMC, NDO = "Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)"
+OUT = ROOT / "docs" / "reports" / "smc-on-m2.html"
+SMC, NDO = SMC_KNOWN, NDOSMC_KNOWN
 L4E1, L4E10 = "SMC λ = 4, η = 1, no observer", "SMC λ = 4, η = 10, no observer"
-
-
-def _img(name: str, alt: str) -> str:
-    b = base64.b64encode((FIG / name).read_bytes()).decode()
-    return f'<img src="data:image/png;base64,{b}" alt="{escape(alt)}">'
-
-
-def tbl(head: list, rows: list) -> str:
-    h = "".join(f'<th{"" if i == 0 else " class=n"}>{x}</th>' for i, x in enumerate(head))
-    b = "".join("<tr>" + "".join(f'<td{"" if i == 0 else " class=n"}>{c}</td>' for i, c in enumerate(r)) + "</tr>"
-                for r in rows)
-    return f'<div class="tbl"><table><thead><tr>{h}</tr></thead><tbody>{b}</tbody></table></div>'
 
 
 THEORY = r"""
@@ -128,7 +116,7 @@ def main() -> None:
     per_test = '<section><h2>9 · Each test</h2><p>Figures for every test, in the order of the comparison.</p></section>'
     for t in tests:
         f = t.replace(" ", "_")
-        per_test += (f'<section><h3>{escape(t)}</h3><p class="meta">{escape(R.ABOUT[t])}</p>'
+        per_test += (f'<section><h3>{escape(t)}</h3><p class="meta">{escape(ABOUT[t])}</p>'
                      f'<figure><div class="scroll">{_img(f"smc_signals_{f}.png", t + ": pressures and disturbance")}</div>'
                      '<figcaption>Left: SMC (λ = 8). Right: NDOSMC. Rows: commanded pressure, measured pressure, disturbance '
                      '(dotted: actual d; solid: observer d̂).</figcaption></figure>'
@@ -149,18 +137,14 @@ then returns along the closed-loop line. The larger loops are the corner errors.
 dotted line \(\dot E = -(\lambda + \eta/\mu)E\) instead. The NDOSMC's line is steeper (14 s⁻¹ against 9 s⁻¹) because
 \(\eta \approx 10\).</li></ul></section>"""
 
-    head = ('<title>Sliding-Mode Controllers on M2</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
-            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,600&display=swap">\n'
-            '<script>window.MathJax={tex:{inlineMath:[["\\\\(","\\\\)"]],displayMath:[["\\\\[","\\\\]"]]},svg:{fontCache:"global"}};</script>\n'
-            '<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>\n')
     intro = ('<div class="wrap"><header><div class="eyebrow">Soft pneumatic arm · delay-aware sliding-mode control · reference known</div>'
              '<h1>Sliding-Mode Controllers on M2</h1><p class="meta">The SMC and the NDOSMC as implemented in '
-             '<code>scripts/ndosmc.py</code>, derived step by step, then their pressures, disturbance and error-space phase '
+             '<code>softarm.controllers.DelayAwareNDOSMC</code>, derived step by step, then their pressures, disturbance and error-space phase '
              'portraits on the six comparison tests. Regenerate: <code>uv run python scripts/smc_signals.py</code>, then '
              '<code>uv run python scripts/report_smc_explained.py</code>.</p></header>')
-    html = head + R.CSS + "\n" + intro + THEORY + eta + dist + phase + per_test + "</div>\n"
+    html = head("Sliding-Mode Controllers on M2") + CSS + "\n" + intro + THEORY + eta + dist + phase + per_test + "</div>\n"
     OUT.write_text(html)
-    print(f"wrote {OUT.relative_to(R.ROOT)} ({len(html) / 1e6:.1f} MB)")
+    print(f"wrote {OUT.relative_to(ROOT)} ({len(html) / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":

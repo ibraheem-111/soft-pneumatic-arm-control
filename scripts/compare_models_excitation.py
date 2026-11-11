@@ -5,17 +5,17 @@ excitation; tip = obs["tip_pos"] minus the settled tip, in mm (the tip has no se
 Models, each simulated open loop (free run) from rest with the same commands u = cmd - 4.5 psi:
 
   one-mode    Nikoletta's reduced model, as in her latest notebook (Copy_of_soft_robotic_arm_
-              SMC_Smith-2.ipynb §7, same as scripts/smc_reduced_model.reduced_model):
+              SMC_Smith-2.ipynb §7, softarm.models.OneMode / reduced_model):
               y'' + c y' + k y = b dp per axis, k = 10.60, c = 9.231, corrected sign b = +|b|,
               no actuator dynamics, no z. Plane inputs dp_x = -u3 (S1 sealed), dp_y = u2 - u4.
   one-mode+g  the same derivation with the hanging chain's gravity stiffness added
               (reduced_model(include_gravity=True): k = 51.45, c = 9.409); from the review of
               her model, not in her notebooks.
-  M2          scripts/task_space_model.py (docs/figures/task_space_model.json via ndosmc.TaskSpaceModel):
+  M2          scripts/task_space_model.py (docs/figures/task_space_model.json, softarm.models.M2):
               tau p' = -p + g u(t - T) per segment, y' = -a y + a (H p) for x, y, z.
-  M3          M2's actuator with second-order mechanics (task_space_model.json M3_mechanics):
+  M3          M2's actuator with second-order mechanics (task_space_model.json M3_mechanics, softarm.models.M3):
               y'' + 2 zeta w y' + w^2 y = w^2 (H p) per axis.
-  F         scripts/sysid_frf.py (models/sysid_calibrated_v2.json): per-axis state space with the
+  F         scripts/sysid_frf.py (models/sysid_calibrated_v2.json, softarm.models.F): per-axis state space with the
             identified delay, channels nu_x = -u3, nu_y = u2 - u4 (the identification map), no z.
 All are ZOH-discretised at 100 Hz; the model output after step k is compared with the simulator's
 tip after step k (as in evaluate_controller).
@@ -31,7 +31,7 @@ predicting the tip one dead time T ahead from the tip measured up to now:
   hold      y_hat(t+T) = y(t)
   M2        y_hat(t+T) = y(t) + x_m(t) - x_m(t-T)   (Smith predictor; x_m = M2 without the dead time)
   M2 + NDO  M2 + d_hat (1 - exp(-a T)) / a           (observer estimate of the unmodelled rate, held
-            over T; ndosmc.NDOB with l2 = 0: d_hat = z + l1 y, z' = l1 (a y - a H p_hat - d_hat))
+            over T; softarm.controllers.NDOB with l2 = 0: d_hat = z + l1 y, z' = l1 (a y - a H p_hat - d_hat))
 
 The actuator identification (identify_actuator) steps one input by +1 psi and fits dead time, lag
 and gain to the measured pouch pressure of that column, the way it would be done without
@@ -49,26 +49,19 @@ Usage:
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import numpy as np
-from scipy.signal import cont2discrete
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import ndosmc as N  # noqa: E402
-import plot_style as P  # noqa: E402
-import smc_reduced_model as S  # noqa: E402
-from soft_robotic_arm import make_calibrated_sim  # noqa: E402
+from soft_robotic_arm import make_calibrated_sim
 
-ROOT = Path(__file__).resolve().parent.parent
-FIG = ROOT / "docs" / "figures"
-F_MODEL = ROOT / "models" / "sysid_calibrated_v2.json"
-HZ, DT, BASE, SETTLE_S = 100.0, 0.01, 4.5, 5.0
+from softarm import plotting as P
+from softarm.constants import BASE_PSI as BASE, DT, F_MODEL_JSON as F_MODEL, FIG, HZ, SETTLE_S
+from softarm.models import F, M2, M3, OneMode, lsim
+
 MODELS = ("one-mode", "one-mode+g", "M2", "M3", "F")
 LABELS = {"truth": "Simulator", "one-mode": "One-mode", "one-mode+g": "One-mode + gravity",
           "M2": "M2", "M3": "M3", "F": "F"}
@@ -118,81 +111,16 @@ def simulate_truth(cmds: np.ndarray, seed: int = 0) -> np.ndarray:
 
 # ---------------------------------------------------------------------------- models
 
-def _lsim(A, B, C, u: np.ndarray, delay: int = 0) -> np.ndarray:
-    """ZOH-discretised x' = A x + B u(t - delay*DT), y = C x, from rest; y after each step."""
-    Ad, Bd, *_ = cont2discrete((A, B, C, np.zeros((C.shape[0], B.shape[1]))), DT)
-    ud = np.vstack([np.zeros((delay, u.shape[1])), u])[: len(u)]
-    x = np.zeros(A.shape[0])
-    y = np.empty((len(u), C.shape[0]))
-    for k in range(len(u)):
-        x = Ad @ x + Bd @ ud[k]
-        y[k] = C @ x
-    return y
-
-
-def plane_inputs(u: np.ndarray) -> np.ndarray:
-    """(n, 2) plane inputs (x, y) from segment deviations u = (u2, u3, u4): (-u3, u2 - u4)."""
-    return np.column_stack([-u[:, 1], u[:, 0] - u[:, 2]])
-
-
-def simulate_one_mode(u: np.ndarray, gravity: bool = False) -> np.ndarray:
-    k, c, b = S.reduced_model(include_gravity=gravity)
-    b = abs(b)                                   # corrected sign (notebook §13)
-    A, B, C = np.array([[0.0, 1.0], [-k, -c]]), np.array([[0.0], [b]]), np.array([[1.0, 0.0]])
-    dp = plane_inputs(u)
-    out = np.full((len(u), 3), np.nan)
-    for i in (0, 1):
-        out[:, i] = 1000.0 * _lsim(A, B, C, dp[:, [i]])[:, 0]
-    return out
-
-
-def simulate_m2(u: np.ndarray) -> np.ndarray:
-    m = N.TaskSpaceModel.load()
-    act, H = m.actuator, m.B_measured
-    a = np.array([ax.params(0.0)[0] for ax in m.axes_measured])
-    tau, g = act.tau_s, act.gain
-    A = np.block([[-np.diag(a), np.diag(a) @ H], [np.zeros((3, 3)), -np.eye(3) / tau]])
-    B = np.vstack([np.zeros((3, 3)), np.diag(g) / tau])
-    C = np.hstack([np.eye(3), np.zeros((3, 3))])
-    return _lsim(A, B, C, u, delay=int(round(act.delay_s * HZ)))
-
-
-def simulate_m3(u: np.ndarray) -> np.ndarray:
-    m = N.TaskSpaceModel.load()
-    act = m.actuator
-    mech = json.loads(N.MODEL_JSON.read_text())["M3_mechanics"]
-    w = np.array([mech[a]["wn"] for a in "xyz"])
-    z = np.array([mech[a]["zeta"] for a in "xyz"])
-    H = np.array([mech[a]["H"] for a in "xyz"])
-    tau, g, O = act.tau_s, act.gain, np.zeros((3, 3))
-    A = np.block([[O, np.eye(3), O],
-                  [-np.diag(w**2), -np.diag(2 * z * w), np.diag(w**2) @ H],
-                  [O, O, -np.eye(3) / tau]])
-    B = np.vstack([O, O, np.diag(g) / tau])
-    C = np.hstack([np.eye(3), O, O])
-    return _lsim(A, B, C, u, delay=int(round(act.delay_s * HZ)))
-
-
-def simulate_f(u: np.ndarray) -> np.ndarray:
-    axes = json.loads(F_MODEL.read_text())["axes"]
-    nu = plane_inputs(u)
-    out = np.full((len(u), 3), np.nan)
-    for i, name in enumerate(("x", "y")):
-        ax = axes[name]
-        A, B, C = np.array(ax["A"]), np.array(ax["B"])[:, None], np.array(ax["C"])[None, :]
-        out[:, i] = 1000.0 * _lsim(A, B, C, nu[:, [i]], delay=int(ax["delay_samples"]))[:, 0]
-    return out
-
-
-SIMULATE = {"one-mode": simulate_one_mode, "one-mode+g": lambda u: simulate_one_mode(u, gravity=True),
-            "M2": simulate_m2, "M3": simulate_m3, "F": simulate_f}
+SIMULATE = {"one-mode": lambda u: OneMode(include_gravity=False).simulate(u),
+            "one-mode+g": lambda u: OneMode(include_gravity=True).simulate(u),
+            "M2": lambda u: M2.load().simulate(u), "M3": lambda u: M3.load().simulate(u),
+            "F": lambda u: F.load(F_MODEL).simulate(u)}
 
 
 def m2_parts():
     """M2's mechanics rate a (1/s), pressure map H (mm/psi), lag tau (s), gain g, dead time (samples)."""
-    m = N.TaskSpaceModel.load()
-    a = np.array([ax.params(0.0)[0] for ax in m.axes_measured])
-    return a, m.B_measured, m.actuator.tau_s, m.actuator.gain, int(round(m.actuator.delay_s * HZ))
+    m = M2.load()
+    return m.a, m.H, m.actuator.tau_s, m.actuator.gain, m.delay_steps
 
 
 PREDICTORS = ("hold", "M2", "M2 + NDO")
@@ -202,10 +130,9 @@ NDO_L1 = (0.1, 1.0)            # 0.1 1/s: the gain of the delay-aware NDOSMC (Ni
 def predict_ahead(truth: np.ndarray, u: np.ndarray, l1: float = 0.1) -> dict:
     """Tip predicted one dead time T ahead from the tip measured up to t (module docstring).
     Returns name -> (n - T, 3) predictions of truth[T:], plus "d_hat" (n, 3), mm/s."""
-    a, H, tau, g, nd = m2_parts()
-    A = np.block([[-np.diag(a), np.diag(a) @ H], [np.zeros((3, 3)), -np.eye(3) / tau]])
-    B = np.vstack([np.zeros((3, 3)), np.diag(g) / tau])
-    xp = _lsim(A, B, np.eye(6), u)               # M2 with the dead time removed: [x_m, p_m]
+    a, H, _, _, nd = m2_parts()
+    A, B, _ = M2.load().continuous()
+    xp = lsim(A, B, np.eye(6), u)                # M2 with the dead time removed: [x_m, p_m]
     x_m, p_m = xp[:, :3], xp[:, 3:]
     n = len(truth)
     x_back = np.vstack([np.zeros((nd, 3)), x_m])[:n]          # x_m(t - T)

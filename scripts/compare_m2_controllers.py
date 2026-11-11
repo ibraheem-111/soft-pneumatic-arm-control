@@ -4,22 +4,22 @@ The professor confirmed the reference trajectory may be assumed known (an arm is
 reference), so every controller here reads the future reference instead of estimating it.
 
 Controllers (all on M2: docs/figures/task_space_model.json):
-  Delay-aware SMC (M2, known ref)     scripts/ndosmc.py DelayAwareNDOSMC, exact_preview=True,
+  Delay-aware SMC (M2, known ref)     softarm.controllers.DelayAwareNDOSMC, exact_preview=True,
                                       lam=8, mu=1 mm, eta=1 mm/s, no observer (gains of
                                       compare_controllers.py)
   Delay-aware NDOSMC (M2, known ref)  same with the observer, Nikoletta's notebook gains
                                       (lam=4, l1=0.1, mu=1 mm, Phi=1, eps=1)
   Delay-aware SMC (M2, known ref),    the SMC at the NDOSMC's lam=4 without the observer, so the
   lambda = 4                          observer's effect is separated from the gain change
-  MPC (M2), horizon H steps           M2MPC below, H in HORIZONS (H steps x 10 ms after the
-                                      0.5 s dead time)
+  MPC (M2), horizon H steps           softarm.controllers.DelayMPC on M2, H in HORIZONS
+                                      (H steps x 10 ms after the 0.5 s dead time)
 Also run, for comparison:
-  MPC (F), horizon 300 steps          scripts/mpc_controller.py DelayMPCController on the
+  MPC (F), horizon 300 steps          softarm.controllers.KalmanDelayMPC (known_reference) on the
                                       frequency-identified model F (models/sysid_calibrated_v2.json),
                                       its own tuned rho = 1e-5 m^2/psi^2, given the true future
                                       reference (preview="oracle")
 
-M2MPC, every 10 ms step k (state X = (y, p): tip mm and measured S2-S4 pressure psi, both as
+DelayMPC on M2, every 10 ms step k (state X = (y, p): tip mm and measured S2-S4 pressure psi, both as
 deviations from the settled pose; input u = command - 4.5 psi):
   1. X_d = (A_d, B_d): M2 discretised with zero-order hold; u acts after N = 50 steps.
   2. Predict across the dead time from the measured state with the commands already sent:
@@ -35,7 +35,7 @@ deviations from the settled pose; input u = command - 4.5 psi):
   matters; the horizon matters when command changes are penalised, so the script also runs
   every horizon at the fixed weights RU_FIXED ("horizon sensitivity" in the JSON).
 
-Tests (make_calibrated_sim(control_hz=100), harness loop benchmark_all_tasks.track):
+Tests (make_calibrated_sim(control_hz=100), harness loop softarm.evaluation.track; tests softarm.evaluation.TESTS):
   held-out circle   10 mm, 0.15 Hz, seed 5 (compare_controllers.py), 30 s
   scored circle     7 mm, 0.1 Hz, seed 0 (package CircularTrackingTask), 30 s
   squiggle          smooth random: per axis 6 sines, random 0.03-0.3 Hz, phases, weights,
@@ -44,7 +44,7 @@ Tests (make_calibrated_sim(control_hz=100), harness loop benchmark_all_tasks.tra
   triangle          vertices on a 7 mm circle (first at +x), 10 s per lap, seed 0
                     (as scripts/motion_tests.py)
   square            axis-aligned, vertices on a 7 mm circle (side 9.9 mm), 10 s per lap, seed 0
-Metrics (planar x-y): RMSE whole run; RMSE after settling (first lap for circles, 5 s for
+Metrics (planar x-y, softarm.evaluation.score): RMSE whole run; RMSE after settling (first lap for circles, 5 s for
 the random paths); shape error = RMS distance from the tip to the nearest point of the
 reference path after settling (timing ignored); max error after settling; radius range
 (circles); path size % (polygons: RMS distance from the centre of the traced path over that of
@@ -63,7 +63,6 @@ Usage:
 import json
 import multiprocessing as mp
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -73,226 +72,57 @@ os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-from scipy.linalg import expm  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import benchmark_all_tasks as B  # noqa: E402
-import benchmark_slide_tasks as BS  # noqa: E402
-import ndosmc as N  # noqa: E402
-import mpc_controller as F  # noqa: E402
-import plot_style as P  # noqa: E402
-from soft_robotic_arm.evaluation import CircularTrackingTask, _phase_lag_seconds, make_reference  # noqa: E402
+from softarm import plotting as P  # noqa: E402
+from softarm.constants import DT, F_MODEL_JSON, FIG, HZ, TRACK_S  # noqa: E402
+from softarm.controllers import Ahead, DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC, known_reference  # noqa: E402
+from softarm.controllers.kalman_mpc import HORIZON as F_HORIZON, RHO as F_RHO  # noqa: E402
+from softarm.evaluation import TESTS, TUNE, circle, ref_array, score, track_ref_mm  # noqa: E402
+from softarm.labels import MPC_F, NDOSMC_KNOWN, RU_GRID, SMC_KNOWN, SMC_L4, mpc_label as _mpc_label  # noqa: E402
+from softarm.models import M2  # noqa: E402
 
-HZ = 100.0
-DT = 1.0 / HZ
-TRACK_S = 30.0
-PAD = 400                                   # reference samples beyond the run (look-ahead)
 HORIZONS = (25, 100, 300)                   # MPC horizons, steps after the dead time
-RU_GRID = (1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0)     # mm^2 / psi^2
 RU_FIXED = (1.0, 10.0)                      # horizon sensitivity at a fixed, larger R_u
-TUNE = dict(radius_m=0.005, frequency_hz=0.07, seed=5)
-FIG = B.FIG
 TRACE_EVERY = 5                             # traces stored in the JSON every 50 ms (metrics use 100 Hz)
-
-
-# ------------------------------------------------------------------------------- MPC
-
-class M2MPC:
-    """Delay-compensated, unconstrained MPC on M2 with the reference known in advance."""
-
-    def __init__(self, ref_mm: np.ndarray, horizon: int, r_u: float, model: N.TaskSpaceModel | None = None,
-                 offset_tau_s: float = 0.5):
-        m = model or N.TaskSpaceModel.load()
-        act = m.actuator
-        lam = np.diag([ax.params(0.0)[0] for ax in m.axes_measured])
-        H = m.B_measured
-        Ac = np.block([[-lam, lam @ H], [np.zeros((3, 3)), -np.eye(3) / act.tau_s]])
-        Bc = np.vstack([np.zeros((3, 3)), np.diag(act.gain) / act.tau_s])
-        E = expm(np.block([[Ac, Bc], [np.zeros((3, 9))]]) * DT)
-        self.A, self.B = E[:6, :6], E[:6, 6:]
-        self.C = np.hstack([np.eye(3), np.zeros((3, 3))])
-        self.nd = int(round(act.delay_s * HZ))
-        self.h, self.r_u, self.d = horizon, r_u, ref_mm
-        self.alpha = 1.0 - np.exp(-DT / offset_tau_s)
-        self.gains = dict(horizon_steps=horizon, horizon_s=horizon * DT, r_u=r_u, dead_time_steps=self.nd,
-                          offset_tau_s=offset_tau_s, model="M2 (task_space_model.json)")
-        # Prediction matrices over the horizon: y(k+N+1+i) = Phi_i X(k+N) + sum_j Gam_ij u(k+j)
-        n, h = 6, horizon
-        Apow = [np.eye(n)]
-        for _ in range(max(h, self.nd) + 1):
-            Apow.append(self.A @ Apow[-1])
-        self.Apow = Apow
-        Phi = np.vstack([self.C @ Apow[i + 1] for i in range(h)])                  # (3h, 6)
-        Gam = np.zeros((3 * h, 3 * h))
-        for i in range(h):
-            for j in range(i + 1):
-                Gam[3 * i:3 * i + 3, 3 * j:3 * j + 3] = self.C @ Apow[i - j] @ self.B
-        D = np.eye(3 * h) - np.eye(3 * h, k=-3)
-        Mi = np.linalg.inv(Gam.T @ Gam + r_u * D.T @ D)
-        K = Mi[:3]                                                               # first move only
-        self.g_r = K @ Gam.T                                                     # (3, 3h)
-        self.g_x = -self.g_r @ Phi                                               # (3, 6)
-        self.g_w = -self.g_r @ np.tile(np.eye(3), (h, 1))                         # (3, 3)
-        E1 = np.zeros((3 * h, 3)); E1[:3] = np.eye(3)
-        self.g_u = r_u * K @ D.T @ E1                                            # (3, 3)
-        self.W = [Apow[self.nd - 1 - i] @ self.B for i in range(self.nd)]       # delay predictor
-        self.k = 0
-        self.home = self.p0 = None
-        self.buf = [np.zeros(3)] * self.nd
-        self.u_prev = np.zeros(3)
-        self.w = np.zeros(3)
-        self.pred_hist: list = []
-
-    def compute(self, t: float, obs: dict, ref: np.ndarray) -> np.ndarray:
-        if self.home is None:
-            self.home = np.asarray(obs["tip_pos"], float).copy()
-            self.p0 = np.asarray(obs["segment_pressures"], float)[1:4].copy()
-        y = 1000.0 * (np.asarray(obs["tip_pos"], float) - self.home)
-        p = np.asarray(obs["segment_pressures"], float)[1:4] - self.p0
-        X = np.concatenate([y, p])
-        Xf = self.Apow[self.nd] @ X + sum(Wi @ ui for Wi, ui in zip(self.W, self.buf))
-        self.pred_hist.append(self.C @ Xf)                     # predicted tip at k + N
-        if len(self.pred_hist) > self.nd:
-            self.w += self.alpha * ((y - self.pred_hist.pop(0)) - self.w)
-        k, h, d = self.k, self.h, self.d
-        r = d[min(k + self.nd, len(d) - h):][:h]                # r(k+N .. k+N+h-1), mm from home
-        r = np.vstack([r, np.repeat(r[-1:], h - len(r), axis=0)]) if len(r) < h else r
-        u = self.g_r @ r.reshape(-1) + self.g_x @ Xf + self.g_w @ self.w + self.g_u @ self.u_prev
-        cmd = np.clip(4.5 + u, 0.0, 9.0)
-        u_app = cmd - 4.5
-        self.buf = self.buf[1:] + [u_app]
-        self.u_prev = u_app
-        self.k += 1
-        return cmd
-
-
-# ---------------------------------------------------------------------------- tests
-
-def smooth_random(seed: int, span_mm: float = 6.0, f_lo: float = 0.03, f_hi: float = 0.3, n: int = 6):
-    """Offset from home (m) vs time: per axis a sum of n random sines, scaled to +-span_mm
-    (same as notebooks/Soft_robotic_arm_SMC_M2.ipynb)."""
-    g = np.random.default_rng(seed)
-    f = g.uniform(f_lo, f_hi, (2, n)); ph = g.uniform(0, 2 * np.pi, (2, n)); a = g.uniform(0.3, 1.0, (2, n))
-    raw = lambda t: (a * np.sin(2 * np.pi * f * np.asarray(t)[..., None, None] + ph)).sum(-1)  # noqa: E731
-    tt = np.arange(0.0, TRACK_S, DT)
-    scale = span_mm / 1000.0 / np.abs(raw(tt) - raw(0.0)).max(axis=0)
-    return lambda tau: np.append((raw(tau) - raw(0.0)) * scale, 0.0)
-
-
-def random_waypoints(seed: int, span_mm: float = 6.0, seg_lo: float = 1.0, seg_hi: float = 2.5):
-    """Offset from home (m): straight lines between random waypoints (as the notebook)."""
-    g = np.random.default_rng(seed)
-    times, pts = [0.0], [np.zeros(2)]
-    while times[-1] < TRACK_S + PAD * DT + 1.0:
-        times.append(times[-1] + g.uniform(seg_lo, seg_hi))
-        pts.append(g.uniform(-span_mm, span_mm, 2) / 1000.0)
-    pts = np.array(pts)
-    return lambda tau: np.array([np.interp(tau, times, pts[:, 0]), np.interp(tau, times, pts[:, 1]), 0.0])
-
-
-def polygon(n: int, radius_m: float, lap_s: float, first_deg: float = 0.0):
-    """Offset from home (m): regular n-gon with vertices on radius_m, one lap per lap_s."""
-    th = np.radians(first_deg) + 2 * np.pi * np.arange(n + 1) / n
-    v = radius_m * np.column_stack([np.cos(th), np.sin(th)])
-    def fn(tau):
-        s = (tau / lap_s % 1.0) * n
-        k = int(s)
-        return np.append(v[k] + (s - k) * (v[k + 1] - v[k]), 0.0)
-    return fn
-
-
-def circle(radius_m: float, freq: float):
-    task = CircularTrackingTask(radius_m=radius_m, frequency_hz=freq)
-    return lambda tau: make_reference(np.zeros(3), tau, task)
-
-
-TESTS = {  # name: (offset_fn(tau) -> m, sim seed, settle_s for "after settling", kind)
-    "held-out circle": (circle(0.010, 0.15), 5, 1 / 0.15, "circle"),
-    "scored circle": (circle(0.007, 0.10), 0, 10.0, "circle"),
-    "triangle": (polygon(3, 0.007, 10.0), 0, 10.0, "polygon"),
-    "square": (polygon(4, 0.007, 10.0, 45.0), 0, 10.0, "polygon"),
-    "squiggle": (smooth_random(101), 0, 5.0, "open"),
-    "random waypoints": (random_waypoints(101), 0, 5.0, "open"),
-}
-
-
-def ref_array(fn) -> np.ndarray:
-    n = int(round(TRACK_S * HZ)) + PAD
-    return np.array([1000.0 * fn(k * DT) for k in range(n)])
 
 
 # ------------------------------------------------------------------------- controllers
 
 def controllers(r_u: dict) -> dict:
-    m = N.TaskSpaceModel.load()
+    m = M2.load()
     out = {
-        "Delay-aware SMC (M2, known ref)": lambda d: BS.Ahead(N.DelayAwareNDOSMC(
+        SMC_KNOWN: lambda d: Ahead(DelayAwareNDOSMC(
             m, lam=8.0, mu=1.0, eps=1.0, observer=False, exact_preview=True), d),
-        "Delay-aware NDOSMC (M2, known ref)": lambda d: BS.Ahead(N.DelayAwareNDOSMC(
+        NDOSMC_KNOWN: lambda d: Ahead(DelayAwareNDOSMC(
             m, lam=4.0, l1=0.1, l2=0.0, mu=1.0, Phi=1.0, eps=1.0, exact_preview=True), d),
-        SMC_L4: lambda d: BS.Ahead(N.DelayAwareNDOSMC(
+        SMC_L4: lambda d: Ahead(DelayAwareNDOSMC(
             m, lam=4.0, mu=1.0, eps=1.0, observer=False, exact_preview=True), d),
-        MPC_F: mpc_f,
+        MPC_F: known_reference,
     }
     for h in HORIZONS:
-        out[mpc_label(h)] = lambda d, h=h: M2MPC(d, h, r_u[h], m)
+        out[mpc_label(h)] = lambda d, h=h: DelayMPC(m, d, h, r_u[h])
     for ru in RU_FIXED:
         for h in HORIZONS:
-            out[mpc_label(h, ru)] = lambda d, h=h, ru=ru: M2MPC(d, h, ru, m)
+            out[mpc_label(h, ru)] = lambda d, h=h, ru=ru: DelayMPC(m, d, h, ru)
     return out
-
-
-SMC_L4 = "Delay-aware SMC (M2, known ref), λ = 4"         # NDOSMC's gain without the observer
-MPC_F = f"MPC (F), horizon {F.HORIZON} steps = {F.HORIZON * DT:.2f} s"
-
-
-def mpc_f(ref_mm: np.ndarray) -> F.DelayMPCController:
-    """MPC on F with the true future reference; tip0 (the settled tip) is set on its first call."""
-    ctl = F.DelayMPCController(preview="oracle")
-    ctl.oracle = lambda n: ctl.tip0 + ref_mm[n, :2] / 1000.0
-    return ctl
 
 
 def mpc_label(h: int, r_u: float | None = None) -> str:
-    return f"MPC (M2), horizon {h} steps = {h * DT:.2f} s" + ("" if r_u is None else f", R_u = {r_u:g}")
+    """Label of the M2 MPC at horizon h (and a fixed R_u)."""
+    return _mpc_label("M2", h, r_u)
 
 
 def gains_of(ctl) -> dict:
-    if isinstance(ctl, M2MPC):
+    if isinstance(ctl, DelayMPC):
         return ctl.gains
-    if isinstance(ctl, F.DelayMPCController):
-        return dict(horizon_steps=F.HORIZON, horizon_s=F.HORIZON * DT, rho_m2_per_psi2=F.RHO, preview="oracle",
-                    dead_time_steps=ctl.axes[0].d, model=F.MODEL_PATH.name)
-    c = ctl.c if hasattr(ctl, "c") else ctl
-    return dict(lam=c.lam, mu=c.mu, eps=c.eps, observer=c.use_observer, Phi=c.Phi,
-                l1=c.obs.l1, l2=c.obs.l2, exact_preview=c.exact_preview, dead_time_steps=c.n_delay)
+    if isinstance(ctl, KalmanDelayMPC):
+        return dict(horizon_steps=F_HORIZON, horizon_s=F_HORIZON * DT, rho_m2_per_psi2=F_RHO, preview="oracle",
+                    dead_time_steps=ctl.axes[0].d, model=F_MODEL_JSON.name)
+    return (ctl.c if hasattr(ctl, "c") else ctl).gains
 
 
-# ----------------------------------------------------------------------------- scoring
-
-def score(tip: np.ndarray, ref: np.ndarray, settle_s: float, cmds: np.ndarray, kind: str) -> dict:
-    e = np.linalg.norm(tip[:, :2] - ref[:, :2], axis=1)
-    k0 = int(round(settle_s * HZ))
-    path = ref[k0:, :2] if kind == "open" else ref[-k0:, :2]      # periodic: one lap of the path
-    dense = np.vstack([np.linspace(a, b, 5, endpoint=False) for a, b in zip(path[:-1], path[1:])])
-    t = tip[k0:, :2]
-    near = np.concatenate([np.sqrt(((t[i:i + 300, None] - dense[None]) ** 2).sum(-1)).min(1)
-                           for i in range(0, len(t), 300)])
-    out = dict(rmse_whole_mm=float(np.sqrt(np.mean(e ** 2))), rmse_settled_mm=float(np.sqrt(np.mean(e[k0:] ** 2))),
-               shape_mm=float(np.sqrt(np.mean(near ** 2))), max_settled_mm=float(e[k0:].max()),
-               saturated_pct=float(100 * np.mean((cmds <= 0.0) | (cmds >= 9.0))),
-               lag_s=float(_phase_lag_seconds(ref[:, 1], tip[:, 1], HZ, max_lag_s=1.0)), settle_s=settle_s)
-    if kind == "polygon":
-        rms = lambda a: np.sqrt(np.mean(np.sum((a - a.mean(0)) ** 2, 1)))  # noqa: E731
-        out.update(size_pct=float(100 * rms(t) / rms(ref[k0:, :2])))
-    if kind == "circle":
-        rad = np.linalg.norm(t - t.mean(0), axis=1)
-        out.update(radius_min_mm=float(rad.min()), radius_max_mm=float(rad.max()),
-                   radius_ref_mm=float(np.linalg.norm(ref[0, :2] - ref[:, :2].mean(0))))
-    return out
-
+# ----------------------------------------------------------------------------- runs
 
 def run(job):
     test, name, r_u = job
@@ -300,7 +130,7 @@ def run(job):
     d = ref_array(fn)
     ctl = controllers(r_u)[name](d)
     t0 = time.perf_counter()
-    res = B.track(ctl, lambda home, k: home + d[k] / 1000.0, int(round(TRACK_S * HZ)), seed=seed)
+    res = track_ref_mm(ctl, d, int(round(TRACK_S * HZ)), seed=seed)
     tip, ref = 1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"])
     return dict(test=test, controller=name, seed=seed, gains=gains_of(ctl), run_s=time.perf_counter() - t0,
                 metrics=score(tip, ref, settle_s, res["cmds"], kind),
@@ -311,7 +141,7 @@ def tune_job(job):
     h, r_u = job
     fn = circle(TUNE["radius_m"], TUNE["frequency_hz"])
     d = ref_array(fn)
-    res = B.track(M2MPC(d, h, r_u), lambda home, k: home + d[k] / 1000.0, int(round(TRACK_S * HZ)), seed=TUNE["seed"])
+    res = track_ref_mm(DelayMPC(M2.load(), d, h, r_u), d, int(round(TRACK_S * HZ)), seed=TUNE["seed"])
     e = 1000.0 * np.linalg.norm((res["tips"] - res["refs"])[:, :2], axis=1)
     k0 = int(round(HZ / TUNE["frequency_hz"]))
     return h, r_u, float(np.sqrt(np.mean(e[k0:] ** 2)))

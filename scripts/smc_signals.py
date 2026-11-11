@@ -1,7 +1,7 @@
 """Pressures and disturbance inside the delay-aware SMC and NDOSMC on the M2 comparison tests.
 
-Runs the two sliding-mode controllers of compare_m2_controllers.py (reference known in advance)
-on its six tests and records, every 10 ms:
+Runs the two sliding-mode controllers of compare_m2_controllers.py (softarm.controllers.DelayAwareNDOSMC
+on M2, reference known in advance) on its six tests (softarm.evaluation.TESTS) and records, every 10 ms:
   u        commanded segment pressure S2-S4 (psi), what the controller sends
   p        measured segment pressure S2-S4 (psi), what the pouch sensors read
   d_hat    the observer's disturbance estimate (mm/s), NDOSMC only, as used in the law
@@ -26,7 +26,6 @@ Usage:
 import json
 import multiprocessing as mp
 import os
-import sys
 from pathlib import Path
 
 os.environ.setdefault("OMP_NUM_THREADS", "1")
@@ -36,14 +35,14 @@ import matplotlib  # noqa: E402
 matplotlib.use("Agg")
 import numpy as np  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import benchmark_all_tasks as B  # noqa: E402
-import benchmark_slide_tasks as BS  # noqa: E402
-import compare_m2_controllers as C  # noqa: E402
-import ndosmc as N  # noqa: E402
-import plot_style as P  # noqa: E402
+from softarm import plotting as P  # noqa: E402
+from softarm.constants import DT, FIG, HZ, TRACK_S  # noqa: E402
+from softarm.controllers import Ahead, DelayAwareNDOSMC  # noqa: E402
+from softarm.evaluation import TESTS, ref_array, score, track_ref_mm  # noqa: E402
+from softarm.models import M2  # noqa: E402
+from softarm.labels import NDOSMC_KNOWN, SMC_KNOWN  # noqa: E402
 
-SMC, NDO = "Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)"
+SMC, NDO = SMC_KNOWN, NDOSMC_KNOWN
 L4E1, L4E10 = "SMC λ = 4, η = 1, no observer", "SMC λ = 4, η = 10, no observer"
 GAINS = {SMC: dict(lam=8.0, mu=1.0, eps=1.0, observer=False, exact_preview=True),
          NDO: dict(lam=4.0, l1=0.1, l2=0.0, mu=1.0, Phi=1.0, eps=1.0, exact_preview=True),
@@ -57,9 +56,9 @@ class Recorder:
     """Wraps Ahead(DelayAwareNDOSMC) and logs pressures and the observer's estimate each step."""
 
     def __init__(self, name: str, ref_mm: np.ndarray):
-        self.m = N.TaskSpaceModel.load()
-        self.c = N.DelayAwareNDOSMC(self.m, **GAINS[name])
-        self.ctl = BS.Ahead(self.c, ref_mm)
+        self.m = M2.load()
+        self.c = DelayAwareNDOSMC(self.m, **GAINS[name])
+        self.ctl = Ahead(self.c, ref_mm)
         self.est: list = []
         est = self.c.obs.estimate
         self.c.obs.estimate = lambda q: self.est.append(est(q)) or self.est[-1]
@@ -82,10 +81,10 @@ class Recorder:
 
 def run(job):
     test, name = job
-    fn, seed, settle_s, kind = C.TESTS[test]
-    d = C.ref_array(fn)
+    fn, seed, settle_s, kind = TESTS[test]
+    d = ref_array(fn)
     rec = Recorder(name, d)
-    res = B.track(rec, lambda home, k: home + d[k] / 1000.0, int(round(C.TRACK_S * C.HZ)), seed=seed)
+    res = track_ref_mm(rec, d, int(round(TRACK_S * HZ)), seed=seed)
     m = rec.m
     a = np.array([ax.params(0.0)[0] for ax in m.axes_measured])
     b = np.array([ax.params(0.0)[1] for ax in m.axes_measured])
@@ -93,12 +92,12 @@ def run(job):
     x = 1000.0 * (np.array(rec.x) - res["home"])
     xd = 1000.0 * np.array(rec.v)
     dist = xd - (-a * x + b * ((p - p[0]) @ m.B_measured.T))
-    met = C.score(1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"]), settle_s, res["cmds"], kind)
+    met = score(1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"]), settle_s, res["cmds"], kind)
     E = np.array(rec.E)
-    Ed = np.gradient(E, C.DT, axis=0)
+    Ed = np.gradient(E, DT, axis=0)
     s = slice(None, None, EVERY)
     return dict(metrics=met, E_mm=E[s, :2].round(5).tolist(), E_dot_mm_s=Ed[s, :2].round(5).tolist(), lam=GAINS[name]["lam"],
-                settle_s=C.TESTS[test][2], test=test, controller=name, gains=GAINS[name], t_s=(np.arange(len(p)) * C.DT)[s].round(3).tolist(),
+                settle_s=TESTS[test][2], test=test, controller=name, gains=GAINS[name], t_s=(np.arange(len(p)) * DT)[s].round(3).tolist(),
                 u_psi=res["cmds"][s].round(4).tolist(), p_psi=p[s].round(4).tolist(),
                 d_hat_mm_s=np.array(rec.dh)[s, :2].round(4).tolist(), d_mm_s=dist[s, :2].round(4).tolist())
 
@@ -126,7 +125,7 @@ def figure(rows: list, test: str, path: Path) -> None:
     h0, l0 = axs[0, 0].get_legend_handles_labels()
     h2, l2 = axs[2, 1].get_legend_handles_labels()
     fig.legend(h0 + h2, l0 + l2, loc="outside lower center", ncol=7)
-    fig.suptitle(f"{test}: pressures and disturbance (make_calibrated_sim, seed {C.TESTS[test][1]})", fontsize=16)
+    fig.suptitle(f"{test}: pressures and disturbance (make_calibrated_sim, seed {TESTS[test][1]})", fontsize=16)
     P.save(fig, path)
 
 
@@ -138,7 +137,7 @@ def phase(rows: list, test: str, path: Path) -> None:
     for i, name in enumerate((SMC, NDO)):
         r = R[name]
         E, Ed = np.array(r["E_mm"]), np.array(r["E_dot_mm_s"])
-        k0 = int(round(r["settle_s"] / (EVERY * C.DT)))
+        k0 = int(round(r["settle_s"] / (EVERY * DT)))
         g = r["gains"]
         mu = g["mu"]
         eta = g["eps"] / g["l1"] if "l1" in g else g["eps"]          # NDOSMC: Phi e^(-l1 t) + eps/l1 -> eps/l1
@@ -160,29 +159,29 @@ def phase(rows: list, test: str, path: Path) -> None:
             ax.grid(alpha=0.3)
     h, lb = axs[1, 0].get_legend_handles_labels()
     fig.legend(h, lb, loc="outside lower center", ncol=3)
-    fig.suptitle(f"{test}: error-space phase portrait (make_calibrated_sim, seed {C.TESTS[test][1]})", fontsize=16)
+    fig.suptitle(f"{test}: error-space phase portrait (make_calibrated_sim, seed {TESTS[test][1]})", fontsize=16)
     P.save(fig, path)
 
 
 def main() -> None:
     P.apply()
     with mp.get_context("fork").Pool(min(12, os.cpu_count() or 4)) as pool:
-        rows = pool.map(run, [(t, n) for t in C.TESTS for n in GAINS])
-    for t in C.TESTS:
-        figure(rows, t, C.FIG / f"smc_signals_{t.replace(' ', '_')}.png")
-        phase(rows, t, C.FIG / f"smc_phase_{t.replace(' ', '_')}.png")
+        rows = pool.map(run, [(t, n) for t in TESTS for n in GAINS])
+    for t in TESTS:
+        figure(rows, t, FIG / f"smc_signals_{t.replace(' ', '_')}.png")
+        phase(rows, t, FIG / f"smc_phase_{t.replace(' ', '_')}.png")
         for r in (r for r in rows if r["test"] == t and r["controller"] in (SMC, NDO)):
             d, dh = np.array(r["d_mm_s"]), np.array(r["d_hat_mm_s"])
             print(f"{t:<17}{r['controller']:<38} |d| rms x {np.sqrt(np.mean(d[:, 0]**2)):6.2f} y "
                   f"{np.sqrt(np.mean(d[:, 1]**2)):6.2f} mm/s   |d_hat| rms x {np.sqrt(np.mean(dh[:, 0]**2)):6.2f} "
                   f"y {np.sqrt(np.mean(dh[:, 1]**2)):6.2f}")
     print("\nswitching-gain check, RMSE whole / after settling (mm):")
-    for t in C.TESTS:
+    for t in TESTS:
         print(f"  {t:<17}" + "  ".join(f"{n}: {r['metrics']['rmse_whole_mm']:.2f}/{r['metrics']['rmse_settled_mm']:.3f}"
                                           for n in (L4E1, L4E10, NDO) for r in rows
                                           if r["test"] == t and r["controller"] == n))
-    (C.FIG / "smc_signals.json").write_text(json.dumps(dict(description=__doc__.split("\n\n")[0],
-                                                             trace_step_s=EVERY * C.DT, runs=rows)))
+    (FIG / "smc_signals.json").write_text(json.dumps(dict(description=__doc__.split("\n\n")[0],
+                                                             trace_step_s=EVERY * DT, runs=rows)))
     print("wrote docs/figures/smc_signals.json, smc_signals_<test>.png and smc_phase_<test>.png")
 
 

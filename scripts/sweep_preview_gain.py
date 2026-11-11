@@ -10,7 +10,8 @@ Configurations:
     delay-aware SMC (M2), exact preview   r(t + T) passed in,     lambda in LAM_DELAY
     paper SMC (M1, eq. 5), no preview,                            lambda in LAM_PAPER
 Other gains are those of scripts/compare_controllers.py (delay-aware: mu = 1 mm, eps = 1,
-no observer; paper SMC: eps = 0.1).
+no observer; paper SMC: eps = 0.1). Controllers: softarm.controllers (DelayAwareNDOSMC, PaperSMC,
+Ahead) on M1 (softarm.models.TaskSpaceModel); tasks: softarm.evaluation.brief_tasks.
 
 Writes docs/figures/sweep_preview_gain.json (every run: task, controller, preview, all
 parameters, metrics) and docs/figures/sweep_preview_gain.png.
@@ -29,11 +30,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-import benchmark_all_tasks as B
-import benchmark_slide_tasks as S
-import ndosmc as N
-import plot_style as P
 from soft_robotic_arm.evaluation import CircularTrackingTask, make_reference
+
+from softarm import plotting as P
+from softarm.constants import FIG
+from softarm.controllers import Ahead, DelayAwareNDOSMC, PaperSMC
+from softarm.evaluation import brief_score, track
+from softarm.evaluation import brief_tasks as S
+from softarm.models import TaskSpaceModel, load_m2_dict
 
 LAM_DELAY = (0.5, 1.0, 2.0, 4.0, 8.0)
 LAM_PAPER = (0.25, 0.5, 1.0, 2.0)
@@ -44,7 +48,7 @@ PAPER_FIXED = dict(eps=0.1)
 def references(n: int) -> dict:
     """The five brief tasks of benchmark_slide_tasks.py: name -> (ref_mm (n, 3), lap_s)."""
     tt = np.arange(n) / S.HZ
-    m = S.load_m2()
+    m = load_m2_dict()
     b = S.reach_bounds(m)
     circ = lambda r: np.array([1000.0 * make_reference(np.zeros(3), t, CircularTrackingTask(  # noqa: E731
         radius_m=r / 1000.0, frequency_hz=S.CIRCLE_F)) for t in tt])
@@ -67,12 +71,12 @@ def configurations(m1) -> list[dict]:
         for preview in ("taylor", "exact"):
             params = dict(lam=lam, **DELAY_FIXED, exact_preview=preview == "exact")
             cfg.append(dict(controller="delay-aware SMC (M2)", preview=preview, params=params,
-                            make=lambda ref, p=params: (S.Ahead(N.DelayAwareNDOSMC(m1, **p), ref)
-                                                        if p["exact_preview"] else N.DelayAwareNDOSMC(m1, **p))))
+                            make=lambda ref, p=params: (Ahead(DelayAwareNDOSMC(m1, **p), ref)
+                                                        if p["exact_preview"] else DelayAwareNDOSMC(m1, **p))))
     for lam in LAM_PAPER:
         params = dict(lam=lam, **PAPER_FIXED)
         cfg.append(dict(controller="paper SMC (M1)", preview="none", params=params,
-                        make=lambda ref, p=params: N.PaperSMC(m1, **p)))
+                        make=lambda ref, p=params: PaperSMC(m1, **p)))
     return cfg
 
 
@@ -112,13 +116,13 @@ def main() -> None:
     args = ap.parse_args()
     n = int(round(args.track_s * S.HZ))
     t0 = time.perf_counter()
-    m1 = N.TaskSpaceModel.load()
+    m1 = TaskSpaceModel.load()
     refs = references(n)
     runs = []
     for task, (ref, lap) in refs.items():
         for c in configurations(m1):
-            res = B.track(c["make"](ref), lambda home, k, d=ref: home + d[k] / 1000.0, n)
-            met = S.score(1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"]), lap, res["cmds"])
+            res = track(c["make"](ref), lambda home, k, d=ref: home + d[k] / 1000.0, n)
+            met = brief_score(1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"]), lap, res["cmds"])
             runs.append(dict(task=task, controller=c["controller"], preview=c["preview"], params=c["params"],
                              sim=f"make_calibrated_sim(control_hz={S.HZ}, seed={S.SEED})", track_s=args.track_s,
                              lap_s=lap, metrics=met))
@@ -129,8 +133,8 @@ def main() -> None:
     out = dict(description=__doc__.splitlines()[0], lam_delay=LAM_DELAY, lam_paper=LAM_PAPER,
                delay_fixed=DELAY_FIXED, paper_fixed=PAPER_FIXED, runs=runs,
                total_run_s=time.perf_counter() - t0)
-    (S.FIG / "sweep_preview_gain.json").write_text(json.dumps(out, indent=2))
-    figure(runs, S.FIG / "sweep_preview_gain.png")
+    (FIG / "sweep_preview_gain.json").write_text(json.dumps(out, indent=2))
+    figure(runs, FIG / "sweep_preview_gain.png")
     print(f"\n{len(runs)} runs in {out['total_run_s']:.0f} s; wrote docs/figures/sweep_preview_gain.json and .png")
 
 

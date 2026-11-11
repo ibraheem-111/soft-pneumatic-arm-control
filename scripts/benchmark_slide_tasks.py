@@ -21,14 +21,16 @@ S2 -> +y, S3 -> -x, S4 -> -y). Tasks:
                  interpolation, 7.5 s per lap, centred on the settled pose; circumradius =
                  largest whose quasi-static command along the edges (position + constant edge
                  velocity through the M2 mechanics and actuator lags) stays within 0-9 psi.
-Geometric references keep z at the settled value (as make_reference does).
+Geometric references keep z at the settled value (as make_reference does). Task definitions,
+reach bounds and open-loop runs: softarm.evaluation.brief_tasks.
 
-Evaluation is benchmark_all_tasks.track (evaluate_controller's loop): make_calibrated_sim
+Evaluation is softarm.evaluation.track (evaluate_controller's loop): make_calibrated_sim
 (control_hz=100, seed=0), 5 s settle at 4.5 psi, home = settled tip, 30 s of tracking, the
 tip after each step scored against the reference passed to that step. Metrics: planar (xy)
 RMSE whole run and after the first lap, z RMSE (meaningful where z is part of the
 reference), max planar error, % of commands at 0 or 9 psi, y-axis phase lag (package
-cross-correlation). Controllers and gains: scripts/compare_controllers.py, not retuned.
+cross-correlation); softarm.evaluation.brief_score. Controllers and gains:
+softarm.controllers.presets.baseline_set() (as in scripts/compare_controllers.py), not retuned.
 
 Shape vs timing: the RMSE scores where the tip is at each instant. "shape" is the RMS
 distance from the tip to the nearest point of the reference path's last lap (time ignored),
@@ -39,7 +41,7 @@ it too large.
 Extra controller: the delay-aware SMC with exact_preview=True, handed the true future
 reference r(t + T) instead of extrapolating r + T r' + T^2 r''/2 (which at 0.4 Hz enlarges a
 circle by |1 + iwT - (wT)^2/2| = 1.27). Only possible when the trajectory is known in
-advance; scored against r(t) like every other controller.
+advance (softarm.controllers.Ahead); scored against r(t) like every other controller.
 
 Also reported: the open-loop replay of the generating commands (tasks axial, circle_ol;
 exactly 0 because the simulator's tip is deterministic, the seed only drives pressure-sensor
@@ -65,21 +67,16 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-import benchmark_all_tasks as B
-import compare_controllers as C
-import plot_style as P
-from soft_robotic_arm import make_calibrated_sim
-from soft_robotic_arm.evaluation import CircularTrackingTask, _phase_lag_seconds, make_reference
-
-FIG = B.FIG
-HZ, SEED, BASE, LIMIT = B.HZ, B.SIM_SEED, B.BASELINE_PSI, B.LIMIT_PSI
-SPAN = min(BASE, LIMIT - BASE)                 # +-4.5 psi around the baseline
-ID_RANGE_PSI = (1.5, 7.5)                      # broadband identification levels, task_space_model.py
-AXIAL_F, AXIAL_MEAN, AXIAL_AMP = 0.5, 3.6, 3.6 # slide 15-16: Seg 4, 0.5 Hz, 0-7.2 psi
-CIRCLE_F = 0.4                                 # slide 17-18
-CIRCLE_OL_AMP = 3.0                            # psi: 1.5-7.5, the identified range
-TRI_PERIOD = 7.5                               # slide 19-20, s per lap
-AZIMUTH = np.radians([90.0, 180.0, 270.0])     # S2, S3, S4
+from softarm import plotting as P
+from softarm.constants import FIG, SETTLE_S
+from softarm.controllers import Ahead, DelayAwareNDOSMC
+from softarm.controllers.presets import baseline_set
+from softarm.evaluation import brief_score as score
+from softarm.evaluation import track
+from softarm.evaluation.brief_tasks import (AXIAL_AMP, AXIAL_MEAN, BASE, CIRCLE_F, CIRCLE_OL_AMP, HZ,
+                                            ID_RANGE_PSI, SEED, axial_cmd, build_tasks, delayed_floor,
+                                            open_loop, reach_bounds, reach_checks)
+from softarm.models import TaskSpaceModel, load_m2_dict
 
 SHOW = (  # controllers drawn in the per-task figures, in two panels of at most 3 + reference
     ["PD, corrected allocator", "SMC (notebook model), corrected allocator + deviation, λ=8",
@@ -102,225 +99,20 @@ SHORT = {
 NO_PRED = "no prediction: reference delayed 0.5 s + lagged 0.6 s"
 
 
-class Ahead:
-    """Passes the controller the reference N steps ahead (N = its dead-time steps)."""
-
-    def __init__(self, ctl, ref_mm: np.ndarray):
-        self.c, self.d, self.k = ctl, ref_mm, 0
-
-    def compute(self, t, obs, ref):
-        k, n = self.k, self.c.n_delay
-        self.k += 1
-        return self.c.compute(t, obs, ref + (self.d[min(k + n, len(self.d) - 1)] - self.d[k]) / 1000.0)
-
-
 def controllers() -> list[tuple[str, object]]:
-    """compare_controllers' set (same gains) plus the exact-preview delay-aware SMC; make(ref_mm)."""
-    rows = [(nm, lambda ref, mk=mk: mk()) for nm, _, mk in C.controllers()]
-    m1 = C.N.TaskSpaceModel.load()
-    rows.append((EXACT, lambda ref: Ahead(C.N.DelayAwareNDOSMC(m1, lam=8.0, mu=1.0, eps=1.0, observer=False,
-                                                               exact_preview=True), ref)))
+    """baseline_set() (same gains) plus the exact-preview delay-aware SMC; make(ref_mm)."""
+    rows = [(nm, lambda ref, mk=mk: mk()) for nm, _, mk in baseline_set()]
+    m1 = TaskSpaceModel.load()
+    rows.append((EXACT, lambda ref: Ahead(DelayAwareNDOSMC(m1, lam=8.0, mu=1.0, eps=1.0, observer=False,
+                                                           exact_preview=True), ref)))
     return rows
-
-
-# ----------------------------------------------------------------- model-based reach
-
-def load_m2() -> dict:
-    """M2 (docs/figures/task_space_model.json): H (measured psi -> mm), rates a, actuator gain, tau."""
-    d = json.loads((FIG / "task_space_model.json").read_text())
-    m = d["M2_mechanics"]
-    H = np.array([m[ax]["H"] for ax in "xyz"])
-    a = np.array([m[ax]["a"] for ax in "xyz"])
-    g = np.array(d["actuator"]["gain"])
-    return dict(H=H, a=a, g=g, Hc=H * g, tau=float(np.mean(d["actuator"]["tau"])),
-                dead_s=float(np.mean(d["actuator"]["dead_s"])))
-
-
-def command_per_mm(m: dict, X: np.ndarray, V: np.ndarray | None = None, omega: float = 0.0) -> np.ndarray:
-    """Command deviation (psi, S2-S4) that holds planar X (N, 2) in M2's steady state.
-
-    Minimum-norm over S2-S4 (pinv of H's x-y rows). With V (N, 2, edge velocity in mm/s) the
-    quasi-static ramp demand H p = X + V/a, g u = p + tau dp/dt is used; with omega (rad/s)
-    X is a complex phasor and the result is the amplitude of the sinusoidal command.
-    """
-    Hp = np.linalg.pinv(m["H"][:2])
-    if omega:
-        p = (X * (1 + 1j * omega / m["a"][:2])) @ Hp.T
-        return np.abs(p * (1 + 1j * omega * m["tau"]) / m["g"])
-    p = X @ Hp.T
-    if V is not None:
-        p = p + (V / m["a"][:2]) @ Hp.T + m["tau"] * (V @ Hp.T)
-    return p / m["g"]
-
-
-def triangle_vertices(R: float) -> np.ndarray:
-    th = np.radians([0.0, 120.0, 240.0])
-    return R * np.stack([np.cos(th), np.sin(th)], 1)
-
-
-def triangle_xy(t: np.ndarray, R: float) -> tuple[np.ndarray, np.ndarray]:
-    """Position (mm) and edge velocity (mm/s) on the triangle V0 -> V1 -> V2 -> V0."""
-    V = triangle_vertices(R)
-    edge_s = TRI_PERIOD / 3
-    s = np.mod(t, TRI_PERIOD) / edge_s
-    i = np.minimum(s.astype(int), 2)
-    f = (s - i)[:, None]
-    a, b = V[i], V[(i + 1) % 3]
-    return a + f * (b - a), (b - a) / edge_s
-
-
-def reach_bounds(m: dict) -> dict:
-    th = np.linspace(0, 2 * np.pi, 3601)
-    unit = np.stack([np.cos(th), np.sin(th)], 1)
-    r_static = SPAN / np.abs(command_per_mm(m, unit)).max()
-    w = 2 * np.pi * CIRCLE_F
-    phasor = np.array([[1.0, -1j]])        # x = cos, y = sin
-    r_dyn = SPAN / command_per_mm(m, phasor, omega=w).max()
-    tri_static = SPAN / np.abs(command_per_mm(m, triangle_vertices(1.0))).max()
-    tt = np.linspace(0, TRI_PERIOD, 30001)[:-1]
-    X, V = triangle_xy(tt, 1.0)
-    tri_edge = SPAN / np.abs(command_per_mm(m, X, V)).max()
-    return dict(circle_static_mm=float(r_static), circle_dyn_0p4hz_mm=float(r_dyn),
-                triangle_static_mm=float(tri_static), triangle_edge_mm=float(tri_edge),
-                Hc_mm_per_psi=m["Hc"].tolist())
-
-
-def floor01(x: float) -> float:
-    return float(np.floor(10 * x) / 10)
-
-
-# ----------------------------------------------------------------------- open loop
-
-def open_loop(cmd_fn, n: int, settle=BASE, seed: int = SEED) -> tuple[np.ndarray, np.ndarray]:
-    """Settle 5 s at `settle` psi, apply cmd_fn(t) for n steps; tip displacement (mm), commands."""
-    sim = make_calibrated_sim(control_hz=HZ, seed=seed)
-    obs = sim.reset()
-    for _ in range(int(round(B.SETTLE_S * HZ))):
-        obs = sim.step(np.broadcast_to(np.asarray(settle, float), (3,)).copy())
-    home = obs["tip_pos"].copy()
-    disp, cmds = np.empty((n, 3)), np.empty((n, 3))
-    for k in range(n):
-        c = np.clip(np.asarray(cmd_fn(k / HZ), float), 0.0, LIMIT)
-        obs = sim.step(c)
-        disp[k], cmds[k] = 1000.0 * (obs["tip_pos"] - home), c
-    sim.close()
-    return disp, cmds
-
-
-def axial_cmd(hold: float):
-    return lambda t: np.array([hold, hold, AXIAL_MEAN + AXIAL_AMP * np.sin(2 * np.pi * AXIAL_F * t)])
-
-
-def circle_ol_cmd(t: float) -> np.ndarray:
-    return BASE + CIRCLE_OL_AMP * np.cos(2 * np.pi * CIRCLE_F * t - AZIMUTH)
-
-
-def reach_checks(m: dict) -> dict:
-    """Numerical reach: 15 s holds at the command limits; full-amplitude 0.4 Hz sine on S3."""
-    n = 15 * HZ
-    holds = {"+x (S3 0)": [BASE, 0.0, BASE], "-x (S3 9)": [BASE, LIMIT, BASE],
-             "+y (S2 9, S4 0)": [LIMIT, BASE, 0.0], "-y (S2 0, S4 9)": [0.0, BASE, LIMIT]}
-    out = {}
-    for name, c in holds.items():
-        d, _ = open_loop(lambda t, c=c: c, n)
-        out[name] = dict(measured_mm=d[-HZ:].mean(0).tolist(),
-                         predicted_mm=(m["Hc"] @ (np.array(c) - BASE)).tolist())
-    d, _ = open_loop(lambda t: [BASE, BASE - SPAN * np.sin(2 * np.pi * CIRCLE_F * t), BASE], 30 * HZ)
-    x = d[15 * HZ:, 0]
-    pred = command_per_mm(m, np.array([[1.0, 0.0]]), omega=2 * np.pi * CIRCLE_F)[0, 1]
-    out["S3 +-4.5 psi sine at 0.4 Hz, x amplitude"] = dict(
-        measured_mm=float((x.max() - x.min()) / 2), predicted_mm=float(SPAN / pred))
-    return out
-
-
-# ------------------------------------------------------------------------ scoring
-
-def delayed_floor(disp: np.ndarray, dead_s: float, tau: float, lag: bool) -> np.ndarray:
-    """Tip of a perfect tracker that sees the reference through the dead time (and lag)."""
-    nd = int(round(dead_s * HZ))
-    u = np.vstack([np.zeros((nd, 3)), disp])[: len(disp)]
-    if not lag:
-        return u
-    alpha = 1 - np.exp(-1 / (HZ * tau))
-    y = np.empty_like(u)
-    prev = np.zeros(3)
-    for k, uk in enumerate(u):
-        prev = prev + alpha * (uk - prev)
-        y[k] = prev
-    return y
-
-
-def score(tip_mm: np.ndarray, ref_mm: np.ndarray, lap_s: float, cmds: np.ndarray | None = None) -> dict:
-    err = tip_mm - ref_mm
-    base = B.metrics(err, cmds, after_s=lap_s)
-    late = np.arange(len(err)) / HZ >= lap_s
-    out = dict(planar_rmse_mm=base["planar_rmse_mm"], planar_rmse_after_lap_mm=base["planar_rmse_after_5s_mm"],
-               z_rmse_mm=base["z_rmse_mm"], z_rmse_after_lap_mm=base["z_rmse_after_5s_mm"],
-               max_planar_error_mm=float(np.linalg.norm(err[:, :2], axis=1).max()),
-               max_planar_error_after_lap_mm=float(np.linalg.norm(err[late, :2], axis=1).max()),
-               phase_lag_s=_phase_lag_seconds(ref_mm[:, 1], tip_mm[:, 1], HZ, max_lag_s=0.5 * lap_s))
-    k0 = int(round(lap_s * HZ))
-    path, tip, rf = ref_mm[-k0:, :2], tip_mm[k0:, :2], ref_mm[k0:, :2]  # last lap: open-loop refs start with a transient
-    near = np.full(len(tip), np.inf)
-    for i in range(0, len(tip), 500):  # chunked nearest-point search
-        near[i:i + 500] = np.sqrt(((tip[i:i + 500, None] - path[None]) ** 2).sum(-1)).min(1)
-    out["shape_rms_after_lap_mm"] = float(np.sqrt(np.mean(near ** 2)))
-    out["size_pct_after_lap"] = float(100 * np.mean(np.linalg.norm(tip - tip.mean(0), axis=1))
-                                      / np.mean(np.linalg.norm(rf - rf.mean(0), axis=1)))
-    # size is an average: an oscillating path can average 100 %. The radius range shows that.
-    rad = np.linalg.norm(tip - tip.mean(0), axis=1)
-    out["radius_min_after_lap_mm"], out["radius_max_after_lap_mm"] = float(rad.min()), float(rad.max())
-    if cmds is not None:
-        out["saturated_pct"] = base["saturated_pct"]
-    return out
-
-
-# ------------------------------------------------------------------------ tasks
-
-def build_tasks(n: int, m: dict) -> tuple[dict, dict]:
-    """The five tasks' references (mm, relative to home; n samples) and the chosen sizes.
-
-    m = load_m2(). Each task: ref_mm (n, 3), lap_s, short, title, and cmd (n, 3) for the
-    open-loop tasks. Open-loop references are deterministic, so a longer n only appends samples.
-    """
-    bounds = reach_bounds(m)
-    r_static, r_dyn = floor01(bounds["circle_static_mm"]), floor01(bounds["circle_dyn_0p4hz_mm"])
-    r_tri = floor01(bounds["triangle_edge_mm"])
-
-    # references (mm, relative to home), with their generating commands where open loop
-    ax_disp, ax_cmd = open_loop(axial_cmd(BASE), n)
-    co_disp, co_cmd = open_loop(circle_ol_cmd, n)
-    tt = np.arange(n) / HZ
-    circ = lambda r: np.array([1000.0 * (make_reference(np.zeros(3), t,  # noqa: E731
-                               CircularTrackingTask(radius_m=r / 1000.0, frequency_hz=CIRCLE_F)))
-                               for t in tt])
-    tri = np.zeros((n, 3))
-    tri[:, :2] = triangle_xy(tt, r_tri)[0]
-    tasks = {
-        "axial": dict(ref_mm=ax_disp, cmd=ax_cmd, lap_s=1 / AXIAL_F, short="axial\n(S4 sine, open-loop path)",
-                      title=f"Axial: open-loop path of S4 = {AXIAL_MEAN}+{AXIAL_AMP} sin(2π·{AXIAL_F}t) psi, "
-                            f"S2/S3 at {BASE} psi"),
-        "circle_ol": dict(ref_mm=co_disp, cmd=co_cmd, lap_s=1 / CIRCLE_F, short="circle, open-loop\n(ellipse)",
-                          title=f"Circular (open-loop path): S2-S4 = {BASE} ± {CIRCLE_OL_AMP} psi, "
-                                f"{CIRCLE_F} Hz, phases 90/180/270°"),
-        "circle_static": dict(ref_mm=circ(r_static), lap_s=1 / CIRCLE_F,
-                              short=f"circle r={r_static:g} mm\n(static-H limit)",
-                              title=f"Circular (geometric): r = {r_static:g} mm (M2 static limit), {CIRCLE_F} Hz"),
-        "circle_dyn": dict(ref_mm=circ(r_dyn), lap_s=1 / CIRCLE_F,
-                           short=f"circle r={r_dyn:g} mm\n(0.4 Hz M2 limit)",
-                           title=f"Circular (geometric): r = {r_dyn:g} mm (M2 limit at {CIRCLE_F} Hz)"),
-        "triangle": dict(ref_mm=tri, lap_s=TRI_PERIOD, short=f"triangle R={r_tri:g} mm",
-                         title=f"Triangular: circumradius {r_tri:g} mm, vertices 0/120/240°, "
-                               f"{TRI_PERIOD} s per lap"),
-    }
-    return tasks, dict(circle_static_r_mm=r_static, circle_dyn_r_mm=r_dyn, triangle_R_mm=r_tri)
 
 
 # ------------------------------------------------------------------------ figures
 
 def task_figure(key: str, task: dict, runs: dict, path) -> None:
     """Tip paths over the last lap, the exact-preview controller's commands, and the planar error
-    over time; controllers split over two panels per row (plot_style identities)."""
+    over time; controllers split over two panels per row (softarm.plotting identities)."""
     P.apply()
     ref = task["ref_mm"]
     t = np.arange(len(ref)) / HZ
@@ -400,7 +192,7 @@ def main() -> None:
     args = ap.parse_args()
     n = int(round(args.track_s * HZ))
     t_start = time.perf_counter()
-    m = load_m2()
+    m = load_m2_dict()
     bounds = reach_bounds(m)
     checks = reach_checks(m)
     tasks, radii = build_tasks(n, m)
@@ -409,7 +201,7 @@ def main() -> None:
                           settle=[ID_RANGE_PSI[0], ID_RANGE_PSI[0], AXIAL_MEAN])
 
     out = dict(sim=f"make_calibrated_sim(control_hz={HZ}, seed={SEED})", track_s=args.track_s,
-               settle=f"{B.SETTLE_S} s at {BASE} psi", m2=dict(tau_s=m["tau"], dead_s=m["dead_s"]),
+               settle=f"{SETTLE_S} s at {BASE} psi", m2=dict(tau_s=m["tau"], dead_s=m["dead_s"]),
                reach_bounds_m2=bounds, reach_checks=checks,
                chosen=dict(axial_hold_psi=BASE, axial_S4_psi=[AXIAL_MEAN - AXIAL_AMP, AXIAL_MEAN + AXIAL_AMP],
                            circle_ol_amp_psi=CIRCLE_OL_AMP, circle_static_r_mm=r_static,
@@ -438,12 +230,12 @@ def main() -> None:
                 def compute(self, t, obs, r):
                     self.k += 1
                     return self.c[self.k - 1]
-            res = B.track(OpenLoop(task["cmd"]), ref_fn, n)
+            res = track(OpenLoop(task["cmd"]), ref_fn, n)
             info["open_loop"] = score(1000.0 * (res["tips"] - res["home"]), ref, task["lap_s"], res["cmds"])
         runs = {}
         for name, make in controllers():
             t0 = time.perf_counter()
-            res = B.track(make(ref), ref_fn, n)
+            res = track(make(ref), ref_fn, n)
             tip = 1000.0 * (res["tips"] - res["home"])
             row = score(tip, 1000.0 * (res["refs"] - res["home"]), task["lap_s"], res["cmds"])
             row["run_s"] = time.perf_counter() - t0

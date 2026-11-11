@@ -3,6 +3,40 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-11-11
+
+- Repository restructured into the installable package `src/softarm/` (Ibraheem's request:
+  models and controllers each in one place, interchangeable through base classes). Models
+  (`softarm.models`: `Model`, `LinearModel`, `FirstOrderModel`; M1, M2, M3, F, OneMode,
+  physics), controllers (`softarm.controllers`: `Controller`; PD, SMC family, `DelayMPC`,
+  `KalmanDelayMPC`, preview wrappers, presets), evaluation (`softarm.evaluation`: `track`,
+  references, `TESTS`, metrics, brief tasks, motions, recorded runs), `constants`,
+  `plotting`, `labels`, `reports`. Every script now imports `softarm` and no script imports
+  another. `DelayMPC` takes any `LinearModel` with a measured state (M2, M3);
+  `DelayAwareNDOSMC` any `FirstOrderModel` (M2, M1's container). Regression: every script
+  rerun before and after; outputs compared leaf by leaf (see the restructure commit).
+  Old → new names:
+  - `ndosmc.TaskSpaceModel/AxisModel/ActuatorModel` → `softarm.models` (also `M1`); M2 parts → `softarm.models.M2`
+  - `ndosmc.PaperSMC/PaperNDOSMC/DelayAwareNDOSMC/NDOB` → `softarm.controllers`
+  - `smc_reduced_model.reduced_model` → `softarm.models.reduced_model` / `OneMode`;
+    `PDController`, `SlidingModeController` → `softarm.controllers` (the `FIX_ALLOCATOR` global
+    is now the `corrected_allocator` argument)
+  - `compare_m2_controllers.M2MPC(ref_mm, h, r_u)` and `mpc_m3.DelayMPC/make_m3_mpc` →
+    `softarm.controllers.DelayMPC(model, ref_mm, h, r_u)`; `mpc_m3.m3_matrices` → `M3.load().continuous()`
+  - `mpc_controller.DelayMPCController/AxisController/RefPredictor/NoisyTip/baselines` →
+    `softarm.controllers.KalmanDelayMPC`, `.kalman_mpc.AxisController`, `.RefPredictor`, `.NoisyTip`,
+    `.presets.mpc_baselines`; `compare_m2_controllers.mpc_f` / `benchmark_unified.mpc_oracle` →
+    `softarm.controllers.known_reference`
+  - `benchmark_slide_tasks.Ahead` / `benchmark_unified.Predicted` → `softarm.controllers`
+  - `compare_controllers.controllers()` → `softarm.controllers.presets.baseline_set()`
+  - `benchmark_all_tasks.track/metrics` → `softarm.evaluation.track/planar_metrics`;
+    `benchmark_slide_tasks.score/load_m2` → `softarm.evaluation.brief_score` / `softarm.models.load_m2_dict`
+  - `compare_m2_controllers.TESTS/score/ref_array/circle/polygon/smooth_random/random_waypoints` →
+    `softarm.evaluation`; `compare_models_excitation.simulate_*` → each model's `.simulate()`
+  - `plant_model.equilibrium/linearize` → `softarm.models.physics`; `scripts/plot_style.py` →
+    `softarm.plotting`
+  The scripts keep their names, CLIs and outputs. Log entries before this date cite the old names.
+
 ## 2026-11-10
 
 - Colab submission notebooks `notebooks/Soft_robotic_arm_MPC_M2.ipynb` and

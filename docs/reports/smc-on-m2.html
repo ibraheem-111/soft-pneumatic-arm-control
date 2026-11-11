@@ -26,7 +26,7 @@ figure { margin:0; display:grid; gap:10px; background:var(--surface); border:1px
 figure .scroll { overflow-x:auto; } figure .scroll > img { display:block; width:100%; min-width:760px; height:auto; background:#fff; border-radius:4px; }
 figcaption { font-size:14.5px; color:var(--muted); }
 </style>
-<div class="wrap"><header><div class="eyebrow">Soft pneumatic arm · delay-aware sliding-mode control · reference known</div><h1>Sliding-Mode Controllers on M2</h1><p class="meta">The SMC and the NDOSMC as implemented in <code>scripts/ndosmc.py</code>, derived step by step, then their pressures, disturbance and error-space phase portraits on the six comparison tests. Regenerate: <code>uv run python scripts/smc_signals.py</code>, then <code>uv run python scripts/report_smc_explained.py</code>.</p></header>
+<div class="wrap"><header><div class="eyebrow">Soft pneumatic arm · delay-aware sliding-mode control · reference known</div><h1>Sliding-Mode Controllers on M2</h1><p class="meta">The SMC and the NDOSMC as implemented in <code>softarm.controllers.DelayAwareNDOSMC</code>, derived step by step, then their pressures, disturbance and error-space phase portraits on the six comparison tests. Regenerate: <code>uv run python scripts/smc_signals.py</code>, then <code>uv run python scripts/report_smc_explained.py</code>.</p></header>
 <section><h2>1 · The model the controllers are built on (M2)</h2>
 <p>Each axis \(i \in \{x, y, z\}\) is handled separately. The input is the three segment commands \(u\) (S2–S4, psi);
 the states are the measured segment pressures \(p\) and the tip \(x\) (mm from the settled pose).</p>

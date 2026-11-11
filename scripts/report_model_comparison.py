@@ -13,10 +13,9 @@ Usage:
 import base64
 import json
 from html import escape
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-FIG = ROOT / "docs" / "figures"
+from softarm.constants import FIG, ROOT
+
 OUT = ROOT / "docs" / "reports" / "model-comparison.html"
 
 MODELS = ("one-mode", "one-mode+g", "M2", "M3", "F")

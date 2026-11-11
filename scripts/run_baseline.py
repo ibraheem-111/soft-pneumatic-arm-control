@@ -9,15 +9,16 @@ Usage:
 """
 
 import json
-from pathlib import Path
 
 import numpy as np
 
 from soft_robotic_arm import make_sim
 
-NOTEBOOK = Path(__file__).resolve().parent.parent / "notebooks" / "soft_robotic_arm.ipynb"
-CONTROL_HZ = 100.0
-MAX_PRESSURE_PSI = 9.0
+from softarm.constants import HZ, LIMIT_PSI, ROOT
+
+NOTEBOOK = ROOT / "notebooks" / "soft_robotic_arm.ipynb"
+CONTROL_HZ = HZ
+MAX_PRESSURE_PSI = LIMIT_PSI
 RUN_TIME_S = 20.0
 
 

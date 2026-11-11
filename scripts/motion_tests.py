@@ -9,13 +9,14 @@ Motions follow the RAS 556 project slides ("Simulation Results ... Motion"):
 Amplitude, period, settle and duration match the package's CircularTrackingTask
 (7 mm, 0.1 Hz, 5 s settle at 4.5 psi, 30 s scored), and the loop reproduces
 evaluate_controller exactly (checked on the circle). Scoring: lateral (x-y) RMSE
-over the whole run; for axial motion also the error on the held axis.
+over the whole run; for axial motion also the error on the held axis. The motions are
+softarm.evaluation.motions.MOTIONS; the controllers are softarm.controllers.KalmanDelayMPC
+(the MPC on F) and its baselines, softarm.controllers.presets.mpc_baselines().
 
 Usage:
     uv run python scripts/motion_tests.py      # about 3 min
 """
 
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -25,45 +26,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from soft_robotic_arm import make_calibrated_sim
-from soft_robotic_arm.evaluation import CircularTrackingTask, make_reference
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import mpc_controller as mpc  # noqa: E402
-
-ROOT = Path(__file__).resolve().parent.parent
-TASK = CircularTrackingTask()          # shared settings: rate, settle, duration, radius, frequency, baseline
-
-
-def circle(home: np.ndarray, t: float) -> np.ndarray:
-    return make_reference(home, t, TASK)
-
-
-def triangle(home: np.ndarray, t: float) -> np.ndarray:
-    angles = 2 * np.pi * np.arange(4) / 3
-    verts = TASK.radius_m * np.column_stack([np.cos(angles), np.sin(angles)])   # V0, V1, V2, V0
-    s = (TASK.frequency_hz * t % 1.0) * 3
-    k = int(s)
-    ref = home.copy()
-    ref[:2] += verts[k] + (s - k) * (verts[k + 1] - verts[k])
-    return ref
-
-
-def axial(axis: int):
-    def ref_fn(home: np.ndarray, t: float) -> np.ndarray:
-        ref = home.copy()
-        ref[axis] += TASK.radius_m * np.sin(2 * np.pi * TASK.frequency_hz * t)
-        return ref
-    return ref_fn
-
-
-MOTIONS = {"circle (harness check)": circle, "triangle": triangle,
-           "axial along y": axial(1), "axial along x": axial(0)}
+from softarm.constants import ROOT
+from softarm.controllers import KalmanDelayMPC
+from softarm.controllers.kalman_mpc import COMMAND_LIMIT_PSI
+from softarm.controllers.presets import mpc_baselines
+from softarm.evaluation import evaluate
+from softarm.evaluation.motions import MOTIONS, TASK
 
 
 def run(make_ctrl, ref_fn, seed: int = 0) -> dict:
     """Same sequence as evaluate_controller: settle at the baseline, take the settled
     tip as home, then track for TASK.track_s with clipped commands."""
-    limit = mpc.COMMAND_LIMIT_PSI
+    limit = COMMAND_LIMIT_PSI
     sim = make_calibrated_sim(control_hz=TASK.control_hz, seed=seed)
     try:
         baseline = TASK.baseline_command(limit)
@@ -112,11 +87,11 @@ def shape_error(tips_xy: np.ndarray, ref_fn, home: np.ndarray) -> np.ndarray:
 
 
 def controllers() -> dict:
-    base = mpc.baselines()
+    base = mpc_baselines()
     return {
-        "MPC": lambda home, ref_fn: mpc.DelayMPCController(),
-        "MPC, AR preview only": lambda home, ref_fn: mpc.DelayMPCController(preview="ar"),
-        "MPC, true future ref (diagnostic)": lambda home, ref_fn: mpc.DelayMPCController(
+        "MPC": lambda home, ref_fn: KalmanDelayMPC(),
+        "MPC, AR preview only": lambda home, ref_fn: KalmanDelayMPC(preview="ar"),
+        "MPC, true future ref (diagnostic)": lambda home, ref_fn: KalmanDelayMPC(
             preview="oracle", oracle=lambda n: ref_fn(home, n / TASK.control_hz)),
         "SMC": lambda home, ref_fn: base["SMC lam=5 K=0.35 phi=0.02, deviation"](),
         "PD": lambda home, ref_fn: base["PD kp=500 kd=20"](),
@@ -145,7 +120,7 @@ def main() -> None:
                 extra = f"; after 2 s {np.sqrt(np.mean(r['lat'][tail] ** 2)):.3f} mm"
             print(f"    {name:<36}{r['rmse']:7.3f} {r['max']:6.2f} {r['effort']:6.2f}  shape {r['shape_rms']:.3f} / "
                   f"{r['shape_rms_tail']:.3f}, max {r['shape_max_tail']:.3f}{extra}")
-    harness = mpc.evaluate(lambda: mpc.DelayMPCController()).rmse_mm
+    harness = evaluate(KalmanDelayMPC()).rmse_mm
     print(f"  check: harness MPC on the circle {harness:.6f} mm vs this loop "
           f"{results[('circle (harness check)', 'MPC')]['rmse']:.6f} mm")
 

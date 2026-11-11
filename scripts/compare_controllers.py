@@ -8,16 +8,15 @@ Prints a table (whole-run RMSE as scored, RMSE after the first 5 s, and the shar
 command samples at 0 or 9 psi), and writes
 docs/figures/controller_comparison.png and docs/figures/controller_comparison.json.
 
-Controllers: the notebook's PD and SMC (as written and with the corrected allocator,
-from scripts/smc_reduced_model.py), and the Qiao, Tao & Zhang SMC / NDOSMC and the
-delay-aware variants (scripts/ndosmc.py).
+Controllers: softarm.controllers.presets.baseline_set(): the notebook's PD and SMC (as written
+and with the corrected allocator), and the Qiao, Tao & Zhang SMC / NDOSMC and the delay-aware
+variants (softarm.controllers). Tasks: softarm.evaluation.motions.CIRCLE_TASKS.
 
 Usage:
     uv run python scripts/compare_controllers.py
 """
 
 import json
-from pathlib import Path
 
 import matplotlib
 
@@ -25,53 +24,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-import ndosmc as N
-import smc_reduced_model as S
-from soft_robotic_arm import make_calibrated_sim
-from soft_robotic_arm.evaluation import CircularTrackingTask, TrackingResult, evaluate_controller
+from soft_robotic_arm.evaluation import TrackingResult
 
-ROOT = Path(__file__).resolve().parent.parent
-FIG = ROOT / "docs" / "figures"
-TASKS = {
-    "scored (7 mm, 0.1 Hz, seed 0)": (CircularTrackingTask(), 0),
-    "held-out (10 mm, 0.15 Hz, seed 5)": (CircularTrackingTask(radius_m=0.010, frequency_hz=0.15), 5),
-}
+from softarm.constants import FIG
+from softarm.controllers.presets import baseline_set
+from softarm.evaluation import evaluate
+from softarm.evaluation.motions import CIRCLE_TASKS
 
-
-def notebook(kind: str, fix: bool, **kw):
-    """Build a notebook controller with the allocator flag set as it would be from the CLI."""
-    S.FIX_ALLOCATOR = fix
-    if kind == "pd":
-        return S.PDController(**kw)
-    k, c, b = S.reduced_model(include_gravity=False)
-    return S.SlidingModeController(k, c, -b if fix else b, **kw)
-
-
-def controllers():
-    m1 = N.TaskSpaceModel.load()
-    return [
-        ("PD, notebook allocator", "notebook", lambda: notebook("pd", False, kp=500.0, kd=20.0)),
-        ("PD, corrected allocator", "notebook", lambda: notebook("pd", True, kp=500.0, kd=20.0)),
-        ("SMC (notebook model), as written", "notebook",
-         lambda: notebook("smc", False, lam=5.0, K_switch=0.2, phi=0.02)),
-        ("SMC (notebook model), corrected allocator + deviation, λ=8", "notebook",
-         lambda: notebook("smc", True, lam=8.0, K_switch=0.2, phi=0.02, deviation=True)),
-        ("Paper SMC, eq. 5 (M1)", "paper", lambda: N.PaperSMC(m1, lam=1.0, eps=0.1)),
-        ("Paper NDOSMC, eq. 12 (M1)", "paper",
-         lambda: N.PaperNDOSMC(m1, lam=1.0, l1=0.5, l2=0.0, mu=0.1, Phi=1.0, eps=1.0)),
-        ("Delay-aware SMC, no observer (M2)", "delay",
-         lambda: N.DelayAwareNDOSMC(m1, lam=8.0, mu=1.0, eps=1.0, observer=False)),
-        ("Delay-aware NDOSMC (M2)", "delay",
-         lambda: N.DelayAwareNDOSMC(m1, lam=4.0, l1=0.1, l2=0.0, mu=1.0, Phi=1.0, eps=1.0)),
-    ]
-
-
-def run(make, task: CircularTrackingTask, seed: int) -> TrackingResult:
-    sim = make_calibrated_sim(control_hz=task.control_hz, seed=seed)
-    try:
-        return evaluate_controller(make(), task=task, sim=sim)
-    finally:
-        sim.close()
+TASKS = CIRCLE_TASKS
 
 
 def tail_rmse(r: TrackingResult, after_s: float = 5.0) -> float:
@@ -86,8 +46,8 @@ def main() -> None:
     for task_name, (task, seed) in TASKS.items():
         print(f"\n{task_name}")
         print(f"{'controller':<60}{'RMSE':>7}{'t>5s':>7}{'lag s':>7}{'effort':>8}{'sat %':>7}")
-        for name, family, make in controllers():
-            r = run(make, task, seed)
+        for name, family, make in baseline_set():
+            r = evaluate(make(), task, seed)
             results[(task_name, name)] = r
             row = dict(family=family, rmse_mm=r.rmse_mm, rmse_after_5s_mm=tail_rmse(r),
                        max_error_mm=r.max_error_mm, phase_lag_s=r.phase_lag_s, effort_psi=r.effort_psi,

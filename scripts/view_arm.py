@@ -26,9 +26,9 @@ from soft_robotic_arm import make_sim
 from soft_robotic_arm.calibration import RobotCalibration
 from soft_robotic_arm.model import build_arm_xml
 
-CONTROL_HZ = 100.0
-MAX_PRESSURE_PSI = 9.0
-BASELINE_PSI = 2.0
+from softarm.constants import HZ as CONTROL_HZ, LIMIT_PSI as MAX_PRESSURE_PSI
+
+BASELINE_PSI = 2.0  # slider start for this viewer (make_sim), not the 4.5 psi harness baseline
 SEGMENT_LABELS = ("S1 (+x)", "S2 (+y)", "S3 (−x)", "S4 (−y)")
 
 
