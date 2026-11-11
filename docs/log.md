@@ -36,6 +36,21 @@ person (or agent) can pick up without asking. Keep entries short and dated.
   - `plant_model.equilibrium/linearize` → `softarm.models.physics`; `scripts/plot_style.py` →
     `softarm.plotting`
   The scripts keep their names, CLIs and outputs. Log entries before this date cite the old names.
+- Professor's new template (`notebooks/soft_robotic_arm_v2.ipynb`, copied unchanged): the assessed
+  plant is `make_sim` (seed 2, 20 s from reset, no settle), all four segments active, interface
+  `student_controller(reference, obs)` -> finite (4, 5) pouch psi in [0, 9] plus
+  `reset_controller()`; `reference(t)` may be queried ahead. Measured on `make_sim`: no dead time, τ
+  = 0.60 s, gain 1.00, +1 psi on any segment moves the tip 1.81 mm toward it at every bias 1-8 psi,
+  reach ±16 mm per axis, tip at the origin at reset with pouches at 0 psi. The professor allowed
+  either plant.
+- Submission notebook `notebooks/Soft_robotic_arm_MPC_M3sim.ipynb` (built by
+  `scripts/build_submission.py`, standalone): model re-identified on `make_sim` (second order per
+  axis: ω 7.08/7.10 rad/s, ζ 0.70, H ≈ 1.79 mm/psi; free-run 0.07-0.14 mm vs 0.17-0.42 for first
+  order), MPC reading `reference(t)` 1 s ahead, R_u = 0.01 tuned on three paths not used for
+  testing. Instructor's example: 0.090 mm RMSE vs 1.259 mm for the template PID; beats the PID on
+  all 12 test trajectories. A `make_calibrated_sim` section (adapted evaluator: rows S2-S4 averaged)
+  runs our M2 MPC: 1.8-2.9 mm vs PID 8.6-9.2 mm; that plant reaches only +4.2 mm in x (S1 sealed),
+  so the 10 mm references are partly unreachable.
 
 ## 2026-11-10
 
