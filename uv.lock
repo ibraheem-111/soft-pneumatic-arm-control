@@ -1933,7 +1933,7 @@ wheels = [
 [[package]]
 name = "ras556-project"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "scipy" },
     { name = "soft-robotic-arm" },
@@ -1943,6 +1943,7 @@ dependencies = [
 dev = [
     { name = "ipykernel" },
     { name = "jupyterlab" },
+    { name = "nbformat" },
     { name = "nbstripout" },
 ]
 
@@ -1956,6 +1957,7 @@ requires-dist = [
 dev = [
     { name = "ipykernel", specifier = ">=7.4.0" },
     { name = "jupyterlab", specifier = ">=4.6.6" },
+    { name = "nbformat", specifier = ">=5.11.1" },
     { name = "nbstripout", specifier = ">=0.9.1" },
 ]
 

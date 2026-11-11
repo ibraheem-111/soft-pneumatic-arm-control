@@ -1,7 +1,7 @@
 """Write draw.io block diagrams of the controllers in compare_m2_controllers.py.
 
-One page per controller, drawn from the code (scripts/ndosmc.py DelayAwareNDOSMC,
-scripts/compare_m2_controllers.py M2MPC, scripts/mpc_controller.py DelayMPCController):
+One page per controller, drawn from the code (softarm.controllers.DelayAwareNDOSMC,
+softarm.controllers.DelayMPC, softarm.controllers.KalmanDelayMPC):
   1. Delay-aware SMC, reference known (lambda = 8 and the lambda = 4 row; observer off)
   2. Delay-aware NDOSMC, reference known (observer on)
   3. MPC on M2, reference known
@@ -158,7 +158,7 @@ def mpc_m2_page() -> Page:
     p.edge("off", "mpc", "w", "r", "l")
     p.edge("plant", "state", "tip, segment pressures (S2–S4)", "b", "b",
            pts=((1460, 580), (225, 580)), lx=-0.3)
-    p.box("note", "Code: scripts/compare_m2_controllers.py M2MPC. M2: τ ṗ = −p + G u(t−T), ẏ = −Λ y + Λ H p "
+    p.box("note", "Code: softarm.controllers.DelayMPC on softarm.models.M2. M2: τ ṗ = −p + G u(t−T), ẏ = −Λ y + Λ H p "
           "(docs/figures/task_space_model.json). R<sub>u</sub> tuned per horizon on a 5 mm, 0.07 Hz circle "
           "(chosen 10⁻⁵ mm²/psi²; also run at R<sub>u</sub> = 1 and 10). Clipping is not in the optimisation; "
           "the clipped command enters the buffer.<br><br>" + LEGEND, 60, 650, 1250, 110, NOTE)
@@ -201,8 +201,8 @@ def mpc_f_page() -> Page:
     p.edge("kf", "mpc", "offset o", "t", (0.05, 1), pts=((485, 340), (662, 340)))
     p.edge("plant", "chan", "pouch pressures", "b", "b", pts=((1460, 590), (200, 590)), lx=-0.4)
     p.edge("plant", "kf", "tip x, y", (0.2, 1), (0.25, 1), pts=((1400, 570), (417, 570)), lx=-0.3)
-    p.box("note", "Code: scripts/mpc_controller.py DelayMPCController(preview=\"oracle\") with the true "
-          "future reference, as built in compare_m2_controllers.mpc_f. F: per-channel state-space model "
+    p.box("note", "Code: softarm.controllers.KalmanDelayMPC(preview=\"oracle\") with the true "
+          "future reference, as built by softarm.controllers.known_reference. F: per-channel state-space model "
           "x<sub>n+1</sub> = A<sub>d</sub> x<sub>n</sub> + B<sub>d</sub> u<sub>n−d</sub> identified from "
           "frequency responses (scripts/sysid_frf.py). Unlike M2, F does not model z and treats x and y "
           "as independent channels.<br><br>" + LEGEND, 60, 650, 1250, 110, NOTE)
@@ -213,12 +213,12 @@ def main() -> None:
     pages = [
         smc_page("SMC known ref", "Delay-aware SMC (M2), reference known",
                  False,
-                 "Code: scripts/ndosmc.py DelayAwareNDOSMC(observer=False, exact_preview=True), fed r(t+T) by "
-                 "benchmark_slide_tasks.Ahead. Rows: λ = 8 s⁻¹ and λ = 4 s⁻¹; μ = 1 mm, ε = 1. "
+                 "Code: softarm.controllers.DelayAwareNDOSMC(observer=False, exact_preview=True), fed r(t+T) by "
+                 "softarm.controllers.Ahead. Rows: λ = 8 s⁻¹ and λ = 4 s⁻¹; μ = 1 mm, ε = 1. "
                  "a, b, H, G, τ from M2 (docs/figures/task_space_model.json); the observer is off (d̂ = 0)."),
         smc_page("NDOSMC known ref", "Delay-aware NDOSMC (M2), reference known",
                  True,
-                 "Code: scripts/ndosmc.py DelayAwareNDOSMC(exact_preview=True) with the observer on. "
+                 "Code: softarm.controllers.DelayAwareNDOSMC(exact_preview=True) with the observer on. "
                  "Nikoletta's gains: λ = 4 s⁻¹, l₁ = 0.1, l₂ = 0, μ = 1 mm, Φ = 1, ε = 1. Same structure as the "
                  "SMC page plus the observer, which acts on the predicted tip q̂."),
         mpc_m2_page(),

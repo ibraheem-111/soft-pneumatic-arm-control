@@ -22,7 +22,8 @@ from scipy.signal import lfilter
 
 from soft_robotic_arm import make_calibrated_sim
 
-DT = 0.01
+from softarm.constants import DT
+
 DP = 0.5
 rng = np.random.default_rng(1234)
 AXES = {

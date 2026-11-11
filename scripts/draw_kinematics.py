@@ -11,8 +11,6 @@ Usage:
     uv run python scripts/draw_kinematics.py            # writes docs/figures/kinematic_diagram.{svg,png,pdf}
 """
 
-from pathlib import Path
-
 import matplotlib
 
 matplotlib.use("Agg")
@@ -23,7 +21,7 @@ import numpy as np
 
 from soft_robotic_arm import make_sim
 
-OUT_DIR = Path(__file__).resolve().parent.parent / "docs" / "figures"
+from softarm.constants import FIG as OUT_DIR
 
 INK = "#1f2328"
 MUTED = "#6e7781"

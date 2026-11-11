@@ -1,6 +1,6 @@
 """Shared figure style: colour-blind-safe colours, one fixed identity per series, readable sizes.
 
-Every figure script imports this module, calls `apply()` before plotting and draws each series
+Every figure script imports this module (`from softarm import plotting as P`), calls `apply()` before plotting and draws each series
 with `line(name, n)` (keyword arguments for `Axes.plot`), so that a controller looks the same in
 every figure: colour + line style + marker. Rules this encodes:
 
@@ -16,7 +16,7 @@ every figure: colour + line style + marker. Rules this encodes:
   carry their value as text on each bar.
 
 Usage (in a figure script):
-    import plot_style as P
+    from softarm import plotting as P
     P.apply()
     fig, ax = plt.subplots(figsize=(P.WIDTH, P.PANEL_H))
     ax.plot(t, ref, **P.REFERENCE)
@@ -24,7 +24,7 @@ Usage (in a figure script):
     P.legend_outside(ax)
     P.save(fig, path)
 Run directly to draw a swatch of every series identity:
-    uv run python scripts/plot_style.py [out.png]
+    uv run python -m softarm.plotting [out.png]
 """
 
 import sys

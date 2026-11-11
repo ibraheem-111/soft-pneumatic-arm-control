@@ -1,6 +1,7 @@
 """Render the scored circular-tracking run of the best controllers as one side-by-side video.
 
-Re-runs the package harness's loop exactly (reset, 5 s settle at the 4.5 psi baseline,
+Controllers: softarm.controllers.presets.baseline_set() (the set of
+scripts/compare_controllers.py). Re-runs the package harness's loop exactly (reset, 5 s settle at the 4.5 psi baseline,
 home = settled tip, then 30 s of `make_reference` tracking with commands clipped to
 0-9 psi) on `make_calibrated_sim(seed=0)`, rendering frames as it goes, and checks the
 resulting RMSE against `evaluate_controller`. Each tile shows MuJoCo's off-screen view
@@ -20,17 +21,17 @@ import os
 
 os.environ.setdefault("MUJOCO_GL", "egl")
 
-from pathlib import Path
-
 import imageio.v2 as imageio
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-import compare_controllers as C
 from soft_robotic_arm import make_calibrated_sim
 from soft_robotic_arm.evaluation import CircularTrackingTask, make_reference
 
-ROOT = Path(__file__).resolve().parent.parent
+from softarm.constants import ROOT
+from softarm.controllers.presets import baseline_set
+from softarm.evaluation import evaluate
+
 OUT = ROOT / "videos"
 FPS = 20
 TILE_H = 300
@@ -112,12 +113,12 @@ def main() -> None:
     args = parser.parse_args()
     OUT.mkdir(exist_ok=True)
     task = CircularTrackingTask()
-    makers = {name: make for name, _, make in C.controllers()}
+    makers = {name: make for name, _, make in baseline_set()}
     scored = {}
     tiles = {}
     for name in PICK:
         tiles[name], rmse = run_and_render(name, makers[name], task)
-        harness = C.run(makers[name], task, 0).rmse_mm
+        harness = evaluate(makers[name](), task, 0).rmse_mm
         scored[name] = (rmse, harness)
         print(f"{name:<60} rendered-run RMSE {rmse:.3f} mm, harness {harness:.3f} mm")
         if args.each:

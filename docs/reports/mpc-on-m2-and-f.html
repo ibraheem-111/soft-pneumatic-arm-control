@@ -71,7 +71,7 @@ steps ago, and low-passed with a 0.5 s time constant:</p>
 <li>Horizon \(H\) = 100 steps = 1 s after the 0.5 s dead time (looks 0.5–1.5 s ahead). \(R_u = 10^{-5}\) mm²/psi², tuned on a
 separate 5 mm, 0.07 Hz circle. That weight is almost zero, so the law is close to an inverse of M2.</li>
 <li>The clipped command, not \(u_k\), goes into the predictor's buffer, so saturation is accounted for.</li></ul>
-<p>Code: <code>scripts/compare_m2_controllers.py</code>, class <code>M2MPC</code>.</p></section>
+<p>Code: <code>softarm.controllers.DelayMPC</code> (with <code>softarm.models.M2</code>).</p></section>
 
 <section><h2>5 · MPC on F: per-channel model and Kalman filter</h2>
 <p>F treats the planar motion as two independent channels, each driven by one combination of segment commands:</p>
@@ -88,7 +88,7 @@ place of \(w\):</p>
 J = \sum_{i=0}^{H-1}\big(C\hat x_{n+d+1+i} + o - r_{n+d+i}\big)^2 + \rho\sum_{i=0}^{H-1}\big(\Delta\nu_{n+i}\big)^2 \]</div>
 <p>\(H\) = 300 steps = 3 s, \(\rho = 10^{-5}\) m²/psi² (its own tuning). The two channel commands go back to segments:</p>
 <div class="eqn">\[ S2 = 4.5 + \tfrac{\nu_y}{2}, \qquad S3 = 4.5 - \nu_x, \qquad S4 = 4.5 - \tfrac{\nu_y}{2}, \qquad \mathrm{clipped\ to\ } [0, 9] \]</div>
-<p>Code: <code>scripts/mpc_controller.py</code>, classes <code>AxisController</code> and <code>DelayMPCController</code>.</p></section>
+<p>Code: <code>softarm.controllers.kalman_mpc</code>, classes <code>AxisController</code> and <code>KalmanDelayMPC</code>.</p></section>
 
 <section><h2>6 · How the MPCs differ from the SMCs</h2><ul>
 <li><b>Look-ahead:</b> the SMC uses \(x_d(t+T)\) and \(\dot x_d(t+T)\); the MPC uses the whole window

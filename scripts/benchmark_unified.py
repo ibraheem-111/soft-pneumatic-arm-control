@@ -10,27 +10,31 @@ Controllers (gains exactly as in their source scripts; recorded per run in the J
                                    RefPredictor: AR(2), then period replay) and the MPC with the
                                    true future reference (diagnostic, preview="oracle")
   scripts/benchmark_slide_tasks.py delay-aware SMC with exact r(t + T) (diagnostic, `Ahead`)
-  new here                         delay-aware SMC fed r(t + T) predicted by mpc_controller's
+  new here                         delay-aware SMC fed r(t + T) predicted by softarm's
                                    RefPredictor from the reference history only (no future
                                    knowledge): DelayAwareNDOSMC(exact_preview=True), same gains
                                    as the exact-preview one, wrapped by `Predicted`.
 Its PD baseline (kp=500, kd=20, corrected allocator) is the PD corrected above, so it is not
-repeated. Every controller is built by a factory make(ref_mm) that receives the task's
-reference (mm, relative to home, with 4 s beyond the run), which only the two diagnostics use.
+repeated. All are built from softarm: presets.baseline_set() and presets.mpc_baselines(),
+KalmanDelayMPC and known_reference (the MPC on F), DelayAwareNDOSMC on M1 (TaskSpaceModel)
+wrapped by Ahead or Predicted (softarm.controllers.preview). Every controller is built by a
+factory make(ref_mm) that receives the task's reference (mm, relative to home, with 4 s beyond
+the run), which only the two diagnostics use.
 
-Tests (references imported from their source scripts, not re-derived):
+Tests (the source scripts' references, now in softarm.evaluation: motions.CIRCLE_TASKS,
+motions.MOTIONS, brief_tasks.build_tasks, recorded.recorded_runs; not re-derived):
   scored circle     CircularTrackingTask() (7 mm, 0.1 Hz), seed 0   compare_controllers.py
   held-out circle   10 mm, 0.15 Hz, seed 5                           compare_controllers.py
   motion tests      triangle, axial along y, axial along x, seed 0   motion_tests.py
   brief-scaled      axial, circle_ol, circle_static, circle_dyn,     benchmark_slide_tasks.py
                     triangle, seed 0
   recorded runs     axial, circular, triangular (lab robot), seed 0  benchmark_all_tasks.py
-All on make_calibrated_sim(control_hz=100), run through benchmark_all_tasks.track (the loop of
+All on make_calibrated_sim(control_hz=100), run through softarm.evaluation.track (the loop of
 evaluate_controller: 5 s settle at 4.5 psi, home = settled tip, commands clipped to 0-9 psi,
 tip after each step scored against the reference passed to that step); 30 s of tracking
 (180 s for the recorded runs, as in their script).
 
-Metrics: benchmark_slide_tasks.score() for every run (planar RMSE whole run / after the first
+Metrics: softarm.evaluation.brief_score() for every run (planar RMSE whole run / after the first
 lap, z RMSE, max planar error, y phase lag, saturation %, shape = RMS distance to the last lap's
 path ignoring time, size % = path radius vs the reference's), lap = the task's period (10 s for
 the recorded runs), plus mpc_controller.py's planar RMSE after the first 2 s.
@@ -55,7 +59,6 @@ import argparse
 import json
 import multiprocessing as mp
 import os
-import sys
 import time
 from pathlib import Path
 
@@ -68,70 +71,37 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import benchmark_all_tasks as B  # noqa: E402
-import benchmark_slide_tasks as BS  # noqa: E402
-import compare_controllers as C  # noqa: E402
-import motion_tests as MT  # noqa: E402
-import mpc_controller as mpc  # noqa: E402
-import plot_style as P  # noqa: E402
-from soft_robotic_arm.evaluation import CircularTrackingTask, make_reference  # noqa: E402
+from soft_robotic_arm.evaluation import make_reference  # noqa: E402
 
-FIG = B.FIG
+from softarm import plotting as P  # noqa: E402
+from softarm.constants import FIG, PAD, ROOT  # noqa: E402
+from softarm.controllers import Ahead, DelayAwareNDOSMC, KalmanDelayMPC, Predicted, known_reference  # noqa: E402
+from softarm.controllers import kalman_mpc  # noqa: E402
+from softarm.controllers.presets import baseline_set, mpc_baselines  # noqa: E402
+from softarm.evaluation import brief_score, track  # noqa: E402
+from softarm.evaluation import brief_tasks as BS  # noqa: E402
+from softarm.evaluation import recorded as B  # noqa: E402
+from softarm.evaluation.motions import CIRCLE_TASKS, MOTIONS, TASK  # noqa: E402
+from softarm.models import TaskSpaceModel, load_m2_dict  # noqa: E402
+
 HZ = B.HZ
-PAD = 400                  # reference samples beyond the run, for the future-reference diagnostics
 SYNTH_S = 30.0
 RECORDED_S = 180.0
 RECORDED_LAP_S = 10.0
-N_C = dict((nm, mk) for nm, _, mk in C.controllers())
+N_C = dict((nm, mk) for nm, _, mk in baseline_set())
 
 # ------------------------------------------------------------------------ controllers
 
 
-class Predicted:
-    """Passes the controller r(t + T) predicted from the reference history (no future knowledge).
-
-    One mpc_controller.RefPredictor (mode "periodic": AR(2) with intercept until the reference
-    is seen to repeat, then the detected period replayed) per axis, on the reference in metres
-    relative to the first reference's home (the settled tip), as DelayMPCController uses it.
-    T = the controller's dead-time steps (n_delay)."""
-
-    def __init__(self, ctl, mode: str = "periodic"):
-        self.c = ctl
-        self.pred = [mpc.RefPredictor(mode) for _ in range(3)]
-        self.home: np.ndarray | None = None
-
-    def compute(self, t, obs, ref):
-        if self.home is None:
-            self.home = np.asarray(obs["tip_pos"], float).copy()
-        r = np.asarray(ref, float) - self.home
-        ahead = np.empty(3)
-        for j, p in enumerate(self.pred):
-            p.update(r[j])
-            ahead[j] = p.predict(self.c.n_delay, 1)[0]
-        return self.c.compute(t, obs, self.home + ahead)
-
-
-def mpc_oracle(ref_mm: np.ndarray):
-    """MPC with the true future reference: oracle(n) = home + reference at sample n."""
-    ctl = mpc.DelayMPCController(preview="oracle")
-    ctl.oracle = lambda n: ctl.tip0 + ref_mm[n, :2] / 1000.0   # tip0 = settled tip, set on the first call
-    return ctl
-
-
 def mpc_smc():
-    S = C.S                                     # baselines() relies on FIX_ALLOCATOR at construction
-    make = mpc.baselines()["SMC lam=5 K=0.35 phi=0.02, deviation"]
-    assert S.FIX_ALLOCATOR
-    return make()
+    return mpc_baselines()["SMC lam=5 K=0.35 phi=0.02, deviation"]()
 
 
 def da_exact_preview():
-    return C.N.DelayAwareNDOSMC(C.N.TaskSpaceModel.load(), lam=8.0, mu=1.0, eps=1.0, observer=False,
-                                exact_preview=True)
+    return DelayAwareNDOSMC(TaskSpaceModel.load(), lam=8.0, mu=1.0, eps=1.0, observer=False, exact_preview=True)
 
 
-# (label, source, family, make(ref_mm)); short labels and plot identities: plot_style.SERIES
+# (label, source, family, make(ref_mm)); short labels and plot identities: softarm.plotting.SERIES
 CONTROLLERS = [
     ("PD, corrected allocator", "compare_controllers.py", "baseline",
      lambda ref: N_C["PD, corrected allocator"]()),
@@ -153,11 +123,11 @@ CONTROLLERS = [
     ("Delay-aware SMC, RefPredictor r(t+T) (M2)", "new (benchmark_unified.py)",
      "delay", lambda ref: Predicted(da_exact_preview())),
     ("Delay-aware SMC, exact future reference (M2) [diagnostic]",
-     "benchmark_slide_tasks.py", "diagnostic", lambda ref: BS.Ahead(da_exact_preview(), ref)),
+     "benchmark_slide_tasks.py", "diagnostic", lambda ref: Ahead(da_exact_preview(), ref)),
     ("MPC, predicted reference", "mpc_controller.py", "mpc",
-     lambda ref: mpc.DelayMPCController()),
+     lambda ref: KalmanDelayMPC()),
     ("MPC, true future reference [diagnostic]", "mpc_controller.py",
-     "diagnostic", mpc_oracle),
+     "diagnostic", known_reference),
 ]
 CTRL = {c[0]: c for c in CONTROLLERS}
 
@@ -170,15 +140,15 @@ def gains(obj, depth: int = 0) -> dict:
     out = {}
     for k, v in vars(obj).items():
         if (isinstance(v, (bool, int, float, str, np.floating, np.integer)) and k not in STATE
-                and not k.startswith("g_") and not (k == "k" and isinstance(obj, BS.Ahead))):
+                and not k.startswith("g_") and not (k == "k" and isinstance(obj, Ahead))):
             out[k] = v.item() if isinstance(v, np.generic) else v
     if depth < 2:
         for k in ("c", "obs", "act"):
             if k in vars(obj) and hasattr(vars(obj)[k], "__dict__"):
                 out[k] = gains(vars(obj)[k], depth + 1)
-        if isinstance(obj, mpc.DelayMPCController):
-            out.update(rho=mpc.RHO, horizon=obj.axes[0].horizon, delay_samples=obj.axes[0].d,
-                       model=str(mpc.MODEL_PATH.relative_to(mpc.ROOT)))
+        if isinstance(obj, KalmanDelayMPC):
+            out.update(rho=kalman_mpc.RHO, horizon=obj.axes[0].horizon, delay_samples=obj.axes[0].d,
+                       model=str(obj.model.path.relative_to(ROOT)))
             if obj.preview != "oracle":
                 out["predictor_mode"] = obj.pred[0].mode
         if isinstance(obj, Predicted):
@@ -206,18 +176,18 @@ def build_tests(upstream: Path) -> dict:
         tests[key] = dict(group=group, ref_fn=ref_fn, ref_mm=_fn_ref(ref_fn, steps + PAD) if ref_fn else None,
                           seed=seed, lap_s=lap_s, n=steps, source=source, params=params)
 
-    for (name, (task, seed)), key in zip(C.TASKS.items(), ("scored circle", "held-out circle")):
+    for (name, (task, seed)), key in zip(CIRCLE_TASKS.items(), ("scored circle", "held-out circle")):
         add(key, "circles (compare_controllers)",
             lambda home, k, t=task: make_reference(home, k / HZ, t), seed, 1.0 / task.frequency_hz,
             task.track_steps, "compare_controllers.py TASKS", label=name, radius_m=task.radius_m,
             frequency_hz=task.frequency_hz)
     for motion in ("triangle", "axial along y", "axial along x"):
-        fn = MT.MOTIONS[motion]
-        add(f"MT {motion}", "motion_tests", lambda home, k, f=fn: f(home, k / MT.TASK.control_hz), 0,
-            1.0 / MT.TASK.frequency_hz, MT.TASK.track_steps, "motion_tests.py MOTIONS",
-            radius_m=MT.TASK.radius_m, frequency_hz=MT.TASK.frequency_hz)
+        fn = MOTIONS[motion]
+        add(f"MT {motion}", "motion_tests", lambda home, k, f=fn: f(home, k / TASK.control_hz), 0,
+            1.0 / TASK.frequency_hz, TASK.track_steps, "motion_tests.py MOTIONS",
+            radius_m=TASK.radius_m, frequency_hz=TASK.frequency_hz)
 
-    slide, radii = BS.build_tasks(n + PAD, BS.load_m2())
+    slide, radii = BS.build_tasks(n + PAD, load_m2_dict())
     for key, task in slide.items():
         ref = task["ref_mm"]
         tests[f"brief {key}"] = dict(
@@ -252,10 +222,10 @@ def run_one(job: tuple[str, str]) -> dict:
     t0 = time.perf_counter()
     ctl = make(test["ref_mm"])
     g = gains(ctl)
-    res = B.track(ctl, test["ref_fn"], test["n"], seed=test["seed"])
+    res = track(ctl, test["ref_fn"], test["n"], seed=test["seed"])
     tip = 1000.0 * (res["tips"] - res["home"])
     ref = 1000.0 * (res["refs"] - res["home"])
-    m = BS.score(tip, ref, test["lap_s"], res["cmds"])
+    m = brief_score(tip, ref, test["lap_s"], res["cmds"])
     lat = np.linalg.norm(tip[:, :2] - ref[:, :2], axis=1)
     m["planar_rmse_after_2s_mm"] = float(np.sqrt(np.mean(lat[int(2 * HZ):] ** 2)))
     return dict(test=test_key, group=test["group"], controller=ctrl_name, short=short, source=source,
@@ -283,7 +253,7 @@ TRAJ_PANELS = [  # (title, controllers); blue and purple, green and orange never
 def run_traj(job: tuple[str, str]) -> tuple[str, str, np.ndarray, np.ndarray]:
     test_key, ctrl_name = job
     test = TESTS[test_key]
-    res = B.track(CTRL[ctrl_name][3](test["ref_mm"]), test["ref_fn"], test["n"], seed=test["seed"])
+    res = track(CTRL[ctrl_name][3](test["ref_mm"]), test["ref_fn"], test["n"], seed=test["seed"])
     return test_key, ctrl_name, 1000.0 * (res["tips"] - res["home"]), 1000.0 * (res["refs"] - res["home"])
 
 
@@ -354,7 +324,7 @@ def sanity_checks(rows: dict) -> list[tuple[str, float, float]]:
     """(label, published, reproduced) pairs from the source scripts' outputs."""
     out = []
     cc = json.loads((FIG / "controller_comparison.json").read_text())
-    for name, key in zip(C.TASKS, ("scored circle", "held-out circle")):
+    for name, key in zip(CIRCLE_TASKS, ("scored circle", "held-out circle")):
         for ctrl, v in cc[name].items():
             if ctrl in CTRL:
                 out.append((f"compare_controllers {key}: {ctrl}", v["rmse_mm"],
@@ -481,9 +451,9 @@ def main() -> None:
     total = time.perf_counter() - t_start
     out = dict(
         description=__doc__.split("\n\n")[0],
-        harness="benchmark_all_tasks.track: make_calibrated_sim(control_hz=100, seed), settle 5 s at 4.5 psi, "
+        harness="softarm.evaluation.track: make_calibrated_sim(control_hz=100, seed), settle 5 s at 4.5 psi, "
                 "home = settled tip, commands clipped to 0-9 psi, tip after each step vs the reference passed",
-        metrics="benchmark_slide_tasks.score (lap = the test's lap_s) + planar_rmse_after_2s_mm",
+        metrics="softarm.evaluation.brief_score (lap = the test's lap_s) + planar_rmse_after_2s_mm",
         workers=args.workers, total_run_s=total,
         controllers=[dict(name=c[0], short=P.label(c[0]), source=c[1], family=c[2]) for c in CONTROLLERS],
         tests={k: dict(group=v["group"], seed=v["seed"], lap_s=v["lap_s"], track_s=v["n"] / HZ,

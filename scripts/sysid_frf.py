@@ -2,7 +2,7 @@
 
 Identification uses only hardware-available signals: the pressure commands, the
 20 pouch-pressure sensors, and tip position with added measurement noise. The
-privileged `p_actual` and the 50-state linearization from `plant_model.py` are
+privileged `p_actual` and the 50-state linearization (softarm.models.physics) are
 used only to check results (the "answer key").
 
 Step 0 (setup): two differential input channels around a bias on every pouch,
@@ -43,7 +43,6 @@ Usage:
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -57,17 +56,14 @@ from scipy.signal import cont2discrete
 
 from soft_robotic_arm import make_calibrated_sim, make_sim
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from plant_model import equilibrium, linearize  # noqa: E402
+from softarm.constants import BASE_PSI as BIAS_PSI, FIG as FIG_DIR, HZ as CONTROL_HZ, ROOT
+from softarm.models.physics import equilibrium, linearize
 
-CONTROL_HZ = 100.0
-BIAS_PSI = 4.5
 TIP_NOISE_M = 1e-4          # assumed motion-capture noise, 0.1 mm (not the lab's measured figure)
 SIM_SEED = 11               # identification seeds; validation must use different ones
 NOISE_SEED = 11
-FIG_DIR = Path(__file__).resolve().parent.parent / "docs" / "figures"
-CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache"
-MODEL_DIR = Path(__file__).resolve().parent.parent / "models"   # identified models, written by `fit`
+CACHE_DIR = ROOT / ".cache"
+MODEL_DIR = ROOT / "models"   # identified models, written by `fit`
 
 # Rows of the (4, 5) command: S1..S4. Channel -> (positive segment, negative segment).
 CHANNELS = {"x": (0, 2), "y": (1, 3)}
@@ -152,7 +148,7 @@ class ChannelPlant:
 
 
 def answer_key(plant: ChannelPlant):
-    """Channel-level linear model from plant_model.linearize: (A, B2, C) with
+    """Channel-level linear model from softarm.models.physics.linearize: (A, B2, C) with
     outputs [tip x, tip y, px_meas, py_meas] and inputs (ux, uy), continuous time."""
     A, B, C = linearize(plant.sim, plant.q0, plant.bias)
     B2 = B @ channel_matrix()

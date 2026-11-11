@@ -46,6 +46,8 @@
         "phase_lag_s": 0.14,
         "shape_rms_after_lap_mm": 1.8003752044106573,
         "size_pct_after_lap": 177.4287075434961,
+        "radius_min_after_lap_mm": 0.01574090783943981,
+        "radius_max_after_lap_mm": 6.669939903799431,
         "saturated_pct": 15.511111111111111
       }
     },
@@ -73,6 +75,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.10441907799576644,
         "size_pct_after_lap": 102.09085759832803,
+        "radius_min_after_lap_mm": 0.0041634902894430855,
+        "radius_max_after_lap_mm": 3.7008589407670227,
         "saturated_pct": 2.011111111111111
       }
     },
@@ -100,6 +104,8 @@
         "phase_lag_s": 0.13,
         "shape_rms_after_lap_mm": 1.942523158599787,
         "size_pct_after_lap": 187.85891018314337,
+        "radius_min_after_lap_mm": 0.0036276698088525566,
+        "radius_max_after_lap_mm": 6.821675870787952,
         "saturated_pct": 16.666666666666664
       }
     },
@@ -127,6 +133,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.09669018406750514,
         "size_pct_after_lap": 105.3006328360172,
+        "radius_min_after_lap_mm": 0.021502811057876485,
+        "radius_max_after_lap_mm": 3.764321420268512,
         "saturated_pct": 1.988888888888889
       }
     },
@@ -154,6 +162,8 @@
         "phase_lag_s": 0.1,
         "shape_rms_after_lap_mm": 2.2048652897598227,
         "size_pct_after_lap": 201.98563133343714,
+        "radius_min_after_lap_mm": 0.039220690446505016,
+        "radius_max_after_lap_mm": 7.15393607173147,
         "saturated_pct": 18.2
       }
     },
@@ -181,6 +191,8 @@
         "phase_lag_s": 0.02,
         "shape_rms_after_lap_mm": 0.156236970702526,
         "size_pct_after_lap": 111.21874742936406,
+        "radius_min_after_lap_mm": 0.004437664342101936,
+        "radius_max_after_lap_mm": 3.905920266613585,
         "saturated_pct": 2.688888888888889
       }
     },
@@ -208,6 +220,8 @@
         "phase_lag_s": 0.06,
         "shape_rms_after_lap_mm": 2.3985846238932944,
         "size_pct_after_lap": 212.0991121469454,
+        "radius_min_after_lap_mm": 0.027486261305784663,
+        "radius_max_after_lap_mm": 7.502703057792011,
         "saturated_pct": 19.68888888888889
       }
     },
@@ -235,6 +249,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.2884280454766837,
         "size_pct_after_lap": 119.15924987384017,
+        "radius_min_after_lap_mm": 0.031075915097512383,
+        "radius_max_after_lap_mm": 4.153909074363559,
         "saturated_pct": 3.8666666666666667
       }
     },
@@ -262,6 +278,8 @@
         "phase_lag_s": 0.0,
         "shape_rms_after_lap_mm": 2.3207800731967874,
         "size_pct_after_lap": 209.77722354972326,
+        "radius_min_after_lap_mm": 0.0003435906924632542,
+        "radius_max_after_lap_mm": 7.477808048048551,
         "saturated_pct": 20.666666666666668
       }
     },
@@ -289,6 +307,8 @@
         "phase_lag_s": -0.01,
         "shape_rms_after_lap_mm": 0.40151647149575975,
         "size_pct_after_lap": 125.0384413399362,
+        "radius_min_after_lap_mm": 0.033883663264626745,
+        "radius_max_after_lap_mm": 4.358614598412437,
         "saturated_pct": 5.022222222222222
       }
     },
@@ -313,6 +333,8 @@
         "phase_lag_s": 0.56,
         "shape_rms_after_lap_mm": 1.1344522488086843,
         "size_pct_after_lap": 145.23749123894615,
+        "radius_min_after_lap_mm": 0.024367253268869394,
+        "radius_max_after_lap_mm": 5.209287944428011,
         "saturated_pct": 11.533333333333333
       }
     },
@@ -337,6 +359,8 @@
         "phase_lag_s": 0.59,
         "shape_rms_after_lap_mm": 1.23882244843558,
         "size_pct_after_lap": 152.61668404554413,
+        "radius_min_after_lap_mm": 0.03476244299485459,
+        "radius_max_after_lap_mm": 5.439544176886301,
         "saturated_pct": 15.388888888888888
       }
     },
@@ -361,6 +385,8 @@
         "phase_lag_s": 0.67,
         "shape_rms_after_lap_mm": 1.5211666755544144,
         "size_pct_after_lap": 166.7374520167685,
+        "radius_min_after_lap_mm": 0.03641564613500858,
+        "radius_max_after_lap_mm": 6.10107024728723,
         "saturated_pct": 19.8
       }
     },
@@ -385,6 +411,8 @@
         "phase_lag_s": 0.85,
         "shape_rms_after_lap_mm": 3.009855718282678,
         "size_pct_after_lap": 236.0476438631566,
+        "radius_min_after_lap_mm": 0.034727443186773316,
+        "radius_max_after_lap_mm": 8.845600007604954,
         "saturated_pct": 36.922222222222224
       }
     },
@@ -412,6 +440,8 @@
         "phase_lag_s": 0.11,
         "shape_rms_after_lap_mm": 2.9958116954362395,
         "size_pct_after_lap": 159.0952832414115,
+        "radius_min_after_lap_mm": 4.914140946135542,
+        "radius_max_after_lap_mm": 12.513011519739644,
         "saturated_pct": 31.055555555555554
       }
     },
@@ -439,6 +469,8 @@
         "phase_lag_s": 0.02,
         "shape_rms_after_lap_mm": 0.1101979814929756,
         "size_pct_after_lap": 101.33231944885542,
+        "radius_min_after_lap_mm": 3.1429626652782066,
+        "radius_max_after_lap_mm": 6.7791942419907825,
         "saturated_pct": 0.03333333333333333
       }
     },
@@ -466,6 +498,8 @@
         "phase_lag_s": 0.08,
         "shape_rms_after_lap_mm": 3.1992971590422834,
         "size_pct_after_lap": 165.15916640351992,
+        "radius_min_after_lap_mm": 5.102534814736315,
+        "radius_max_after_lap_mm": 12.833119685529514,
         "saturated_pct": 35.67777777777778
       }
     },
@@ -493,6 +527,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.18523686384832708,
         "size_pct_after_lap": 103.76242007398878,
+        "radius_min_after_lap_mm": 3.2345740169617807,
+        "radius_max_after_lap_mm": 6.930216492886111,
         "saturated_pct": 0.03333333333333333
       }
     },
@@ -520,6 +556,8 @@
         "phase_lag_s": 0.03,
         "shape_rms_after_lap_mm": 3.3717400182174284,
         "size_pct_after_lap": 169.27995334371374,
+        "radius_min_after_lap_mm": 5.286088281582129,
+        "radius_max_after_lap_mm": 12.43534546448977,
         "saturated_pct": 41.16666666666667
       }
     },
@@ -547,6 +585,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.34062228127467253,
         "size_pct_after_lap": 107.32171810845671,
+        "radius_min_after_lap_mm": 3.364964626986562,
+        "radius_max_after_lap_mm": 7.148765050029004,
         "saturated_pct": 0.03333333333333333
       }
     },
@@ -574,6 +614,8 @@
         "phase_lag_s": -0.02,
         "shape_rms_after_lap_mm": 3.3689297046644424,
         "size_pct_after_lap": 169.58242329354007,
+        "radius_min_after_lap_mm": 5.29256200566413,
+        "radius_max_after_lap_mm": 11.776804640449521,
         "saturated_pct": 39.67777777777778
       }
     },
@@ -601,6 +643,8 @@
         "phase_lag_s": 0.0,
         "shape_rms_after_lap_mm": 0.4868297295449448,
         "size_pct_after_lap": 110.47611042821073,
+        "radius_min_after_lap_mm": 3.4821379464282556,
+        "radius_max_after_lap_mm": 7.343751710578806,
         "saturated_pct": 0.03333333333333333
       }
     },
@@ -628,6 +672,8 @@
         "phase_lag_s": -0.06,
         "shape_rms_after_lap_mm": 3.163876079627333,
         "size_pct_after_lap": 165.3092235044794,
+        "radius_min_after_lap_mm": 5.17108898090661,
+        "radius_max_after_lap_mm": 11.289501719897986,
         "saturated_pct": 34.72222222222222
       }
     },
@@ -655,6 +701,8 @@
         "phase_lag_s": -0.01,
         "shape_rms_after_lap_mm": 0.5397343401355063,
         "size_pct_after_lap": 111.59655753265862,
+        "radius_min_after_lap_mm": 3.529612456009673,
+        "radius_max_after_lap_mm": 7.407614419262218,
         "saturated_pct": 0.03333333333333333
       }
     },
@@ -679,6 +727,8 @@
         "phase_lag_s": 0.54,
         "shape_rms_after_lap_mm": 1.960849834501623,
         "size_pct_after_lap": 140.99636242015828,
+        "radius_min_after_lap_mm": 4.427369472927755,
+        "radius_max_after_lap_mm": 9.423793076832338,
         "saturated_pct": 6.388888888888888
       }
     },
@@ -703,6 +753,8 @@
         "phase_lag_s": 0.56,
         "shape_rms_after_lap_mm": 2.8536738537623068,
         "size_pct_after_lap": 159.03015489740068,
+        "radius_min_after_lap_mm": 5.074324580822421,
+        "radius_max_after_lap_mm": 10.655400356784037,
         "saturated_pct": 21.2
       }
     },
@@ -727,6 +779,8 @@
         "phase_lag_s": 0.58,
         "shape_rms_after_lap_mm": 3.9321073778091895,
         "size_pct_after_lap": 180.6000605795736,
+        "radius_min_after_lap_mm": 5.451397782516867,
+        "radius_max_after_lap_mm": 12.139312213301515,
         "saturated_pct": 52.011111111111106
       }
     },
@@ -751,6 +805,8 @@
         "phase_lag_s": 0.6,
         "shape_rms_after_lap_mm": 4.444234995723643,
         "size_pct_after_lap": 190.47673829243564,
+        "radius_min_after_lap_mm": 5.25015458552944,
+        "radius_max_after_lap_mm": 12.954333274935637,
         "saturated_pct": 70.17777777777778
       }
     },
@@ -778,6 +834,8 @@
         "phase_lag_s": -0.01,
         "shape_rms_after_lap_mm": 1.6872624975009167,
         "size_pct_after_lap": 87.54953977258732,
+        "radius_min_after_lap_mm": 6.031573030575155,
+        "radius_max_after_lap_mm": 9.86506119691001,
         "saturated_pct": 73.6888888888889
       }
     },
@@ -805,6 +863,8 @@
         "phase_lag_s": 0.0,
         "shape_rms_after_lap_mm": 2.140159472707938,
         "size_pct_after_lap": 78.10728787771936,
+        "radius_min_after_lap_mm": 5.151641749242489,
+        "radius_max_after_lap_mm": 8.528661169240848,
         "saturated_pct": 49.62222222222222
       }
     },
@@ -832,6 +892,8 @@
         "phase_lag_s": 0.0,
         "shape_rms_after_lap_mm": 1.6727375362536476,
         "size_pct_after_lap": 87.90121269943121,
+        "radius_min_after_lap_mm": 6.014582008822775,
+        "radius_max_after_lap_mm": 9.883285767297867,
         "saturated_pct": 74.6111111111111
       }
     },
@@ -859,6 +921,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 2.022813558854148,
         "size_pct_after_lap": 79.84247421124108,
+        "radius_min_after_lap_mm": 5.746765337176835,
+        "radius_max_after_lap_mm": 8.685153988400993,
         "saturated_pct": 50.922222222222224
       }
     },
@@ -886,6 +950,8 @@
         "phase_lag_s": -0.01,
         "shape_rms_after_lap_mm": 1.6571189868545264,
         "size_pct_after_lap": 88.3968685617033,
+        "radius_min_after_lap_mm": 5.996061233557625,
+        "radius_max_after_lap_mm": 9.908486054804865,
         "saturated_pct": 76.35555555555555
       }
     },
@@ -913,6 +979,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 1.9032932463302124,
         "size_pct_after_lap": 81.88806927472157,
+        "radius_min_after_lap_mm": 5.836337965750445,
+        "radius_max_after_lap_mm": 8.856303201453462,
         "saturated_pct": 53.666666666666664
       }
     },
@@ -940,6 +1008,8 @@
         "phase_lag_s": -0.01,
         "shape_rms_after_lap_mm": 1.6425296872014483,
         "size_pct_after_lap": 89.13745638432732,
+        "radius_min_after_lap_mm": 5.983765193751148,
+        "radius_max_after_lap_mm": 9.970611784527872,
         "saturated_pct": 78.33333333333333
       }
     },
@@ -967,6 +1037,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 1.832256216835184,
         "size_pct_after_lap": 83.32554138095134,
+        "radius_min_after_lap_mm": 5.826530146850464,
+        "radius_max_after_lap_mm": 8.982545657178035,
         "saturated_pct": 58.84444444444444
       }
     },
@@ -994,6 +1066,8 @@
         "phase_lag_s": -0.01,
         "shape_rms_after_lap_mm": 1.6325309823608694,
         "size_pct_after_lap": 90.15515542375157,
+        "radius_min_after_lap_mm": 5.937991707630764,
+        "radius_max_after_lap_mm": 10.082280179053702,
         "saturated_pct": 80.93333333333334
       }
     },
@@ -1021,6 +1095,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 1.801519493090334,
         "size_pct_after_lap": 83.88962110153308,
+        "radius_min_after_lap_mm": 5.800152206196286,
+        "radius_max_after_lap_mm": 9.051578118183647,
         "saturated_pct": 62.63333333333333
       }
     },
@@ -1045,6 +1121,8 @@
         "phase_lag_s": 0.53,
         "shape_rms_after_lap_mm": 1.7290369183777312,
         "size_pct_after_lap": 85.8689605761816,
+        "radius_min_after_lap_mm": 5.659214382562084,
+        "radius_max_after_lap_mm": 9.357262189821487,
         "saturated_pct": 69.84444444444445
       }
     },
@@ -1069,6 +1147,8 @@
         "phase_lag_s": 0.55,
         "shape_rms_after_lap_mm": 1.7032274180769171,
         "size_pct_after_lap": 86.73378439980968,
+        "radius_min_after_lap_mm": 5.714106003771811,
+        "radius_max_after_lap_mm": 9.488208210935184,
         "saturated_pct": 72.76666666666667
       }
     },
@@ -1093,6 +1173,8 @@
         "phase_lag_s": 0.59,
         "shape_rms_after_lap_mm": 1.6754450806986254,
         "size_pct_after_lap": 88.02532651103762,
+        "radius_min_after_lap_mm": 5.795679122150709,
+        "radius_max_after_lap_mm": 9.734392776435511,
         "saturated_pct": 77.64444444444445
       }
     },
@@ -1117,6 +1199,8 @@
         "phase_lag_s": 0.66,
         "shape_rms_after_lap_mm": 1.6617064549930665,
         "size_pct_after_lap": 89.43526177233815,
+        "radius_min_after_lap_mm": 5.8505980752592235,
+        "radius_max_after_lap_mm": 10.100344530432608,
         "saturated_pct": 83.67777777777778
       }
     },
@@ -1144,6 +1228,8 @@
         "phase_lag_s": 0.1,
         "shape_rms_after_lap_mm": 2.171363868859082,
         "size_pct_after_lap": 147.89193846189377,
+        "radius_min_after_lap_mm": 4.895897366977859,
+        "radius_max_after_lap_mm": 7.551815941124428,
         "saturated_pct": 37.922222222222224
       }
     },
@@ -1171,6 +1257,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.19185866224123935,
         "size_pct_after_lap": 100.69528257455768,
+        "radius_min_after_lap_mm": 3.3016833762215145,
+        "radius_max_after_lap_mm": 5.388030052343182,
         "saturated_pct": 0.05555555555555555
       }
     },
@@ -1198,6 +1286,8 @@
         "phase_lag_s": 0.09,
         "shape_rms_after_lap_mm": 2.3535446643677527,
         "size_pct_after_lap": 152.53138111351115,
+        "radius_min_after_lap_mm": 5.329171538422288,
+        "radius_max_after_lap_mm": 7.771002858469809,
         "saturated_pct": 39.77777777777778
       }
     },
@@ -1225,6 +1315,8 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.17270386100927582,
         "size_pct_after_lap": 103.43152239186624,
+        "radius_min_after_lap_mm": 4.137137189429877,
+        "radius_max_after_lap_mm": 4.923094224849505,
         "saturated_pct": 0.05555555555555555
       }
     },
@@ -1252,6 +1344,8 @@
         "phase_lag_s": 0.05,
         "shape_rms_after_lap_mm": 2.5603233876864153,
         "size_pct_after_lap": 157.1632026149113,
+        "radius_min_after_lap_mm": 5.767977251181163,
+        "radius_max_after_lap_mm": 7.925312808224502,
         "saturated_pct": 43.4
       }
     },
@@ -1279,6 +1373,8 @@
         "phase_lag_s": 0.0,
         "shape_rms_after_lap_mm": 0.31385092733374226,
         "size_pct_after_lap": 107.18490653658041,
+        "radius_min_after_lap_mm": 4.491931207486468,
+        "radius_max_after_lap_mm": 4.738562827766485,
         "saturated_pct": 0.05555555555555555
       }
     },
@@ -1306,6 +1402,8 @@
         "phase_lag_s": -0.01,
         "shape_rms_after_lap_mm": 2.511056564117653,
         "size_pct_after_lap": 156.26076691676084,
+        "radius_min_after_lap_mm": 5.702707190346089,
+        "radius_max_after_lap_mm": 7.6723400916647435,
         "saturated_pct": 41.266666666666666
       }
     },
@@ -1333,6 +1431,8 @@
         "phase_lag_s": 0.0,
         "shape_rms_after_lap_mm": 0.4538723170395872,
         "size_pct_after_lap": 110.51504468524874,
+        "radius_min_after_lap_mm": 4.658507512873004,
+        "radius_max_after_lap_mm": 4.78416144188856,
         "saturated_pct": 0.16666666666666669
       }
     },
@@ -1360,6 +1460,8 @@
         "phase_lag_s": -0.05,
         "shape_rms_after_lap_mm": 2.2169355527878096,
         "size_pct_after_lap": 149.95730155667684,
+        "radius_min_after_lap_mm": 5.554601979373775,
+        "radius_max_after_lap_mm": 7.236232547337623,
         "saturated_pct": 35.68888888888889
       }
     },
@@ -1387,6 +1489,8 @@
         "phase_lag_s": -0.02,
         "shape_rms_after_lap_mm": 0.5140982269120247,
         "size_pct_after_lap": 111.9087214214272,
+        "radius_min_after_lap_mm": 4.727910475057575,
+        "radius_max_after_lap_mm": 4.844510657669389,
         "saturated_pct": 3.4000000000000004
       }
     },
@@ -1411,6 +1515,8 @@
         "phase_lag_s": 0.54,
         "shape_rms_after_lap_mm": 1.4940025128824668,
         "size_pct_after_lap": 134.21291823372354,
+        "radius_min_after_lap_mm": 4.879316434879302,
+        "radius_max_after_lap_mm": 6.127472432395594,
         "saturated_pct": 15.222222222222223
       }
     },
@@ -1435,6 +1541,8 @@
         "phase_lag_s": 0.55,
         "shape_rms_after_lap_mm": 2.174738383549148,
         "size_pct_after_lap": 149.0339240518719,
+        "radius_min_after_lap_mm": 5.3178460482484065,
+        "radius_max_after_lap_mm": 7.1264836261594375,
         "saturated_pct": 20.922222222222224
       }
     },
@@ -1459,6 +1567,8 @@
         "phase_lag_s": 0.57,
         "shape_rms_after_lap_mm": 3.2307174909247744,
         "size_pct_after_lap": 170.97356974783762,
+        "radius_min_after_lap_mm": 5.654871339923514,
+        "radius_max_after_lap_mm": 8.765938983235063,
         "saturated_pct": 53.86666666666666
       }
     },
@@ -1483,6 +1593,8 @@
         "phase_lag_s": 0.6,
         "shape_rms_after_lap_mm": 3.807718162864528,
         "size_pct_after_lap": 182.81149322146962,
+        "radius_min_after_lap_mm": 5.71816697840471,
+        "radius_max_after_lap_mm": 9.943028040009954,
         "saturated_pct": 71.02222222222223
       }
     },
@@ -1510,6 +1622,8 @@
         "phase_lag_s": 0.72,
         "shape_rms_after_lap_mm": 1.0205771221679545,
         "size_pct_after_lap": 129.4309837681774,
+        "radius_min_after_lap_mm": 3.675784553212795,
+        "radius_max_after_lap_mm": 7.186050852238075,
         "saturated_pct": 2.2444444444444445
       }
     },
@@ -1537,6 +1651,8 @@
         "phase_lag_s": 0.18,
         "shape_rms_after_lap_mm": 0.250729881286311,
         "size_pct_after_lap": 106.8313089773235,
+        "radius_min_after_lap_mm": 3.0687925979509822,
+        "radius_max_after_lap_mm": 6.0457898244730846,
         "saturated_pct": 0.41111111111111115
       }
     },
@@ -1564,6 +1680,8 @@
         "phase_lag_s": 0.59,
         "shape_rms_after_lap_mm": 1.2593257027642457,
         "size_pct_after_lap": 136.44844759270126,
+        "radius_min_after_lap_mm": 3.8075625089971177,
+        "radius_max_after_lap_mm": 7.810803892036905,
         "saturated_pct": 2.7777777777777777
       }
     },
@@ -1591,6 +1709,8 @@
         "phase_lag_s": 0.14,
         "shape_rms_after_lap_mm": 0.23557500152685076,
         "size_pct_after_lap": 106.94923048836708,
+        "radius_min_after_lap_mm": 3.0683571155127,
+        "radius_max_after_lap_mm": 6.152317212471978,
         "saturated_pct": 0.41111111111111115
       }
     },
@@ -1618,6 +1738,8 @@
         "phase_lag_s": 0.46,
         "shape_rms_after_lap_mm": 1.1971665468821435,
         "size_pct_after_lap": 135.02998910447363,
+        "radius_min_after_lap_mm": 3.636519251405,
+        "radius_max_after_lap_mm": 7.9891313615378605,
         "saturated_pct": 2.922222222222222
       }
     },
@@ -1645,6 +1767,8 @@
         "phase_lag_s": 0.1,
         "shape_rms_after_lap_mm": 0.20389287568183717,
         "size_pct_after_lap": 106.17910965633733,
+        "radius_min_after_lap_mm": 3.0505701702565498,
+        "radius_max_after_lap_mm": 6.228233584079101,
         "saturated_pct": 0.41111111111111115
       }
     },
@@ -1672,6 +1796,8 @@
         "phase_lag_s": 0.36,
         "shape_rms_after_lap_mm": 1.0976836637454108,
         "size_pct_after_lap": 131.31287326264177,
+        "radius_min_after_lap_mm": 3.4486986399006354,
+        "radius_max_after_lap_mm": 8.042915682989138,
         "saturated_pct": 2.977777777777778
       }
     },
@@ -1699,6 +1825,8 @@
         "phase_lag_s": 0.07,
         "shape_rms_after_lap_mm": 0.16977845098817987,
         "size_pct_after_lap": 104.7527046500176,
+        "radius_min_after_lap_mm": 3.028737241755493,
+        "radius_max_after_lap_mm": 6.2612049291382545,
         "saturated_pct": 0.41111111111111115
       }
     },
@@ -1726,6 +1854,8 @@
         "phase_lag_s": 0.31,
         "shape_rms_after_lap_mm": 1.0308839823041638,
         "size_pct_after_lap": 128.07089042991691,
+        "radius_min_after_lap_mm": 3.2669926691886055,
+        "radius_max_after_lap_mm": 8.063696233250337,
         "saturated_pct": 3.077777777777778
       }
     },
@@ -1753,6 +1883,8 @@
         "phase_lag_s": 0.04,
         "shape_rms_after_lap_mm": 0.1450963888130821,
         "size_pct_after_lap": 103.33777381516367,
+        "radius_min_after_lap_mm": 3.0299178901830217,
+        "radius_max_after_lap_mm": 6.265670421514321,
         "saturated_pct": 0.4444444444444444
       }
     },
@@ -1777,6 +1909,8 @@
         "phase_lag_s": 0.44,
         "shape_rms_after_lap_mm": 0.7511252060095811,
         "size_pct_after_lap": 120.68309705826361,
+        "radius_min_after_lap_mm": 3.4606119358754155,
+        "radius_max_after_lap_mm": 7.4093399977247705,
         "saturated_pct": 1.3222222222222222
       }
     },
@@ -1801,6 +1935,8 @@
         "phase_lag_s": 0.36,
         "shape_rms_after_lap_mm": 1.05830427173072,
         "size_pct_after_lap": 128.4565188177117,
+        "radius_min_after_lap_mm": 3.552720893942068,
+        "radius_max_after_lap_mm": 7.877068256518992,
         "saturated_pct": 1.988888888888889
       }
     },
@@ -1825,6 +1961,8 @@
         "phase_lag_s": 0.22,
         "shape_rms_after_lap_mm": 1.020339842440405,
         "size_pct_after_lap": 129.12168505004578,
+        "radius_min_after_lap_mm": 3.0575991667429623,
+        "radius_max_after_lap_mm": 7.91725339149135,
         "saturated_pct": 1.633333333333333
       }
     },
@@ -1849,9 +1987,11 @@
         "phase_lag_s": 0.01,
         "shape_rms_after_lap_mm": 0.7012479091755837,
         "size_pct_after_lap": 129.40575326391001,
+        "radius_min_after_lap_mm": 3.812450102437515,
+        "radius_max_after_lap_mm": 7.142115917863507,
         "saturated_pct": 3.8555555555555556
       }
     }
   ],
-  "total_run_s": 142.6727660880424
+  "total_run_s": 160.12651710098726
 }

@@ -10,57 +10,24 @@ Usage:
     uv run python scripts/report_m2_controllers.py
 """
 
-import base64
 import json
 from html import escape
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-FIG = ROOT / "docs" / "figures"
+from softarm.constants import FIG, ROOT
+from softarm.reports import ABOUT, CSS, head
+from softarm.labels import MPC_F, NDOSMC_KNOWN, SMC_KNOWN, SMC_L4, mpc_label
+from softarm.reports import img as _img
+
 OUT = ROOT / "docs" / "reports" / "m2-controller-comparison.html"
 
-SMC_L4 = "Delay-aware SMC (M2, known ref), λ = 4"
-SMC, NDO = "Delay-aware SMC (M2, known ref)", "Delay-aware NDOSMC (M2, known ref)"
-MPC_F = "MPC (F), horizon 300 steps = 3.00 s"
-M2 = [f"MPC (M2), horizon {h} steps = {h / 100:.2f} s" for h in (25, 100, 300)]
+SMC, NDO = SMC_KNOWN, NDOSMC_KNOWN
+M2 = [mpc_label("M2", h) for h in (25, 100, 300)]
 ROWS = [SMC, SMC_L4, NDO, *M2, MPC_F]
 ORDER = ["scored circle", "held-out circle", "triangle", "square", "squiggle", "random waypoints"]
-ABOUT = {
-    "scored circle": "7 mm circle, 0.1 Hz (10 s per lap), sim seed 0; the course harness task.",
-    "held-out circle": "10 mm circle, 0.15 Hz (6.7 s per lap), sim seed 5; never used for tuning.",
-    "triangle": "Vertices on a 7 mm circle (first at +x), 10 s per lap, sim seed 0 (as motion_tests.py).",
-    "square": "Axis-aligned, vertices on a 7 mm circle (side 9.9 mm), 10 s per lap, sim seed 0.",
-    "squiggle": "Smooth random path: per axis 6 sines, random 0.03–0.3 Hz, ±6 mm, path seed 101; never repeats.",
-    "random waypoints": "Straight lines between random points (±6 mm), 1–2.5 s per segment, path seed 101; sharp corners.",
-}
-CSS = """<style>
-/* Layout: results report; one section per test with its table and figure. Best values: bold with a star (never colour alone). */
-:root { --bg:#f6f6f3; --surface:#fff; --fg:#1c2124; --muted:#5d676c; --rule:#d8dcd9; --accent:#1f6f7a;
-  --display:"Newsreader",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#121618; --surface:#1a2023; --fg:#e3e8ea; --muted:#9aa6ab; --rule:#2e383c; --accent:#6cc3cc; color-scheme:dark; } }
-:root[data-theme="dark"] { --bg:#121618; --surface:#1a2023; --fg:#e3e8ea; --muted:#9aa6ab; --rule:#2e383c; --accent:#6cc3cc; color-scheme:dark; }
-body { background:var(--bg); color:var(--fg); font:16px/1.6 var(--body); }
-.wrap { max-width:1060px; margin:0 auto; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); padding-block:36px 72px; display:grid; gap:40px; }
-header { display:grid; gap:10px; border-bottom:1px solid var(--rule); padding-bottom:22px; }
-.eyebrow { font:500 12px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
-h1,h2 { font-family:var(--display); font-weight:600; margin:0; line-height:1.2; text-wrap:balance; } h1 { font-size:clamp(28px,5vw,40px); } h2 { font-size:25px; }
-h3 { font:600 16px var(--body); margin:0; }
-section { display:grid; gap:14px; min-width:0; } p,ul { margin:0; max-width:78ch; } ul { padding-left:22px; display:grid; gap:6px; }
-.meta { color:var(--muted); font-size:14.5px; } code { font-family:var(--mono); font-size:.86em; }
-.eqn { overflow-x:auto; background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:2px 14px; }
-.tbl { overflow-x:auto; border:1px solid var(--rule); border-radius:6px; background:var(--surface); }
-table { border-collapse:collapse; width:100%; font-size:14.5px; font-variant-numeric:tabular-nums; }
-th,td { padding:7px 11px; text-align:left; border-bottom:1px solid var(--rule); vertical-align:top; } th { font-size:13px; color:var(--muted); font-weight:600; }
-td.n,th.n { text-align:right; white-space:nowrap; } td:first-child { min-width:250px; } th.n { white-space:normal; min-width:84px; } td.best { font-weight:700; } tr:last-child td { border-bottom:0; }
-figure { margin:0; display:grid; gap:10px; background:var(--surface); border:1px solid var(--rule); border-radius:6px; padding:12px; min-width:0; }
-figure .scroll { overflow-x:auto; } figure .scroll > img { display:block; width:100%; min-width:760px; height:auto; background:#fff; border-radius:4px; }
-figcaption { font-size:14.5px; color:var(--muted); }
-</style>"""
 
 
 def img(test: str) -> str:
-    b = base64.b64encode((FIG / f"m2ctrl_{test.replace(' ', '_')}.png").read_bytes()).decode()
-    return f'<img src="data:image/png;base64,{b}" alt="{escape(test)}: tip paths and planar error over time.">'
+    return _img(f"m2ctrl_{test.replace(' ', '_')}.png", f"{test}: tip paths and planar error over time.")
 
 
 def table(head: list, rows: list, best_cols: set, skip_best: set) -> str:
@@ -158,7 +125,7 @@ correction \(w\) (measured tip minus the tip predicted 0.5 s earlier, low-pass 0
 in closed form (unconstrained), apply the first move, clip to 0–9 psi. <b>Horizon</b>: H steps of 10 ms after the 0.5 s
 dead time, so 25 steps = 0.25 s (looks 0.5–0.75 s ahead), 100 steps = 1 s (0.5–1.5 s ahead), 300 steps = 3 s
 (0.5–3.5 s ahead). R<sub>u</sub> (mm²/psi²) tuned per horizon on a separate circle (5 mm, 0.07 Hz, seed 5).</li>
-<li><b>MPC (F)</b>: <code>mpc_controller.DelayMPCController</code> on the frequency-identified model F: one model per
+<li><b>MPC (F)</b>: <code>softarm.controllers.KalmanDelayMPC</code> on the frequency-identified model F: one model per
 planar channel (ν<sub>x</sub> = −u₃, ν<sub>y</sub> = u₂ − u₄), Kalman filter on tip and channel pressure, same delay
 predictor, same cost with ρ = 10⁻⁵ m²/psi² (its own tuning), horizon 300 steps = 3 s; given the true future reference.</li></ul>
 <p class="meta">Run interactively: <code>notebooks/m2_controller_comparison.ipynb</code>. Regenerate:
@@ -179,12 +146,6 @@ Every run's gains, metrics and traces: <code>docs/figures/m2_controllers.json</c
                 + table(["Horizon", *[f"R_u = {g:g}" for g in grid]], tu, set(), set())
                 + '<p class="meta">The tuning optimum is at the smallest weight tried, but the whole range 10⁻⁵–10⁻¹ is within '
                   '0.002 mm; a larger weight costs accuracy on smooth circles and gains it on cornered paths.</p></section>')
-    head = """<title>M2 Controller Comparison</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,600&display=swap">
-<script>window.MathJax={tex:{inlineMath:[["\\\\(","\\\\)"]],displayMath:[["\\\\[","\\\\]"]]},svg:{fontCache:"global"}};</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
-"""
     intro = """<div class="wrap">
 <header><div class="eyebrow">Soft pneumatic arm · controllers with the reference known in advance</div>
 <h1>M2 Controller Comparison</h1>
@@ -192,8 +153,8 @@ Every run's gains, metrics and traces: <code>docs/figures/m2_controllers.json</c
 MPC on the frequency-identified model F, each given the true future reference (confirmed acceptable by the professor), on
 two circles, a triangle, a square and two random paths.</p></header>
 """
-    html = head + CSS + "\n" + intro + findings + setup + "".join(test_section(t, R, kind[t]) for t in ORDER) \
-        + horizon + "\n</div>\n"
+    html = head("M2 Controller Comparison") + CSS + "\n" + intro + findings + setup \
+        + "".join(test_section(t, R, kind[t]) for t in ORDER) + horizon + "\n</div>\n"
     OUT.write_text(html)
     print(f"wrote {OUT.relative_to(ROOT)} ({len(html) / 1e6:.1f} MB)")
 

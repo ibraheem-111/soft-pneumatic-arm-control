@@ -107,9 +107,38 @@ docs/
   log.md                  dated decisions and open questions
   proposal/               our submitted proposal (.doc + markdown transcription)
   figures/                generated figures
-notebooks/                coursework notebook (stripped on commit)
-scripts/                  runnable tools (see table above) + setup_git.sh
+src/softarm/              the package: models, controllers, evaluation, plotting (below)
+notebooks/                coursework, analysis and submission notebooks (stripped on commit)
+scripts/                  runnable experiments, identification, reports (see table above) + setup_git.sh
+models/                   identified model F (sysid_calibrated_v2.json)
 main.py                   uv's placeholder entry point (unused)
+```
+
+### The `softarm` package
+
+```
+src/softarm/
+  constants.py            control rate, 4.5 psi baseline, 9 psi limit, settle/track times, paths
+  models/                 Model, LinearModel, FirstOrderModel base classes
+    task_space.py         M1 (TaskSpaceModel), AxisModel, ActuatorModel
+    m2.py  m3.py          M2 (first-order) and M3 (second-order) mechanics + actuator
+    f.py                  F, frequency-identified per channel
+    one_mode.py           Nikoletta's one-mode model (derived from the MuJoCo arm)
+  controllers/            Controller base class
+    pd.py  smc.py         PD; notebook SMC, paper SMC/NDOSMC, delay-aware NDOSMC
+    mpc.py                DelayMPC on any LinearModel with a measured state (M2, M3)
+    kalman_mpc.py         KalmanDelayMPC on F
+    preview.py            Ahead (known r(t+T)), Predicted, RefPredictor, NoisyTip
+    presets.py            the project's tuned controller configurations
+  evaluation/             track() harness loop, references, comparison TESTS, metrics
+  experiments/            experiments shared by a script and a notebook (M2 comparison, MPC
+                          signals, MPC on M3, model check)
+  plotting.py             shared figure style
+```
+
+Any controller takes any model it can use, for example
+`DelayMPC(M3.load(), ref_mm, horizon=100, r_u=1e-5)` or
+`DelayAwareNDOSMC(M2.load(), lam=8, mu=1, eps=1, observer=False)`.
 ```
 
 ## Collaborating

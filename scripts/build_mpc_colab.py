@@ -5,35 +5,31 @@
 
 Each runs on Google Colab (or any Python >= 3.10) with no files from this repository: it installs
 soft-robotic-arm 0.4.2, defines the model with its fitted parameters (copied from
-docs/figures/task_space_model.json), the controller, the tests and the plots. The controller is the
-one in scripts/compare_m2_controllers.py (M2MPC) and scripts/mpc_m3.py; the tests and metrics are
-those of compare_m2_controllers.py. Both notebooks share every cell except the model section.
+docs/figures/task_space_model.json, read through softarm.models M2 and M3), the controller, the tests
+and the plots. The controller is softarm.controllers.DelayMPC (as run by compare_m2_controllers.py and
+mpc_m3.py); the tests and metrics are softarm.evaluation's (TESTS, score). Both notebooks share every
+cell except the model section.
 
 Usage:
     uv run python scripts/build_mpc_colab.py
     uv run jupyter nbconvert --to notebook --execute notebooks/Soft_robotic_arm_MPC_M2.ipynb --output /tmp/check.ipynb
 """
 
-import json
-import sys
-from pathlib import Path
-
 import nbformat as nbf
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import ndosmc as N  # noqa: E402
+from softarm.constants import ROOT
+from softarm.models import M2, M3
 
-ROOT = Path(__file__).resolve().parent.parent
 md, code = nbf.v4.new_markdown_cell, nbf.v4.new_code_cell
 
 
 def params() -> tuple[dict, dict, dict]:
-    m = N.TaskSpaceModel.load()
+    m = M2.load()
     act = dict(gain=[float(g) for g in m.actuator.gain], tau_s=float(m.actuator.tau_s),
                delay_steps=int(round(m.actuator.delay_s * 100)))
-    m2 = dict(a=[float(ax.params(0.0)[0]) for ax in m.axes_measured], H=m.B_measured.tolist())
-    mech = json.loads(N.MODEL_JSON.read_text())["M3_mechanics"]
-    m3 = dict(wn=[mech[a]["wn"] for a in "xyz"], zeta=[mech[a]["zeta"] for a in "xyz"], H=[mech[a]["H"] for a in "xyz"])
+    m2 = dict(a=[float(a) for a in m.a], H=m.H.tolist())
+    m3_model = M3.load()
+    m3 = dict(wn=m3_model.wn.tolist(), zeta=m3_model.zeta.tolist(), H=m3_model.H.tolist())
     return act, m2, m3
 
 

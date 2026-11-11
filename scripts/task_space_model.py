@@ -56,14 +56,11 @@ from scipy.signal import cont2discrete, lfilter, savgol_filter
 
 from soft_robotic_arm import make_calibrated_sim
 
-ROOT = Path(__file__).resolve().parents[1]
-FIG_DIR = ROOT / "docs" / "figures"
+from softarm.constants import BASE_PSI as U0, DT, FIG as FIG_DIR, ROOT, SETTLE_S, TASK_SPACE_JSON
+
 REPORT = ROOT / "docs" / "reports" / "task-space-model.html"
 
-HZ = 100
-DT = 1.0 / HZ
-U0 = 4.5  # psi, baseline on S2..S4
-SETTLE_S = 5.0
+HZ = 100  # softarm.constants.HZ as an int: also used as a sample count
 TIP_NOISE_M = 1e-4  # 0.1 mm per axis
 SEG = ["S2", "S3", "S4"]
 AX = ["x", "y", "z"]
@@ -707,7 +704,7 @@ def main() -> None:
         "validation_rmse_mm": results,
         "disturbance_V1": dist,
     }
-    (FIG_DIR / "task_space_model.json").write_text(json.dumps(out, indent=1))
+    TASK_SPACE_JSON.write_text(json.dumps(out, indent=1))
 
     print("\nactuator:", {k: np.round(v, 4).tolist() for k, v in act.items()})
     print("regulator static gain/bias:", np.round(reg["affine_gain"], 4), np.round(reg["affine_bias"], 4))

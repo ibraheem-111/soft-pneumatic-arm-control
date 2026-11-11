@@ -133,7 +133,8 @@ G(s) = γ e^{−sT} / (τs + 1)  ×  (b₁s + b₀) / (s³ + a₂s² + a₁s + a
 
 ## Delay-compensated MPC on `make_calibrated_sim` (done)
 
-`scripts/mpc_controller.py`, built on `models/sysid_calibrated_v2.json` (written by
+`softarm.controllers.KalmanDelayMPC` (run and scored by `scripts/mpc_controller.py`),
+built on `models/sysid_calibrated_v2.json` (model class `softarm.models.F`, written by
 `sysid_frf.py fit --plant calibrated`). Per axis:
 - a Kalman filter on [model state; tip offset], measuring tip and channel pressure;
 - a delay predictor, x_{n+d} = A_d^d x_n + Σ A_d^{d−1−i} B_d u_{n−d+i};

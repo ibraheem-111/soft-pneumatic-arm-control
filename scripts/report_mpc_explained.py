@@ -1,9 +1,9 @@
 """Build docs/reports/mpc-on-m2-and-f.html: the two delay-compensated MPCs, derived and plotted.
 
-Equations follow the code: compare_m2_controllers.M2MPC (MPC on M2) and
-mpc_controller.DelayMPCController / AxisController (MPC on F). Numbers and figures come from
+Equations follow the code: softarm.controllers.DelayMPC on M2 (MPC on M2) and
+softarm.controllers.KalmanDelayMPC / kalman_mpc.AxisController (MPC on F). Numbers and figures come from
 scripts/mpc_signals.py (docs/figures/mpc_signals.json, mpc_signals_<test>.png, mpc_phase_<test>.png).
-Same page style as report_smc_explained.py.
+Same page style as report_smc_explained.py (softarm.reports).
 
 Usage:
     uv run python scripts/mpc_signals.py          # results first
@@ -15,12 +15,13 @@ from html import escape
 
 import numpy as np
 
-import report_m2_controllers as R
-from report_smc_explained import _img, tbl
+from softarm.constants import FIG, ROOT
+from softarm.reports import ABOUT, CSS, head, tbl
+from softarm.labels import MPC_F, mpc_label
+from softarm.reports import img as _img
 
-FIG = R.FIG
-OUT = R.ROOT / "docs" / "reports" / "mpc-on-m2-and-f.html"
-M2, F = "MPC (M2), horizon 100 steps = 1.00 s", "MPC (F), horizon 300 steps = 3.00 s"
+OUT = ROOT / "docs" / "reports" / "mpc-on-m2-and-f.html"
+M2, F = mpc_label("M2", 100), MPC_F
 
 THEORY = r"""
 <section><h2>1 · What both MPCs do every 10 ms</h2>
@@ -67,7 +68,7 @@ steps ago, and low-passed with a 0.5 s time constant:</p>
 <li>Horizon \(H\) = 100 steps = 1 s after the 0.5 s dead time (looks 0.5–1.5 s ahead). \(R_u = 10^{-5}\) mm²/psi², tuned on a
 separate 5 mm, 0.07 Hz circle. That weight is almost zero, so the law is close to an inverse of M2.</li>
 <li>The clipped command, not \(u_k\), goes into the predictor's buffer, so saturation is accounted for.</li></ul>
-<p>Code: <code>scripts/compare_m2_controllers.py</code>, class <code>M2MPC</code>.</p></section>
+<p>Code: <code>softarm.controllers.DelayMPC</code> (with <code>softarm.models.M2</code>).</p></section>
 
 <section><h2>5 · MPC on F: per-channel model and Kalman filter</h2>
 <p>F treats the planar motion as two independent channels, each driven by one combination of segment commands:</p>
@@ -84,7 +85,7 @@ place of \(w\):</p>
 J = \sum_{i=0}^{H-1}\big(C\hat x_{n+d+1+i} + o - r_{n+d+i}\big)^2 + \rho\sum_{i=0}^{H-1}\big(\Delta\nu_{n+i}\big)^2 \]</div>
 <p>\(H\) = 300 steps = 3 s, \(\rho = 10^{-5}\) m²/psi² (its own tuning). The two channel commands go back to segments:</p>
 <div class="eqn">\[ S2 = 4.5 + \tfrac{\nu_y}{2}, \qquad S3 = 4.5 - \nu_x, \qquad S4 = 4.5 - \tfrac{\nu_y}{2}, \qquad \mathrm{clipped\ to\ } [0, 9] \]</div>
-<p>Code: <code>scripts/mpc_controller.py</code>, classes <code>AxisController</code> and <code>DelayMPCController</code>.</p></section>
+<p>Code: <code>softarm.controllers.kalman_mpc</code>, classes <code>AxisController</code> and <code>KalmanDelayMPC</code>.</p></section>
 
 <section><h2>6 · How the MPCs differ from the SMCs</h2><ul>
 <li><b>Look-ahead:</b> the SMC uses \(x_d(t+T)\) and \(\dot x_d(t+T)\); the MPC uses the whole window
@@ -132,7 +133,7 @@ def main() -> None:
     per_test = '<section><h2>9 · Each test</h2><p>Figures for every test, in the order of the comparison.</p></section>'
     for t in tests:
         f = t.replace(" ", "_")
-        per_test += (f'<section><h3>{escape(t)}</h3><p class="meta">{escape(R.ABOUT[t])}</p>'
+        per_test += (f'<section><h3>{escape(t)}</h3><p class="meta">{escape(ABOUT[t])}</p>'
                      f'<figure><div class="scroll">{_img(f"mpc_signals_{f}.png", t + ": MPC pressures and disturbance")}</div>'
                      '<figcaption>Left: MPC on M2 (horizon 100 steps = 1 s). Right: MPC on F (300 steps = 3 s). Rows: commanded '
                      'pressure, measured pressure, actual disturbance d, the MPC\'s own offset estimate.</figcaption></figure>'
@@ -140,18 +141,14 @@ def main() -> None:
                      '<figcaption>Error-space phase portrait, E against Ė, x and y. Left: whole run. Right: after settling.'
                      '</figcaption></figure></section>')
 
-    head = ('<title>MPC on M2 and F</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
-            '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,600&display=swap">\n'
-            '<script>window.MathJax={tex:{inlineMath:[["\\\\(","\\\\)"]],displayMath:[["\\\\[","\\\\]"]]},svg:{fontCache:"global"}};</script>\n'
-            '<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>\n')
     intro = ('<div class="wrap"><header><div class="eyebrow">Soft pneumatic arm · delay-compensated MPC · reference known</div>'
              '<h1>MPC on M2 and F</h1><p class="meta">The two model-predictive controllers of the comparison, derived from '
              'the code step by step, then their pressures, disturbance and error-space phase portraits on the six tests. '
              'Companion to the SMC page. Regenerate: <code>uv run python scripts/mpc_signals.py</code>, then '
              '<code>uv run python scripts/report_mpc_explained.py</code>.</p></header>')
-    html = head + R.CSS + "\n" + intro + THEORY + numbers + READING + per_test + "</div>\n"
+    html = head("MPC on M2 and F") + CSS + "\n" + intro + THEORY + numbers + READING + per_test + "</div>\n"
     OUT.write_text(html)
-    print(f"wrote {OUT.relative_to(R.ROOT)} ({len(html) / 1e6:.1f} MB)")
+    print(f"wrote {OUT.relative_to(ROOT)} ({len(html) / 1e6:.1f} MB)")
 
 
 if __name__ == "__main__":
