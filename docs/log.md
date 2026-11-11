@@ -5,6 +5,11 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-11
 
+- Model check moved into `softarm.experiments.model_check` (excitations, simulator run, metrics,
+  0.5 s-ahead prediction, actuator step fit, static gains, figures, runner);
+  `scripts/compare_models_excitation.py` only calls its `main()`, and
+  `notebooks/model_check_excitation.ipynb` imports it without sys.path. Outputs byte-identical
+  (json, npz, every figure); the notebook executes without errors.
 - Repository restructured into the installable package `src/softarm/` (Ibraheem's request:
   models and controllers each in one place, interchangeable through base classes). Models
   (`softarm.models`: `Model`, `LinearModel`, `FirstOrderModel`; M1, M2, M3, F, OneMode,
