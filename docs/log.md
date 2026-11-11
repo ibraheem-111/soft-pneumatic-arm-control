@@ -5,6 +5,12 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-11
 
+- Submission notebooks: the install cell now also installs scipy (the controller cell uses
+  scipy.linalg.expm); the template's tutorial sections stay out (Ibraheem: not needed). The
+  professor confirmed reading the reference ahead is allowed. A Colab "save to GitHub" (bd4a880)
+  updated `Soft_robotic_arm_MPC_M2sim.ipynb` in place, not a new file: whitespace in the video cell,
+  cell ids and `toc_visible` only, no outputs. The builder no longer writes trailing spaces, so
+  Colab saves stop producing that diff.
 - Third submission-style notebook `notebooks/Soft_robotic_arm_MPC_OneMode.ipynb` (same builder): the
   preview MPC on Nikoletta's one-mode model as written (k 10.60, c 9.23, |b| 0.0820 m/psi; Δp_x = S1
   − S3, Δp_y = S2 − S4 on make_sim; no actuator dynamics), R_u = 1 tuned on the non-test paths.

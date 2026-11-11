@@ -34,6 +34,12 @@ OUT = {v: ROOT / "notebooks" / f"Soft_robotic_arm_MPC_{v}.ipynb" for v in ("M3si
 md, code = nbf.v4.new_markdown_cell, nbf.v4.new_code_cell
 
 
+INSTALL_NOTE = """
+
+**Group 5 addition:** the install line also installs `scipy`, which the controller cell uses (`scipy.linalg.expm`,
+to discretise the model). Colab ships with it; the explicit install makes the notebook run elsewhere too."""
+
+
 def template_cells() -> list[str]:
     return ["".join(c["source"]) for c in json.loads(TEMPLATE.read_text())["cells"]]
 
@@ -979,7 +985,7 @@ def build(variant: str) -> nbf.NotebookNode:
     T = template_cells()
     t = lambda name: text(name, variant)  # noqa: E731
     cells = [md(t("INTRO")),
-             md(T[1]), code(T[2]),                    # 1 - install (template)
+             md(T[1] + INSTALL_NOTE), code(T[2].replace("soft-robotic-arm", "soft-robotic-arm scipy")),   # 1 - install
              md("## 2 — Simulator setup (template)"), code(T[4] + "\n\nfrom IPython.display import Markdown"),
              md(t("ID_MD")), code(t("ID_CODE")),
              md(t("MPC_MD")),
@@ -992,7 +998,7 @@ def build(variant: str) -> nbf.NotebookNode:
                 "Set `RENDER_VIDEO = True` to record our controller on the instructor's example (needs a GPU-less EGL "
                 "renderer, available on Colab)."),
              code("RENDER_VIDEO = False\nif RENDER_VIDEO:\n" + "\n".join(
-                 "    " + line for line in T[14]
+                 ("    " + line if line.strip() else "") for line in T[14]
                  .replace("video_controller = RandomTrajectoryPDController()", "reset_controller()")
                  .replace("video_controller.compute(video_obs[\"time\"], video_obs)",
                           "student_controller(instructor_reference, video_obs)")
