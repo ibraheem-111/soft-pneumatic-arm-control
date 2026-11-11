@@ -2,9 +2,12 @@
 
     notebooks/Soft_robotic_arm_MPC_M3sim.ipynb   MPC on M3's structure (second-order mechanics), identified on make_sim
     notebooks/Soft_robotic_arm_MPC_M2sim.ipynb   MPC on M2's structure (first-order mechanics), identified on make_sim
+    notebooks/Soft_robotic_arm_MPC_OneMode.ipynb MPC on Nikoletta's one-mode model (physics-derived, not identified)
 
-The two are identical except for the model: every model-specific text and code block below is written for M3sim,
-and M2SIM_EDITS turns it into the M2sim version by exact replacement (each must match once).
+The notebooks differ only in the model: every model-specific text and code block below is written for M3sim,
+and M2SIM_EDITS turns it into the M2sim version by exact replacement (each must match once). The OneMode
+notebook replaces whole blocks (ONEMODE_BLOCKS), adds a section comparing variants of her model, and leaves
+out the make_calibrated_sim section, which runs our M2 model rather than hers.
 
 The template's assessment interface is kept exactly: a clearly labelled controller cell defines
 student_controller(reference, obs) -> finite (4, 5) absolute pouch psi in [0, 9] and reset_controller();
@@ -27,7 +30,7 @@ import nbformat as nbf
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / "notebooks" / "soft_robotic_arm_v2.ipynb"   # the professor's template, copied unchanged
-OUT = {v: ROOT / "notebooks" / f"Soft_robotic_arm_MPC_{v}.ipynb" for v in ("M3sim", "M2sim")}
+OUT = {v: ROOT / "notebooks" / f"Soft_robotic_arm_MPC_{v}.ipynb" for v in ("M3sim", "M2sim", "OneMode")}
 md, code = nbf.v4.new_markdown_cell, nbf.v4.new_code_cell
 
 
@@ -676,7 +679,295 @@ difference of the measured tip), and the four measured segment pressures""",
 }
 
 
+ONEMODE_BLOCKS = {   # Nikoletta's one-mode model (softarm.models.one_mode.reduced_model): y'' + c y' + k y = b dp
+    "INTRO": r"""# Group 5 — Soft Robotic Arm: Model-Predictive Control on Nikoletta's One-Mode Model
+
+Built on the course template (`soft_robotic_arm_v2.ipynb`). The assessment interface is unchanged:
+the **controller cell** (§5) defines `student_controller(reference, obs)` and `reset_controller()`, and §6 runs
+the instructor's `evaluate_controller` exactly as given.
+
+**Controller.** The same model-predictive controller (MPC) as our other submissions, built on **Nikoletta's one-mode
+model**: one bending mode per plane axis, $\ddot y + c\dot y + ky = b\,\Delta p$, with $k$, $c$, $b$ derived from the
+arm's structure (joint springs, damping, lever arms), not fitted to data. Every 10 ms the MPC reads the supplied
+trajectory one second ahead, `reference(t + 0.01 … t + 1.00)`, and computes the pressures that make the predicted tip
+follow it, in closed form. Opposing segments act as pairs (S1/S3 for x, S2/S4 for y) around a 4.5 psi bias.
+
+**Result on the instructor's example test** (§6, `make_sim(seed=2)`, 20 s, transient included): see the printed
+RMSE; on our runs **0.95 mm RMSE**, against **1.26 mm** for the template's PID example. §8 compares the two on twelve
+trajectories; §10 shows what changes when her model gets the gravity stiffness of the hanging arm and the measured
+pneumatic lag.
+
+Run all cells in order (Runtime → Run all), about 6 minutes on Colab. §9 (video) is optional and off by default.""",
+
+    "ID_MD": r"""## 3 — The model: Nikoletta's one-mode model
+
+Derived by Nikoletta from the MuJoCo arm (her notebook `SMC_Controller_withoutdisturbanceobserver.ipynb`, section 7):
+the arm's bending joints are reduced to their dominant mode. Per plane axis $i \in \{x, y\}$:
+$$\ddot y_i + c\,\dot y_i + k\,y_i = b\,\Delta p_i, \qquad \Delta p_x = p_{S1} - p_{S3}, \quad \Delta p_y = p_{S2} - p_{S4}$$
+- $k$ is the mode's stiffness, from the joint springs; $c$ its damping, from the joint damping; $b$ the pressure gain
+  through the lever arms. Derived, not identified.
+- $\Delta p$ is the commanded pressure difference: the model has **no actuator dynamics** (the pouches are assumed to
+  reach their commanded pressure at once) and no z.
+- On `make_sim` all four segments are active, so x is driven by S1 − S3 and y by S2 − S4.
+
+The cell below checks the model **free-running** against `make_sim` (random steps, seed 32, and a 0.02 → 1 Hz chirp),
+as written and with two additions that are *not* in her notebook: the gravity stiffness of the hanging chain (same
+derivation, $k$ from the springs plus gravity) and the pneumatic lag $\tau\dot p = -p + u$ with $\tau = 0.6$ s (the
+value in the simulator's configuration, `make_sim().cfg.tau_pneumatic`, and measured in our other notebooks).""",
+
+    "ID_CODE": r'''DT = 0.01
+ONE_MODE = {"as written": (10.602415303139802, 9.230907320069726, 0.08203667215669287),
+            "+ gravity stiffness": (51.45086866273482, 9.408628750381794, 0.07903934655742169)}   # k, c, |b| (m/psi)
+
+
+def random_steps(seed, seconds=60.0):
+    """Each segment jumps to an independent random level in 0-9 psi, held 0.5-3 s."""
+    g = np.random.default_rng(seed)
+    u, k = np.empty((int(seconds / DT), 4)), 0
+    while k < len(u):
+        n = int(g.uniform(0.5, 3.0) / DT)
+        u[k:k + n] = g.uniform(0.0, 9.0, 4)
+        k += n
+    return u
+
+
+def chirp(seconds=60.0):
+    t = np.arange(int(seconds / DT)) * DT
+    phase = 2 * np.pi * np.cumsum(0.02 * (1.0 / 0.02) ** (t / seconds)) * DT
+    return 4.5 + 4.0 * np.column_stack([np.sin(phase), np.cos(phase), -np.sin(phase), -np.cos(phase)])
+
+
+def run_open_loop(u, seed):
+    """Tip x-y (mm) after each command step."""
+    s = make_sim(control_hz=CONTROL_HZ, seed=seed)
+    obs, tips = s.reset(), []
+    for c in u:
+        obs = s.step(c)
+        tips.append(1000.0 * obs["tip_pos"][:2])
+    s.close()
+    return np.array(tips)
+
+
+def free_run(u, k, c, b, lag):
+    """One-mode model per axis from rest; dp = commanded (lag=False) or lagged (tau = 0.6 s) pressure difference."""
+    from scipy.linalg import expm
+    p = u.copy()
+    if lag:
+        a, prev = np.exp(-DT / 0.6), np.zeros(4)
+        for i, c_ in enumerate(u):
+            prev = a * prev + (1 - a) * c_
+            p[i] = prev
+    dp = np.column_stack([p[:, 0] - p[:, 2], p[:, 1] - p[:, 3]])
+    E = expm(np.block([[np.array([[0.0, 1.0], [-k, -c]]), np.array([[0.0], [1000.0 * b]])], [np.zeros((1, 3))]]) * DT)
+    A, B = E[:2, :2], E[:2, 2]
+    out = np.zeros((len(u), 2))
+    for i in range(2):
+        x = np.zeros(2)
+        for n, v in enumerate(dp[:, i]):
+            x = A @ x + B * v
+            out[n, i] = x[0]
+    return out
+
+
+rows = []
+for name, u in (("random steps, seed 32", random_steps(32)), ("chirp 0.02 -> 1 Hz", chirp())):
+    tips_v = run_open_loop(u, seed=3)
+    for label, (k, c, b) in ONE_MODE.items():
+        for lag in (False, True):
+            e = free_run(u, k, c, b, lag) - tips_v
+            rows.append(f"| {name} | {label}{' + pneumatic lag' if lag else ''} | {1000 * b / k:.2f} | "
+                        f"{np.sqrt(np.mean(e[:, 0] ** 2)):.3f} | {np.sqrt(np.mean(e[:, 1] ** 2)):.3f} |")
+display(Markdown("**Free-run check against make_sim** (RMSE, mm; the simulator's static gain is 1.81 mm per psi)\n\n"
+                 "| Data | Model | static gain (mm/psi) | x | y |\n|---|---|---|---|---|\n" + "\n".join(rows)))''',
+
+    "MPC_MD": r"""## 4 — The controller: MPC with trajectory preview
+
+**State and input.** $X = (y, \dot y) \in \mathbb R^4$: tip x-y (mm, measured) and tip velocity (backward difference of
+the measured tip). The input is a pair of differential corrections $\delta = (\delta_x, \delta_y)$: segment commands
+$u = 4.5 + (\delta_x, \delta_y, -\delta_x, -\delta_y)$, so $\Delta p_x = 2\delta_x$ and $\Delta p_y = 2\delta_y$. The model of
+§3 (as written: no actuator dynamics) is discretised with a zero-order hold at 10 ms: $X_{k+1} = AX_k + B\delta_k$,
+tip $y = CX$.
+
+**Offset.** The model is not exact. $e_k = y_k - C(AX_{k-1} + B\delta_{k-1})$ is its one-step prediction error;
+its low-pass (0.5 s) is an offset $w$ added to every prediction:
+$w_k = w_{k-1} + \alpha(e_k - w_{k-1})$, $\alpha = 1 - e^{-0.01/0.5}$.
+
+**Optimisation.** Choose the next $H = 100$ corrections (1 s) to minimise
+$$J = \sum_{i=0}^{H-1}\big\|C\hat X_{k+1+i} + w - r(t_k + (i+1)\,\Delta t)\big\|^2 + R_u\sum_{i=0}^{H-1}\big\|\delta_{k+i}-\delta_{k+i-1}\big\|^2$$
+With $\hat Y = \Phi X_k + \Gamma U$ ($\Phi_i = CA^{i+1}$, $\Gamma_{ij} = CA^{i-j}B$ for $j \le i$, $D$ the
+first-difference matrix), setting $\partial J/\partial U = 0$:
+$$U^\star = \big(\Gamma^\top\Gamma + R_u D^\top D\big)^{-1}\Big[\Gamma^\top\big(\mathcal R - \Phi X_k - \mathbf 1\otimes w\big) + R_u D^\top e_1\,\delta_{k-1}\Big]$$
+Only the first correction is applied: $\delta_k = g_r\,\mathcal R + g_x X_k + g_w\,w + g_u\,\delta_{k-1}$, then
+$u = \operatorname{clip}_{[0,9]}\big(4.5 + (\delta_x, \delta_y, -\delta_x, -\delta_y)\big)$, sent to all five pouches of each
+segment. $R_u = 1$ mm²/psi² is tuned in §7 on trajectories not used for testing.
+
+The class also takes `gravity=True` (her derivation with the hanging chain's gravity stiffness) and
+`pneumatic_lag=True` (adds the four measured segment pressures to the state, with $\tau\dot p = -p + u$); §10 uses
+them. The submitted controller uses her model as written.
+
+**Memory.** The controller keeps its last prediction, offset, previous correction and previous tip;
+`reset_controller()` clears them before each trial.""",
+
+    "CONTROLLER": r'''# STUDENT CONTROLLER CELL: MPC with trajectory preview on Nikoletta's one-mode model (Group 5).
+import numpy as np
+from scipy.linalg import expm
+
+# Nikoletta's one-mode model per plane axis: y'' + c y' + k y = b dp  (y in m, dp in psi), derived from the arm.
+ONE_MODE_PARAMS = {False: dict(k=10.602415303139802, c=9.230907320069726, b=0.08203667215669287),   # as written
+                   True: dict(k=51.45086866273482, c=9.408628750381794, b=0.07903934655742169)}    # + gravity
+BIAS_PSI, LIMIT_PSI, DT_S, TAU_S = 4.5, 9.0, 0.01, 0.6
+PAIRS = np.array([[1, 0], [0, 1], [-1, 0], [0, -1]], float)   # u = BIAS + PAIRS @ (dx, dy)
+
+
+class PreviewMPC:
+    """Unconstrained MPC on the one-mode model, reading the supplied trajectory HORIZON steps ahead."""
+
+    def __init__(self, horizon=100, r_u=1.0, offset_tau_s=0.5, gravity=False, pneumatic_lag=False):
+        prm = ONE_MODE_PARAMS[gravity]
+        k, c, b = prm["k"], prm["c"], 1000.0 * prm["b"]          # b in mm per psi of dp
+        O, I = np.zeros, np.eye(2)
+        if pneumatic_lag:   # state (y, y', p - BIAS): dp = (p1 - p3, p2 - p4), tau p' = -p + u
+            Hp = b * np.array([[1, 0, -1, 0], [0, 1, 0, -1]], float)
+            Ac = np.block([[O((2, 2)), I, O((2, 4))], [-k * I, -c * I, Hp], [O((4, 4)), -np.eye(4) / TAU_S]])
+            Bc = np.vstack([O((4, 4)), np.eye(4) / TAU_S]) @ PAIRS
+        else:               # as written: dp = commanded difference = 2 * delta, no actuator dynamics
+            Ac = np.block([[O((2, 2)), I], [-k * I, -c * I]])
+            Bc = np.vstack([O((2, 2)), 2 * b * I])
+        n, m, h = Ac.shape[0], 2, horizon
+        self.lag = pneumatic_lag
+        E = expm(np.block([[Ac, Bc], [O((m, n + m))]]) * DT_S)
+        self.A, self.B = E[:n, :n], E[:n, n:]
+        self.C = np.hstack([I, O((2, n - 2))])
+        powers = [np.eye(n)]
+        for _ in range(h):
+            powers.append(self.A @ powers[-1])
+        Phi = np.vstack([self.C @ powers[i + 1] for i in range(h)])
+        Gam = np.zeros((2 * h, m * h))
+        for i in range(h):
+            for j in range(i + 1):
+                Gam[2 * i:2 * i + 2, m * j:m * j + m] = self.C @ powers[i - j] @ self.B
+        D = np.eye(m * h) - np.eye(m * h, k=-m)
+        K = np.linalg.solve(Gam.T @ Gam + r_u * D.T @ D, np.eye(m * h))[:m]   # first move only
+        self.g_r = K @ Gam.T
+        self.g_x = -self.g_r @ Phi
+        self.g_w = -self.g_r @ np.tile(np.eye(2), (h, 1))
+        E1 = np.zeros((m * h, m))
+        E1[:m] = np.eye(m)
+        self.g_u = r_u * K @ D.T @ E1
+        self.steps_ahead = (np.arange(h) + 1) * DT_S
+        self.alpha = 1.0 - np.exp(-DT_S / offset_tau_s)
+        self.reset()
+
+    def reset(self):
+        self.tip_prev, self.x_pred = None, None
+        self.offset, self.delta_prev = np.zeros(2), np.zeros(2)
+
+    def __call__(self, reference, obs):
+        t = float(obs["time"])
+        tip = 1000.0 * np.asarray(obs["tip_pos"], float)[:2]                     # mm
+        vel = np.zeros(2) if self.tip_prev is None else (tip - self.tip_prev) / DT_S
+        self.tip_prev = tip
+        parts = [tip, vel] + ([np.asarray(obs["segment_pressures"], float) - BIAS_PSI] if self.lag else [])
+        X = np.concatenate(parts)
+        if self.x_pred is not None:                                              # model offset
+            self.offset += self.alpha * ((tip - self.C @ self.x_pred) - self.offset)
+        window = 1000.0 * np.array([reference(t + s) for s in self.steps_ahead])  # mm, (H, 2)
+        delta = (self.g_r @ window.reshape(-1) + self.g_x @ X
+                 + self.g_w @ self.offset + self.g_u @ self.delta_prev)
+        segments = np.clip(BIAS_PSI + PAIRS @ delta, 0.0, LIMIT_PSI)
+        applied = np.array([segments[0] - segments[2], segments[1] - segments[3]]) / 2.0
+        self.x_pred = self.A @ X + self.B @ applied
+        self.delta_prev = applied
+        return np.repeat(segments[:, None], 5, axis=1)                          # (4, 5) pouch psi
+
+
+_mpc = PreviewMPC()   # Nikoletta's model as written
+
+
+def reset_controller():
+    """Clear all controller memory before a new trial."""
+    _mpc.reset()
+
+
+def student_controller(reference, obs):
+    """Track the supplied x-y trajectory; return absolute (4, 5) pouch pressures in psi."""
+    return _mpc(reference, obs)
+
+
+reset_controller()''',
+
+    "TUNE_MD": r"""## 7 — Tuning $R_u$ on separate trajectories
+
+$R_u$ trades tracking against smooth commands. It is chosen on three trajectories that are **not** used for
+testing: the template's tutorial family with seed 11 (12 mm), a smooth random path (seed 12) and random waypoints
+(seed 13). Score: mean RMSE over the three with the instructor's `evaluate_controller`. The smallest mean is at
+$R_u = 1$, the value in the controller cell. Our identified models tune to much smaller $R_u$; this model's static
+gain is about 4× the simulator's (§3), and the larger $R_u$ damps the commands it produces.""",
+
+    "TUNE": r'''TUNING = {"tutorial sines, seed 11": tutorial_sines(11), "smooth random, seed 12": smooth_random(12),
+          "waypoints, seed 13": waypoints(13)}
+grid = (1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0)
+rows = []
+for r_u in grid:
+    scores = []
+    for ref in TUNING.values():
+        ctl = PreviewMPC(r_u=r_u)
+        scores.append(evaluate_controller(ctl, ref, reset=ctl.reset)["rmse_mm"])
+    rows.append(f"| one-mode, as written (submitted) | {r_u:g} | " + " | ".join(f"{s:.3f}" for s in scores)
+                + f" | **{np.mean(scores):.3f}** |")
+display(Markdown("| Model | R_u | " + " | ".join(TUNING) + " | mean |\n|---|---|---|---|---|---|\n" + "\n".join(rows)))''',
+
+    "SUMMARY": r"""## 11 — Summary and limitations
+
+- **Her model as written** already gives a working tracking controller: about 0.95 mm RMSE on the instructor's example
+  against 1.26 mm for the template's PID (§6, §8). The gain comes from reading the supplied trajectory ahead.
+- **Its two gaps on `make_sim`** (§3, §10): the static gain is about 4× the simulator's, because the gravity stiffness
+  of the hanging arm is left out, and the commanded pressure is assumed to act at once, while the pouches lag by
+  0.6 s. With both added, the same MPC reaches about 0.17 mm on the instructor's example; the same structure fitted to
+  data (our M3sim notebook) reaches 0.09 mm.
+- **Where all controllers are limited:** trajectories that start away from the tip carry an unavoidable initial error,
+  and fast paths (0.4 Hz circle) saturate the valves.
+- **Assumptions:** the reference function can be queried ahead of the current time, as the interface allows; the tip
+  velocity is a raw backward difference, which real sensor noise would amplify.""",
+}
+
+VARIANTS_MD = r"""## 10 — Variants of her model: gravity stiffness and pneumatic lag
+
+The same MPC on four versions of the one-mode model, each with its own $R_u$ tuned on the §7 trajectories (grid
+$10^{-4}$ to $10$), then run on all twelve test trajectories. *As written* is the submitted controller. *+ gravity*
+uses her derivation with the hanging chain's gravity stiffness; *+ lag* adds the measured 0.6 s pneumatic lag to the
+model's state. Neither addition is in her notebook. Each cell: RMSE in mm (saturation, % of pouch commands at 0 or
+9 psi)."""
+
+VARIANTS_CODE = r'''VARIANTS = {"as written": dict(), "+ gravity": dict(gravity=True), "+ lag": dict(pneumatic_lag=True),
+            "+ gravity + lag": dict(gravity=True, pneumatic_lag=True)}
+best_r_u = {}
+for name, kw in VARIANTS.items():
+    means = {}
+    for r_u in (1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10.0):
+        scores = []
+        for ref in TUNING.values():
+            ctl = PreviewMPC(r_u=r_u, **kw)
+            scores.append(evaluate_controller(ctl, ref, reset=ctl.reset)["rmse_mm"])
+        means[r_u] = np.mean(scores)
+    best_r_u[name] = min(means, key=means.get)
+print("tuned R_u:", best_r_u)
+
+head = "| Trajectory | " + " | ".join(f"{n} (R_u {best_r_u[n]:g})" for n in VARIANTS) + " |"
+rows = []
+for test, ref in TESTS.items():
+    cells = []
+    for name, kw in VARIANTS.items():
+        ctl = PreviewMPC(r_u=best_r_u[name], **kw)
+        res = evaluate_controller(ctl, ref, reset=ctl.reset)
+        cells.append(f"{res['rmse_mm']:.3f} ({saturation_pct(res):.0f} %)")
+    rows.append(f"| {test} | " + " | ".join(cells) + " |")
+display(Markdown(head + "\n|" + "---|" * (len(VARIANTS) + 1) + "\n" + "\n".join(rows)))'''
+
+
 def text(name: str, variant: str) -> str:
+    if variant == "OneMode" and name in ONEMODE_BLOCKS:
+        return ONEMODE_BLOCKS[name]
     out = globals()[name]
     for old, new in (M2SIM_EDITS.get(name, []) if variant == "M2sim" else []):
         assert out.count(old) == 1, (name, old[:60])
@@ -690,7 +981,7 @@ def build(variant: str) -> nbf.NotebookNode:
     cells = [md(t("INTRO")),
              md(T[1]), code(T[2]),                    # 1 - install (template)
              md("## 2 — Simulator setup (template)"), code(T[4] + "\n\nfrom IPython.display import Markdown"),
-             md(t("ID_MD")), code(ID_CODE),
+             md(t("ID_MD")), code(t("ID_CODE")),
              md(t("MPC_MD")),
              md("## 5 — Controller cell\n\nSelf-contained: it runs on its own after the setup cell."), code(t("CONTROLLER")),
              md("## 6 — Instructor evaluation (template, unchanged)\n\n" + T[15].split("\n", 1)[1]),
@@ -706,7 +997,7 @@ def build(variant: str) -> nbf.NotebookNode:
                  .replace("video_controller.compute(video_obs[\"time\"], video_obs)",
                           "student_controller(instructor_reference, video_obs)")
                  .replace("soft_arm_pd_tracking.mp4", "group5_mpc_tracking.mp4").splitlines())),
-             md(CALIB_MD), code(CALIB_CODE),
+             *([md(VARIANTS_MD), code(VARIANTS_CODE)] if variant == "OneMode" else [md(CALIB_MD), code(CALIB_CODE)]),
              md(t("SUMMARY"))]
     return nbf.v4.new_notebook(cells=cells, metadata={
         "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"}, "colab": {"provenance": []}})

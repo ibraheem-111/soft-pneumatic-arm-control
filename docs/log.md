@@ -5,6 +5,13 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-11
 
+- Third submission-style notebook `notebooks/Soft_robotic_arm_MPC_OneMode.ipynb` (same builder): the
+  preview MPC on Nikoletta's one-mode model as written (k 10.60, c 9.23, |b| 0.0820 m/psi; Δp_x = S1
+  − S3, Δp_y = S2 − S4 on make_sim; no actuator dynamics), R_u = 1 tuned on the non-test paths.
+  Instructor's example 0.946 mm (PID 1.259); ties the PID on two waypoint seeds. Free-run against
+  make_sim: 14–25 mm as written (static gain 7.74 vs 1.81 mm/psi), 0.64–1.16 mm with gravity
+  stiffness and the 0.6 s pneumatic lag added. With both added the MPC reaches 0.169 mm (M3sim
+  0.090).
 - Second submission notebook `notebooks/Soft_robotic_arm_MPC_M2sim.ipynb`, identical to the M3sim
   one except the model: M2's first-order mechanics identified on `make_sim` (a 4.66/4.69 1/s, H ≈
   1.84 mm/psi), R_u = 0.1 tuned on the same three non-test paths (mean 0.464 mm vs 0.404 for M3sim).
