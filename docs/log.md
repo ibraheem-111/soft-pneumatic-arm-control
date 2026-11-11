@@ -5,6 +5,12 @@ person (or agent) can pick up without asking. Keep entries short and dated.
 
 ## 2026-11-11
 
+- M2 controller comparison, MPC signals and the MPC on M3 moved into `softarm.experiments`
+  (`m2_comparison`, `mpc_signals`, `mpc_m3`); `scripts/compare_m2_controllers.py`, `mpc_signals.py`
+  and `mpc_m3.py` are thin runners, and `notebooks/m2_controller_comparison.ipynb` and
+  `mpc_m3.ipynb` import the modules without sys.path. Rule (AGENTS.md): notebooks never add
+  `scripts/` to sys.path. Outputs of the three scripts and both reports identical to before; both
+  notebooks execute.
 - Model check moved into `softarm.experiments.model_check` (excitations, simulator run, metrics,
   0.5 s-ahead prediction, actuator step fit, static gains, figures, runner);
   `scripts/compare_models_excitation.py` only calls its `main()`, and
