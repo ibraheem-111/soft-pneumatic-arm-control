@@ -86,6 +86,9 @@ Full detail in `docs/simulator.md`.
   only, each runnable as `uv run python scripts/<name>.py` with a module docstring that
   states purpose and usage. Scripts import `softarm`; they do not define models or
   controllers and do not import each other. Code two scripts need goes into `softarm`.
+- An experiment used by both a script and a notebook lives in `softarm.experiments`
+  (runs, tuning, figures, `main()`); its script is a thin runner and the notebook imports
+  the module. Notebooks never add `scripts/` to `sys.path`.
 - A new model is a `softarm.models` class (subclass `LinearModel` and/or
   `FirstOrderModel`); a new controller is a `softarm.controllers` class (subclass
   `Controller`). Register a new controller's plot identity in `softarm.plotting.SERIES`.
@@ -110,7 +113,7 @@ Full detail in `docs/simulator.md`.
 - Git silently ignores the filter if it isn't configured, so before committing a
   notebook check `git config filter.nbstripout.clean` prints a command. If it prints
   nothing, run the setup script first. Never bypass the filter.
-- Notebooks import `softarm` for models, controllers and evaluation, and keep
+- Notebooks import `softarm` (models, controllers, evaluation, experiments) and keep
   exploration and presentation. Submission/Colab notebooks are standalone (they
   pip-install the simulator and inline parameters) and must not import `softarm`.
 

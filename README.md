@@ -131,6 +131,8 @@ src/softarm/
     preview.py            Ahead (known r(t+T)), Predicted, RefPredictor, NoisyTip
     presets.py            the project's tuned controller configurations
   evaluation/             track() harness loop, references, comparison TESTS, metrics
+  experiments/            experiments shared by a script and a notebook (M2 comparison, MPC
+                          signals, MPC on M3, model check)
   plotting.py             shared figure style
 ```
 
