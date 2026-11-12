@@ -3,11 +3,13 @@
 One page per controller, drawn from the code:
   1. MPC (M2), submission: the controller of notebooks/Soft_robotic_arm_MPC_M2sim.ipynb (make_sim,
      trajectory preview), in IEEE style (black lines, Times New Roman, no colour) for the report
-  2. Delay-aware SMC, reference known (lambda = 8 and the lambda = 4 row; observer off)
-  3. Delay-aware NDOSMC, reference known (observer on)
-  4. MPC on M2, reference known (make_calibrated_sim)
-  5. MPC on F, reference known
-Pages 2-5 (softarm.controllers.DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC): blue blocks run in the
+  2. The same controller drawn as a Simulink model (gain paths, Sum, Transfer Fcn, Saturation, Unit
+     Delay, Mux, ports), and 3. the inside of its offset-estimator subsystem
+  4. Delay-aware SMC, reference known (lambda = 8 and the lambda = 4 row; observer off)
+  5. Delay-aware NDOSMC, reference known (observer on)
+  6. MPC on M2, reference known (make_calibrated_sim)
+  7. MPC on F, reference known
+Pages 4-7 (softarm.controllers.DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC): blue blocks run in the
 controller every 10 ms, dashed blocks are models the controller runs internally, grey is the simulator.
 Signals are in mm (tip) and psi (pressure).
 
@@ -94,6 +96,8 @@ I_EDGE = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFi
 class IEEEPage(Page):
     """Black on white, Times New Roman, no title (the caption goes in the report)."""
 
+    edge_style = I_EDGE
+
     def __init__(self, name: str, width: int, height: int):
         self.name, self.cells, self.n, self.size = name, [], 0, (width, height)
 
@@ -103,7 +107,7 @@ class IEEEPage(Page):
     def link(self, a: str, b: str, label: str = "", out="r", inn="l", pts=(), lx=0.0, ly=0.0, arrow=True) -> None:
         ox, oy = PORT[out] if isinstance(out, str) else out
         ix, iy = PORT[inn] if isinstance(inn, str) else inn
-        s = I_EDGE + f"exitX={ox};exitY={oy};exitDx=0;exitDy=0;entryX={ix};entryY={iy};entryDx=0;entryDy=0;"
+        s = self.edge_style + f"exitX={ox};exitY={oy};exitDx=0;exitDy=0;entryX={ix};entryY={iy};entryDx=0;entryDy=0;"
         if not arrow:
             s += "endArrow=none;"
         geo = '<mxGeometry relative="1" as="geometry"' + (f' x="{lx}" y="{ly}">' if (lx or ly) else ">")
@@ -137,7 +141,7 @@ def submission_page() -> IEEEPage:
     p = IEEEPage("MPC M2 submission (IEEE)", 1450, 470)
     i = lambda s: f"<i>{s}</i>"          # noqa: E731
     sub = lambda s: f"<sub>{s}</sub>"    # noqa: E731
-    db = "<i>δ̄</i>"                       # applied correction
+    db = "<span style=\"text-decoration:overline\"><i>δ</i></span>"                       # applied correction
     y0, y1 = 70, 270                     # forward path, feedback row
 
     p.box("ref", f"{i('r')}({i('t')})", 0, y0 - 15, 40, 30, I_TEXT)
@@ -201,6 +205,181 @@ def submission_page() -> IEEEPage:
                   f"{i('H')} ∈ ℝ<sup>2×4</sup> (≈ 1.84 mm/psi); {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup> maps "
                   f"({i('δ')}{sub(i('x'))}, {i('δ')}{sub(i('y'))}) to S1–S4; {i('α')} = 1 − e<sup>−Δ<i>t</i>/0.5 s</sup>; "
                   "each segment command drives its five pouches.", 90, 400, 1240, 40, I_NOTE)
+    return p
+
+
+# ------------------------------------------------------------- Simulink-style pages (same controller)
+
+SF = "fontFamily=Helvetica;fontColor=#000000;"
+S_BLOCK = "rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1;shadow=1;fontSize=12;" + SF
+S_GAIN = "triangle;direction={d};html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1;shadow=1;fontSize=12;" + SF
+S_SUM = "ellipse;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1;shadow=1;" + SF
+S_PORT = "rounded=1;arcSize=40;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1;shadow=1;fontSize=10;" + SF
+S_MUX = "rounded=0;html=1;fillColor=#000000;strokeColor=#000000;"
+S_NAME = "text;html=1;align=center;verticalAlign=top;fontSize=11;" + SF
+S_SIGN = "text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;" + SF
+S_NOTE = "text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=11;" + SF
+S_GROUP = ("rounded=0;html=1;fillColor=none;dashed=1;dashPattern=6 4;strokeColor=#555555;verticalAlign=top;align=left;"
+           "spacingLeft=6;fontSize=11;fontColor=#333333;fontFamily=Helvetica;")
+S_EDGE = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;endSize=5;strokeColor=#000000;"
+          "strokeWidth=1;fontSize=11;fontStyle=2;labelBackgroundColor=#FFFFFF;" + SF)
+
+
+def frac(num: str, den: str) -> str:
+    """Stacked fraction (Transfer Fcn block label)."""
+    cell = "padding:0 5px;text-align:center"
+    return (f'<table style="border-collapse:collapse;margin:auto"><tr><td style="border-bottom:1px solid #000;{cell}">'
+            f"{num}</td></tr><tr><td style=\"{cell}\">{den}</td></tr></table>")
+
+
+class SimulinkPage(IEEEPage):
+    """Simulink look: white blocks with shadows, block names underneath, triangle gains, port blocks."""
+    edge_style = S_EDGE
+
+    def block(self, key, label, x, y, w, h, name="", style=S_BLOCK):
+        self.box(key, label, x, y, w, h, style)
+        if name:
+            self.box(key + "_name", name, x - 30, y + h + 2, w + 60, 16, S_NAME)
+
+    def gain(self, key, label, x, y, name="", facing="east", w=50, h=40):
+        pad = "spacingRight=14;" if facing == "east" else "spacingLeft=18;"
+        self.block(key, label, x, y, w, h, name, S_GAIN.format(d=facing) + pad)
+
+    def port(self, key, number, x, y, name):
+        self.block(key, str(number), x, y, 30, 16, name, S_PORT)
+
+    def sum(self, key, cx, cy, signs, r=12):
+        """Round Sum block; signs: list of (text, dx, dy) placed relative to the centre."""
+        self.box(key, "", cx - r, cy - r, 2 * r, 2 * r, S_SUM)
+        for j, (t, dx, dy) in enumerate(signs):
+            self.box(f"{key}_s{j}", t, cx + dx - 6, cy + dy - 7, 12, 14, S_SIGN)
+
+    def saturation(self, key, x, y, name, size=50):
+        self.block(key, "", x, y, size, size, name)
+        cx, cy = x + size / 2, y + size / 2
+        self.line([(cx - 18, cy), (cx + 18, cy)], width=0.6, arrow=True)
+        self.line([(cx, cy + 16), (cx, cy - 18)], width=0.6, arrow=True)
+        self.line([(cx - 16, cy + 9), (cx - 7, cy + 9), (cx + 7, cy - 9), (cx + 16, cy - 9)])
+
+
+def simulink_page() -> SimulinkPage:
+    """The submitted MPC (M2 on make_sim) drawn as a Simulink model: the control law as four gain paths
+    into a Sum, the offset estimator as a subsystem (next page), the plant as Transfer Fcn and Gain blocks."""
+    p = SimulinkPage("MPC M2 submission (Simulink)", 1150, 600)
+    i = lambda s: f"<i>{s}</i>"          # noqa: E731
+    sub = lambda s: f"<sub>{s}</sub>"    # noqa: E731
+    db = "<span style=\"text-decoration:overline\"><i>δ</i></span>"
+
+    # control law: delta_k = g_r R_k + g_x X_k + g_w w_k + g_u dbar_{k-1}
+    p.port("in_r", 1, 20, 52, f"{i('r')}({i('t')})")
+    p.block("prev", "Reference<br>preview", 80, 35, 120, 50,
+            f"{i('R')}{sub(i('k'))} = {i('r')}({i('t')}{sub(i('k'))} + {i('i')}Δ{i('t')}), {i('i')} = 1…100")
+    for key, lab, yc in (("gr", "g<sub>r</sub>", 60), ("gx", "g<sub>x</sub>", 120), ("gw", "g<sub>w</sub>", 180),
+                         ("gu", "g<sub>u</sub>", 240)):
+        p.gain(key, i(lab), 240, yc - 20)
+    p.block("sumd", "", 330, 40, 24, 220, "Sum")
+    for j, yc in enumerate((60, 120, 180, 240)):
+        p.box(f"sumd_s{j}", "+", 332, yc - 7, 12, 14, S_SIGN)
+    p.link("in_r", "prev")
+    p.link("prev", "gr", f"{i('R')}{sub(i('k'))}", ly=-10)
+    for key, frac_y in (("gr", 0.0909), ("gx", 0.3636), ("gw", 0.6364), ("gu", 0.9091)):
+        p.link(key, "sumd", inn=(0, frac_y))
+
+    # allocation, bias, saturation
+    p.gain("P", i("P"), 385, 130, "Pair allocation")
+    p.block("c45", "4.5", 455, 80, 40, 26)
+    p.box("c45_name", "Bias (psi)", 395, 85, 58, 16, S_NAME)
+    p.sum("sumb", 475, 150, [("+", -18, -8), ("+", -8, -18)])
+    p.saturation("sat", 520, 125, "Saturation [0, 9] psi")
+    p.link("sumd", "P", f"{i('δ')}{sub(i('k'))}", ly=-10)
+    p.link("P", "sumb")
+    p.link("c45", "sumb", out="b", inn="t")
+    p.link("sumb", "sat")
+
+    # plant model
+    p.box("plant", "Plant model (<span style=\"font-family:Courier New\">make_sim</span>), axes <i>x</i>, <i>y</i>",
+          625, 95, 330, 125, S_GROUP)
+    p.dot("utap", 605, 150)
+    p.block("act", frac(i("G"), f"{i('τ')}{i('s')} + 1"), 640, 125, 90, 50, "Actuator lag")
+    p.dot("ptap", 755, 150)
+    p.gain("H", i("H"), 775, 130, "Pressure map")
+    p.block("mech", frac(f"{i('a')}{sub(i('i'))}", f"{i('s')} + {i('a')}{sub(i('i'))}"), 850, 125, 90, 50, "Mechanics")
+    p.dot("ytap", 975, 150)
+    p.port("out_y", 1, 1005, 142, i("y"))
+    p.link("sat", "utap", f"{i('u')}{sub(i('k'))}", ly=-10, arrow=False)
+    p.link("utap", "act")
+    p.link("act", "ptap", i("p"), ly=-10, arrow=False)
+    p.link("ptap", "H")
+    p.link("H", "mech", i("v"), ly=-10)
+    p.link("mech", "ytap", arrow=False)
+    p.link("ytap", "out_y")
+
+    # applied correction and its delay
+    p.gain("Pt", "½<i>P</i><sup>T</sup>", 545, 276, "Applied correction", facing="west", w=60, h=48)
+    p.block("zd", frac("1", i("z")), 470, 280, 40, 40, "Unit Delay")
+    p.dot("dtap", 450, 300)
+    p.link("utap", "Pt", out="b", inn="r", pts=[(605, 300)])
+    p.link("Pt", "zd", f"{db}{sub(i('k'))}", out="l", inn="r", ly=10)        # leftward: +y is above
+    p.link("zd", "dtap", out="l", inn="r", arrow=False)
+    p.link("dtap", "gu", f"{db}{sub(i('k') + '−1')}", out="l", inn="l", pts=[(230, 300), (230, 240)], lx=-0.3, ly=-10)
+
+    # measured state X = (y, p - 4.5)
+    p.block("bias", f"{i('u')} − 4.5", 850, 420, 80, 30, "Bias")
+    p.box("mux", "", 1060, 380, 6, 70, S_MUX)
+    p.box("mux_name", "Mux", 1033, 452, 60, 16, S_NAME)
+    p.link("ytap", "mux", f"{i('y')}{sub(i('k'))}", out="b", inn=(0, 0.214), pts=[(975, 395)], lx=0.6, ly=-10)
+    p.link("ptap", "bias", f"{i('p')}{sub(i('k'))}", out="b", inn="l", pts=[(755, 435)], lx=0.5, ly=-10)
+    p.link("bias", "mux", inn=(0, 0.786))
+    p.dot("xtap", 470, 500)
+    p.link("mux", "xtap", f"{i('X')}{sub(i('k'))}", out="r", inn="r", pts=[(1085, 415), (1085, 500)], lx=0.3, ly=-10,
+           arrow=False)
+    p.link("xtap", "gx", out="l", inn="l", pts=[(200, 500), (200, 120)])
+
+    # offset estimator subsystem
+    p.block("off", "Offset<br>estimator", 300, 370, 130, 70, "Offset estimator (subsystem, next page)")
+    p.link("dtap", "off", out="b", inn=(1, 0.214), pts=[(450, 385)])
+    p.link("xtap", "off", out="t", inn=(1, 0.786), pts=[(470, 425)])
+    p.link("off", "gw", f"{i('w')}{sub(i('k'))}", out="l", inn="l", pts=[(220, 405), (220, 180)], lx=-0.4, ly=-10)
+
+    p.box("note", f"Fixed-step discrete, Δ{i('t')} = 10 ms. {i('g')}<sub>r</sub>, {i('g')}<sub>x</sub>, {i('g')}<sub>w</sub>, "
+                  f"{i('g')}<sub>u</sub>: first block row of the closed-form MPC solution (horizon 100 steps, "
+                  f"{i('R')}<sub>u</sub> = 0.1). {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup>; {i('G')} = 1, "
+                  f"{i('τ')} = 0.60 s, {i('a')}<sub>x</sub> = 4.66, {i('a')}<sub>y</sub> = 4.69 s⁻¹, "
+                  f"{i('H')} ∈ ℝ<sup>2×4</sup>. Each segment command drives its five pouches.", 20, 530, 1100, 40, S_NOTE)
+    return p
+
+
+def simulink_offset_page() -> SimulinkPage:
+    """Inside the offset estimator subsystem: e_k = y_k - C(A X_{k-1} + B dbar_{k-1}), w_k = low-pass(e_k)."""
+    p = SimulinkPage("MPC M2 submission (Simulink): Offset estimator", 760, 300)
+    i = lambda s: f"<i>{s}</i>"          # noqa: E731
+    sub = lambda s: f"<sub>{s}</sub>"    # noqa: E731
+    p.port("in_x", 1, 20, 112, f"{i('X')}{sub(i('k'))}")
+    p.port("in_d", 2, 20, 202, f"<span style=\"text-decoration:overline\"><i>δ</i></span>{sub(i('k') + '−1')}")
+    p.dot("xt", 90, 120)
+    p.block("sel", f"{i('y')} = {i('X')}(1:2)", 170, 25, 90, 30, "Selector")
+    p.block("zx", frac("1", i("z")), 130, 100, 40, 40, "Unit Delay")
+    p.gain("A", i("A"), 200, 100)
+    p.gain("B", i("B"), 200, 190)
+    p.sum("s1", 300, 165, [("+", -10, -18), ("+", -10, 18)])
+    p.gain("C", i("C"), 340, 145)
+    p.sum("s2", 450, 165, [("−", -18, -8), ("+", -8, -18)])
+    p.block("lp", frac(i("α"), f"1 − (1 − {i('α')}) {i('z')}<sup>−1</sup>"), 500, 140, 130, 50, "Discrete Filter (0.5 s)")
+    p.port("out_w", 1, 680, 157, f"{i('w')}{sub(i('k'))}")
+    p.link("in_x", "xt", arrow=False)
+    p.link("xt", "zx")
+    p.link("zx", "A")
+    p.link("xt", "sel", out="t", inn="l", pts=[(90, 40)])
+    p.link("A", "s1", out="r", inn="t", pts=[(300, 120)])
+    p.link("in_d", "B")
+    p.link("B", "s1", out="r", inn="b", pts=[(300, 210)])
+    p.link("s1", "C")
+    p.link("C", "s2", f"ŷ{sub(i('k') + '|' + i('k') + '−1')}", ly=-10)
+    p.link("sel", "s2", f"{i('y')}{sub(i('k'))}", out="r", inn="t", pts=[(450, 40)], lx=0.3, ly=-10)
+    p.link("s2", "lp", f"{i('e')}{sub(i('k'))}", ly=-10)
+    p.link("lp", "out_w")
+    p.box("note", f"{i('A')}, {i('B')}, {i('C')}: the model discretised with a zero-order hold at 10 ms; "
+                  f"{i('α')} = 1 − e<sup>−0.01/0.5</sup>.", 20, 250, 700, 30, S_NOTE)
     return p
 
 
@@ -342,6 +521,8 @@ def mpc_f_page() -> Page:
 def main() -> None:
     pages = [
         submission_page(),
+        simulink_page(),
+        simulink_offset_page(),
         smc_page("SMC known ref", "Delay-aware SMC (M2), reference known",
                  False,
                  "Code: softarm.controllers.DelayAwareNDOSMC(observer=False, exact_preview=True), fed r(t+T) by "
