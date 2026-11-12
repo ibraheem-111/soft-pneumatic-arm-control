@@ -1,13 +1,17 @@
 """Write draw.io block diagrams of the controllers in compare_m2_controllers.py.
 
-One page per controller, drawn from the code (softarm.controllers.DelayAwareNDOSMC,
-softarm.controllers.DelayMPC, softarm.controllers.KalmanDelayMPC):
-  1. Delay-aware SMC, reference known (lambda = 8 and the lambda = 4 row; observer off)
-  2. Delay-aware NDOSMC, reference known (observer on)
-  3. MPC on M2, reference known
-  4. MPC on F, reference known
-Blue blocks run in the controller every 10 ms, dashed blocks are models the controller runs
-internally, grey is the simulator. Signals are in mm (tip) and psi (pressure).
+One page per controller, drawn from the code:
+  1. MPC (M2), submission: the controller of notebooks/Soft_robotic_arm_MPC_M2sim.ipynb (make_sim,
+     trajectory preview), in IEEE style (black lines, Times New Roman, no colour) for the report
+  2. Delay-aware SMC, reference known (lambda = 8 and the lambda = 4 row; observer off)
+  3. Delay-aware NDOSMC, reference known (observer on)
+  4. MPC on M2, reference known (make_calibrated_sim)
+  5. MPC on F, reference known
+Pages 2-5 (softarm.controllers.DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC): blue blocks run in the
+controller every 10 ms, dashed blocks are models the controller runs internally, grey is the simulator.
+Signals are in mm (tip) and psi (pressure).
+
+Hand edits made in draw.io are overwritten when this script is run again.
 
 Writes docs/diagrams/controllers.drawio (open with draw.io / diagrams.net, or the VS Code
 Draw.io Integration extension).
@@ -72,6 +76,132 @@ class Page:
                 '<mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" '
                 'arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="900" math="0" shadow="0">'
                 f'<root><mxCell id="0"/><mxCell id="1" parent="0"/>{body}</root></mxGraphModel></diagram>')
+
+
+# --------------------------------------------------------------- IEEE-style page (report figure)
+
+FONT = "fontFamily=Times New Roman;fontColor=#000000;"
+I_BLOCK = "rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1;fontSize=14;" + FONT
+I_TEXT = "text;html=1;align=center;verticalAlign=middle;fontSize=14;" + FONT
+I_NOTE = "text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontSize=12;" + FONT
+I_DOT = "ellipse;html=1;fillColor=#000000;strokeColor=#000000;"
+I_GROUP = ("rounded=0;html=1;fillColor=none;dashed=1;dashPattern=6 4;strokeColor=#000000;strokeWidth=1;"
+           "verticalAlign=top;align=left;spacingLeft=6;spacingTop=2;fontSize=12;" + FONT)
+I_EDGE = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;endSize=7;strokeColor=#000000;"
+          "strokeWidth=1;fontSize=13;labelBackgroundColor=#FFFFFF;" + FONT)
+
+
+class IEEEPage(Page):
+    """Black on white, Times New Roman, no title (the caption goes in the report)."""
+
+    def __init__(self, name: str, width: int, height: int):
+        self.name, self.cells, self.n, self.size = name, [], 0, (width, height)
+
+    def dot(self, key: str, cx, cy, r=3) -> None:
+        self.box(key, "", cx - r, cy - r, 2 * r, 2 * r, I_DOT)
+
+    def link(self, a: str, b: str, label: str = "", out="r", inn="l", pts=(), lx=0.0, ly=0.0, arrow=True) -> None:
+        ox, oy = PORT[out] if isinstance(out, str) else out
+        ix, iy = PORT[inn] if isinstance(inn, str) else inn
+        s = I_EDGE + f"exitX={ox};exitY={oy};exitDx=0;exitDy=0;entryX={ix};entryY={iy};entryDx=0;entryDy=0;"
+        if not arrow:
+            s += "endArrow=none;"
+        geo = '<mxGeometry relative="1" as="geometry"' + (f' x="{lx}" y="{ly}">' if (lx or ly) else ">")
+        if pts:
+            geo += '<Array as="points">' + "".join(f'<mxPoint x="{px}" y="{py}"/>' for px, py in pts) + "</Array>"
+        self.cells.append(f'<mxCell id="{self._id()}" value="{escape(label)}" style="{s}" edge="1" parent="1" '
+                          f'source="{a}" target="{b}">{geo}</mxGeometry></mxCell>')
+
+    def line(self, points, width=1.5, arrow=False) -> None:
+        """Free line through points (not attached to blocks); used for glyphs."""
+        (x0, y0), (x1, y1) = points[0], points[-1]
+        mids = "".join(f'<mxPoint x="{px}" y="{py}"/>' for px, py in points[1:-1])
+        end = "endArrow=classic;endSize=3;" if arrow else "endArrow=none;"
+        self.cells.append(f'<mxCell id="{self._id()}" style="{end}html=1;strokeColor=#000000;rounded=0;'
+                          f'strokeWidth={width};" edge="1" parent="1"><mxGeometry relative="1" as="geometry">'
+                          f'<mxPoint x="{x0}" y="{y0}" as="sourcePoint"/><mxPoint x="{x1}" y="{y1}" as="targetPoint"/>'
+                          + (f'<Array as="points">{mids}</Array>' if mids else "") + "</mxGeometry></mxCell>")
+
+    def xml(self) -> str:
+        w, h = self.size
+        return (f'<diagram name="{escape(self.name)}" id="{escape(self.name.replace(" ", "_"))}">'
+                f'<mxGraphModel dx="{w}" dy="{h}" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" '
+                f'arrows="1" fold="1" page="1" pageScale="1" pageWidth="{w}" pageHeight="{h}" math="0" shadow="0" '
+                f'background="#FFFFFF"><root><mxCell id="0"/><mxCell id="1" parent="0"/>{"".join(self.cells)}'
+                '</root></mxGraphModel></diagram>')
+
+
+def submission_page() -> IEEEPage:
+    """The submitted controller: MPC with trajectory preview on M2 identified on make_sim (controller cell of
+    notebooks/Soft_robotic_arm_MPC_M2sim.ipynb). No dead time on this plant; four segments in opposing pairs."""
+    p = IEEEPage("MPC M2 submission (IEEE)", 1450, 470)
+    i = lambda s: f"<i>{s}</i>"          # noqa: E731
+    sub = lambda s: f"<sub>{s}</sub>"    # noqa: E731
+    db = "<i>δ̄</i>"                       # applied correction
+    y0, y1 = 70, 270                     # forward path, feedback row
+
+    p.box("ref", f"{i('r')}({i('t')})", 0, y0 - 15, 40, 30, I_TEXT)
+    p.box("prev", f"Reference preview<br>{i('R')}{sub(i('k'))} = [ {i('r')}({i('t')}{sub(i('k'))} + {i('i')}Δ{i('t')}) ], "
+                  f"{i('i')} = 1 … {i('H')}", 60, y0 - 32, 190, 64, I_BLOCK)
+    p.box("mpc", f"Unconstrained MPC (first move)<br>{i('δ')}{sub(i('k'))} = {i('g')}{sub(i('r'))}{i('R')}{sub(i('k'))} + "
+                 f"{i('g')}{sub(i('x'))}{i('X')}{sub(i('k'))} + {i('g')}{sub(i('w'))}{i('w')}{sub(i('k'))} + "
+                 f"{i('g')}{sub(i('u'))}{db}{sub(i('k') + '−1')}", 300, y0 - 38, 270, 76, I_BLOCK)
+    p.box("alloc", f"Pair allocation<br>4.5 + {i('P')}{i('δ')}{sub(i('k'))}", 610, y0 - 32, 120, 64, I_BLOCK)
+    p.box("sat", "<br><br>[0, 9] psi", 770, y0 - 32, 80, 64, I_BLOCK)
+    cx, cy = 810, y0 - 8                                     # saturation glyph
+    p.line([(cx - 22, cy), (cx + 22, cy)], width=0.6, arrow=True)
+    p.line([(cx, cy + 14), (cx, cy - 16)], width=0.6, arrow=True)
+    p.line([(cx - 20, cy + 10), (cx - 9, cy + 10), (cx + 9, cy - 10), (cx + 20, cy - 10)])
+    p.box("act", f"{i('G')} / ({i('τs')} + 1)", 930, y0 - 25, 105, 50, I_BLOCK)
+    p.box("H", i("H"), 1090, y0 - 25, 50, 50, I_BLOCK)
+    p.box("mech", f"{i('a')}{sub(i('i'))} / ({i('s')} + {i('a')}{sub(i('i'))})", 1195, y0 - 25, 115, 50, I_BLOCK)
+    p.box("y", i("y"), 1395, y0 - 15, 30, 30, I_TEXT)
+    p.box("plant", "Plant (<span style=\"font-family:Courier New\">make_sim</span>) as modelled (M2), "
+                   f"axes {i('i')} ∈ {{{i('x')}, {i('y')}}}", 910, y0 - 68, 420, 120, I_GROUP)
+    p.dot("utap", 885, y0)
+    p.dot("ptap", 1062, y0)
+    p.dot("ytap", 1350, y0)
+    p.link("ref", "prev")
+    p.link("prev", "mpc", f"{i('R')}{sub(i('k'))}", ly=-12)
+    p.link("mpc", "alloc", f"{i('δ')}{sub(i('k'))}", ly=-12)
+    p.link("alloc", "sat")
+    p.link("sat", "utap", f"{i('u')}{sub(i('k'))}", ly=-12, arrow=False)
+    p.link("utap", "act")
+    p.link("act", "ptap", i("p"), ly=-12, arrow=False)
+    p.link("ptap", "H")
+    p.link("H", "mech", i("v"), ly=-12)
+    p.link("mech", "ytap", arrow=False)
+    p.link("ytap", "y")
+
+    p.box("state", f"State<br>{i('X')}{sub(i('k'))} = ( {i('y')}{sub(i('k'))}, {i('p')}{sub(i('k'))} − 4.5 )",
+          90, y1 - 30, 190, 60, I_BLOCK)
+    p.box("offset", f"Offset estimator<br>{i('e')}{sub(i('k'))} = {i('y')}{sub(i('k'))} − {i('C')}({i('A')}{i('X')}"
+                    f"{sub(i('k') + '−1')} + {i('B')}{db}{sub(i('k') + '−1')})<br>{i('w')}{sub(i('k'))} = "
+                    f"{i('w')}{sub(i('k') + '−1')} + {i('α')}({i('e')}{sub(i('k'))} − {i('w')}{sub(i('k') + '−1')})",
+          360, y1 - 42, 300, 84, I_BLOCK)
+    p.box("z1", f"{i('z')}<sup>−1</sup>", 740, y1 - 22, 50, 44, I_BLOCK)
+    p.box("rec", f"Applied correction<br>{db}{sub(i('k'))} = ½ ( {i('u')}{sub('1')} − {i('u')}{sub('3')}, "
+                 f"{i('u')}{sub('2')} − {i('u')}{sub('4')} )", 830, y1 - 30, 200, 60, I_BLOCK)
+    p.dot("dtap", 700, y1)
+    yp, yy = 360, 385                                        # measurement buses
+    p.link("ytap", "state", f"{i('y')}{sub(i('k'))} (tip position)", out="b", inn=(0.3, 1),
+           pts=[(1350, yy), (147, yy)], lx=0.55, ly=-12)
+    p.link("ptap", "state", f"{i('p')}{sub(i('k'))} (segment pressure sensors)", out="b", inn=(0.7, 1),
+           pts=[(1062, yp), (223, yp)], lx=0.25, ly=-12)
+    p.link("utap", "rec", out="b", inn=(0.275, 0), pts=[(885, y1 - 30)])
+    p.link("rec", "z1", f"{db}{sub(i('k'))}", out="l", inn="r", ly=-12)
+    p.link("z1", "dtap", out="l", inn="r", arrow=False)
+    p.link("dtap", "offset", f"{db}{sub(i('k') + '−1')}", out="l", inn="r", ly=14)
+    p.link("state", "offset", f"{i('X')}{sub(i('k'))}", out="r", inn="l", ly=-12)
+    p.link("state", "mpc", f"{i('X')}{sub(i('k'))}", out="t", inn=(0.15, 1), pts=[(185, 180), (340, 180)], lx=0.85)
+    p.link("offset", "mpc", f"{i('w')}{sub(i('k'))}", out="t", inn=(0.55, 1), pts=[(510, 195), (448, 195)], lx=0.6)
+    p.link("dtap", "mpc", f"{db}{sub(i('k') + '−1')}", out="t", inn=(0.9, 1), pts=[(700, 165), (543, 165)], lx=0.3)
+    p.box("note", f"Δ{i('t')} = 10 ms; horizon {i('H')} = 100 steps (1 s); {i('R')}{sub(i('u'))} = 0.1 mm²/psi²; "
+                  f"{i('τ')} = 0.60 s; {i('G')} = 1; {i('a')}{sub(i('x'))} = 4.66 s⁻¹, {i('a')}{sub(i('y'))} = 4.69 s⁻¹; "
+                  f"{i('H')} ∈ ℝ<sup>2×4</sup> (≈ 1.84 mm/psi); {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup> maps "
+                  f"({i('δ')}{sub(i('x'))}, {i('δ')}{sub(i('y'))}) to S1–S4; {i('α')} = 1 − e<sup>−Δ<i>t</i>/0.5 s</sup>; "
+                  "each segment command drives its five pouches.", 90, 400, 1240, 40, I_NOTE)
+    return p
 
 
 LEGEND = ("Blue: computed by the controller every 10 ms. Dashed: model run inside the controller. "
@@ -211,6 +341,7 @@ def mpc_f_page() -> Page:
 
 def main() -> None:
     pages = [
+        submission_page(),
         smc_page("SMC known ref", "Delay-aware SMC (M2), reference known",
                  False,
                  "Code: softarm.controllers.DelayAwareNDOSMC(observer=False, exact_preview=True), fed r(t+T) by "
