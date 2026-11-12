@@ -146,7 +146,7 @@ def submission_page() -> IEEEPage:
 
     p.box("ref", f"{i('r')}({i('t')})", 0, y0 - 15, 40, 30, I_TEXT)
     p.box("prev", f"Reference preview<br>{i('R')}{sub(i('k'))} = [ {i('r')}({i('t')}{sub(i('k'))} + {i('i')}Δ{i('t')}) ], "
-                  f"{i('i')} = 1 … {i('H')}", 60, y0 - 32, 190, 64, I_BLOCK)
+                  f"{i('i')} = 1 … {i('N')}<sub>p</sub>", 60, y0 - 32, 190, 64, I_BLOCK)
     p.box("mpc", f"Unconstrained MPC (first move)<br>{i('δ')}{sub(i('k'))} = {i('g')}{sub(i('r'))}{i('R')}{sub(i('k'))} + "
                  f"{i('g')}{sub(i('x'))}{i('X')}{sub(i('k'))} + {i('g')}{sub(i('w'))}{i('w')}{sub(i('k'))} + "
                  f"{i('g')}{sub(i('u'))}{db}{sub(i('k') + '−1')}", 300, y0 - 38, 270, 76, I_BLOCK)
@@ -200,9 +200,9 @@ def submission_page() -> IEEEPage:
     p.link("state", "mpc", f"{i('X')}{sub(i('k'))}", out="t", inn=(0.15, 1), pts=[(185, 180), (340, 180)], lx=0.85)
     p.link("offset", "mpc", f"{i('w')}{sub(i('k'))}", out="t", inn=(0.55, 1), pts=[(510, 195), (448, 195)], lx=0.6)
     p.link("dtap", "mpc", f"{db}{sub(i('k') + '−1')}", out="t", inn=(0.9, 1), pts=[(700, 165), (543, 165)], lx=0.3)
-    p.box("note", f"Δ{i('t')} = 10 ms; horizon {i('H')} = 100 steps (1 s); {i('R')}{sub(i('u'))} = 0.1 mm²/psi²; "
+    p.box("note", f"Δ{i('t')} = 10 ms; prediction horizon {i('N')}<sub>p</sub> = 100 steps (1 s); {i('R')}{sub(i('u'))} = 0.1 mm²/psi²; "
                   f"{i('τ')} = 0.60 s; {i('G')} = 1; {i('a')}{sub(i('x'))} = 4.66 s⁻¹, {i('a')}{sub(i('y'))} = 4.69 s⁻¹; "
-                  f"{i('H')} ∈ ℝ<sup>2×4</sup> (≈ 1.84 mm/psi); {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup> maps "
+                  f"pressure map {i('H')} ∈ ℝ<sup>2×4</sup> (≈ 1.84 mm/psi); {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup> maps "
                   f"({i('δ')}{sub(i('x'))}, {i('δ')}{sub(i('y'))}) to S1–S4; {i('α')} = 1 − e<sup>−Δ<i>t</i>/0.5 s</sup>; "
                   "each segment command drives its five pouches.", 90, 400, 1240, 40, I_NOTE)
     return p
@@ -273,7 +273,7 @@ def simulink_page() -> SimulinkPage:
     # control law: delta_k = g_r R_k + g_x X_k + g_w w_k + g_u dbar_{k-1}
     p.port("in_r", 1, 20, 52, f"{i('r')}({i('t')})")
     p.block("prev", "Reference<br>preview", 80, 35, 120, 50,
-            f"{i('R')}{sub(i('k'))} = {i('r')}({i('t')}{sub(i('k'))} + {i('i')}Δ{i('t')}), {i('i')} = 1…100")
+            f"{i('R')}{sub(i('k'))} = {i('r')}({i('t')}{sub(i('k'))} + {i('i')}Δ{i('t')}), {i('i')} = 1…{i('N')}<sub>p</sub>")
     for key, lab, yc in (("gr", "g<sub>r</sub>", 60), ("gx", "g<sub>x</sub>", 120), ("gw", "g<sub>w</sub>", 180),
                          ("gu", "g<sub>u</sub>", 240)):
         p.gain(key, i(lab), 240, yc - 20)
@@ -342,10 +342,10 @@ def simulink_page() -> SimulinkPage:
     p.link("off", "gw", f"{i('w')}{sub(i('k'))}", out="l", inn="l", pts=[(220, 405), (220, 180)], lx=-0.4, ly=-10)
 
     p.box("note", f"Fixed-step discrete, Δ{i('t')} = 10 ms. {i('g')}<sub>r</sub>, {i('g')}<sub>x</sub>, {i('g')}<sub>w</sub>, "
-                  f"{i('g')}<sub>u</sub>: first block row of the closed-form MPC solution (horizon 100 steps, "
+                  f"{i('g')}<sub>u</sub>: first block row of the closed-form MPC solution (prediction horizon {i('N')}<sub>p</sub> = 100 steps, "
                   f"{i('R')}<sub>u</sub> = 0.1). {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup>; {i('G')} = 1, "
                   f"{i('τ')} = 0.60 s, {i('a')}<sub>x</sub> = 4.66, {i('a')}<sub>y</sub> = 4.69 s⁻¹, "
-                  f"{i('H')} ∈ ℝ<sup>2×4</sup>. Each segment command drives its five pouches.", 20, 530, 1100, 40, S_NOTE)
+                  f"pressure map {i('H')} ∈ ℝ<sup>2×4</sup>. Each segment command drives its five pouches.", 20, 530, 1100, 40, S_NOTE)
     return p
 
 
