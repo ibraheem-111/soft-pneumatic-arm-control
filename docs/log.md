@@ -9,9 +9,23 @@ person (or agent) can pick up without asking. Keep entries short and dated.
   `simplest_MPC_representation` and `simplified_MPC` (the submitted MPC, plant drawn as one block, since
   the plant is the simulator and G/(τs+1), H, a/(s+a) are the controller's model M2), and
   `3 input MPC diagram` (the make_calibrated_sim version, `DelayPreviewMPC` in §10 of the submission
-  notebook). The Simulink pages were removed. `scripts/draw_controller_diagrams.py` no longer
-  overwrites the file without `--force`. Decision: keep the diagrams simple and put the equations in
-  the report text.
+  notebook). Decision: keep the diagrams simple and put the equations in the report text.
+- Merged with the generated pages, and corrected:
+  - `scripts/draw_controller_diagrams.py` now merges by page name: it rewrites only its own pages
+    (listed in its docstring) and keeps the hand-edited pages and the page order. Rerunning gives
+    byte-identical output.
+  - The Simulink pages are back (they were missing because the hand edit started from an older copy).
+  - On the IEEE and Simulink pages the plant is one block, with G/(τs+1), H and a/(s+a) listed as the
+    controller's internal model, and the horizon is N_p.
+  - On `3 input MPC diagram`:
+    - z⁻⁵⁰ became z⁻¹ (g_u uses δ̄_{k−1}, `u_prev` in `DelayPreviewMPC`);
+    - added the dead-time predictor X̂_{k+N}, fed X_k and δ̄_{k−1}, feeding the MPC and the
+      offset estimator; the code feeds the MPC X̂_{k+N} and gives the estimator no δ̄.
+  - `simplified_MPC`: the preview uses N_p instead of H.
+  - Doubled arrowheads at the y junction removed on all three hand-edited pages.
+  - New generated page `3 input MPC (detailed)`: correction buffer z⁻¹…z⁻ᴺ, the predictor equation,
+    z⁻ᴺ into the estimator, the y_k branch, and the parameters of the calibrated M2.
+  - All pages checked in viewer.diagrams.net against `PreviewMPC` and `DelayPreviewMPC`.
 
 ## 2026-11-11
 

@@ -1,32 +1,36 @@
 """Write draw.io block diagrams of the controllers in compare_m2_controllers.py.
 
-One page per controller, drawn from the code:
-  1. MPC (M2), submission: the controller of notebooks/Soft_robotic_arm_MPC_M2sim.ipynb (make_sim,
-     trajectory preview), in IEEE style (black lines, Times New Roman, no colour) for the report
-  2. The same controller drawn as a Simulink model (gain paths, Sum, Transfer Fcn, Saturation, Unit
-     Delay, Mux, ports), and 3. the inside of its offset-estimator subsystem
-  4. Delay-aware SMC, reference known (lambda = 8 and the lambda = 4 row; observer off)
-  5. Delay-aware NDOSMC, reference known (observer on)
-  6. MPC on M2, reference known (make_calibrated_sim)
-  7. MPC on F, reference known
-Pages 4-7 (softarm.controllers.DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC): blue blocks run in the
+Pages this script draws, from the code:
+  - "MPC M2 submission (IEEE)": the controller of notebooks/Soft_robotic_arm_MPC_M2sim.ipynb (make_sim,
+    trajectory preview), in IEEE style (black lines, Times New Roman, no colour) for the report
+  - "MPC M2 submission (Simulink)": the same controller drawn as a Simulink model (gain paths, Sum,
+    Saturation, Unit Delay, Mux, ports), and "...: Offset estimator", the inside of that subsystem
+  - "3 input MPC (detailed)": the three-input version for make_calibrated_sim (DelayPreviewMPC in section
+    10 of the same notebook), IEEE style, with the dead-time predictor and its correction buffer
+  - "SMC known ref", "NDOSMC known ref": delay-aware SMC (lambda = 8 and 4, observer off) and NDOSMC
+  - "MPC on M2", "MPC on F": MPC with the reference known (make_calibrated_sim)
+The plant is drawn as one block (it is the simulator); G/(tau s + 1), H and a/(s + a) are the controller's
+internal model (M2), listed in the page notes.
+The last four pages (softarm.controllers.DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC) (softarm.controllers.DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC): blue blocks run in the
 controller every 10 ms, dashed blocks are models the controller runs internally, grey is the simulator.
 Signals are in mm (tip) and psi (pressure).
 
-Since 2026-11-15 controllers.drawio is edited by hand in diagrams.net: it has pages this script
-does not draw (the simplified submission diagrams and the three-input MPC), and the Simulink pages
-were removed. The script therefore refuses to overwrite it; pass --force to regenerate anyway
-(that discards the hand-edited pages), or --out <path> to write elsewhere.
+controllers.drawio also holds pages edited by hand in diagrams.net ("simplest_MPC_representation",
+"simplified_MPC", "3 input MPC diagram"). The script merges by page name: it replaces only the pages
+listed above and keeps every other page, and its position, unchanged. A hand edit to one of the pages
+listed above is overwritten when the script runs.
 
 Writes docs/diagrams/controllers.drawio (open with draw.io / diagrams.net, or the VS Code
 Draw.io Integration extension).
 
 Usage:
-    uv run python scripts/draw_controller_diagrams.py --out /tmp/controllers_generated.drawio
+    uv run python scripts/draw_controller_diagrams.py                 # merge into docs/diagrams/controllers.drawio
+    uv run python scripts/draw_controller_diagrams.py --out <path>    # merge into (or create) another file
 """
 
+import re
 import sys
-from html import escape
+from html import escape, unescape
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parent.parent / "docs" / "diagrams" / "controllers.drawio"
@@ -95,6 +99,8 @@ I_GROUP = ("rounded=0;html=1;fillColor=none;dashed=1;dashPattern=6 4;strokeColor
            "verticalAlign=top;align=left;spacingLeft=6;spacingTop=2;fontSize=12;" + FONT)
 I_EDGE = ("edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;endSize=7;strokeColor=#000000;"
           "strokeWidth=1;fontSize=13;labelBackgroundColor=#FFFFFF;" + FONT)
+I_SUM = "ellipse;html=1;fillColor=#FFFFFF;strokeColor=#000000;strokeWidth=1;" + FONT
+I_SIGN = "text;html=1;align=center;verticalAlign=middle;fontSize=12;" + FONT
 
 
 class IEEEPage(Page):
@@ -108,10 +114,12 @@ class IEEEPage(Page):
     def dot(self, key: str, cx, cy, r=3) -> None:
         self.box(key, "", cx - r, cy - r, 2 * r, 2 * r, I_DOT)
 
-    def link(self, a: str, b: str, label: str = "", out="r", inn="l", pts=(), lx=0.0, ly=0.0, arrow=True) -> None:
+    def link(self, a: str, b: str, label: str = "", out="r", inn="l", pts=(), lx=0.0, ly=0.0, arrow=True,
+             style: str = "") -> None:
         ox, oy = PORT[out] if isinstance(out, str) else out
         ix, iy = PORT[inn] if isinstance(inn, str) else inn
-        s = self.edge_style + f"exitX={ox};exitY={oy};exitDx=0;exitDy=0;entryX={ix};entryY={iy};entryDx=0;entryDy=0;"
+        s = (self.edge_style + f"exitX={ox};exitY={oy};exitDx=0;exitDy=0;entryX={ix};entryY={iy};entryDx=0;entryDy=0;"
+             + style)
         if not arrow:
             s += "endArrow=none;"
         geo = '<mxGeometry relative="1" as="geometry"' + (f' x="{lx}" y="{ly}">' if (lx or ly) else ">")
@@ -119,6 +127,20 @@ class IEEEPage(Page):
             geo += '<Array as="points">' + "".join(f'<mxPoint x="{px}" y="{py}"/>' for px, py in pts) + "</Array>"
         self.cells.append(f'<mxCell id="{self._id()}" value="{escape(label)}" style="{s}" edge="1" parent="1" '
                           f'source="{a}" target="{b}">{geo}</mxGeometry></mxCell>')
+
+    def junction(self, key: str, cx, cy, signs, r=12) -> None:
+        """Summing junction; signs: list of (text, dx, dy) placed relative to the centre."""
+        self.box(key, "", cx - r, cy - r, 2 * r, 2 * r, I_SUM)
+        for j, (t, dx, dy) in enumerate(signs):
+            self.box(f"{key}_s{j}", t, cx + dx - 6, cy + dy - 7, 12, 14, I_SIGN)
+
+    def limiter(self, key: str, x, y, w=80, h=64) -> None:
+        """Saturation block [0, 9] psi with the limiter glyph."""
+        self.box(key, "<br><br>[0, 9] psi", x, y, w, h, I_BLOCK)
+        cx, cy = x + w / 2, y + h / 2 - 8
+        self.line([(cx - 22, cy), (cx + 22, cy)], width=0.6, arrow=True)
+        self.line([(cx, cy + 14), (cx, cy - 16)], width=0.6, arrow=True)
+        self.line([(cx - 20, cy + 10), (cx - 9, cy + 10), (cx + 9, cy - 10), (cx + 20, cy - 10)])
 
     def line(self, points, width=1.5, arrow=False) -> None:
         """Free line through points (not attached to blocks); used for glyphs."""
@@ -155,30 +177,18 @@ def submission_page() -> IEEEPage:
                  f"{i('g')}{sub(i('x'))}{i('X')}{sub(i('k'))} + {i('g')}{sub(i('w'))}{i('w')}{sub(i('k'))} + "
                  f"{i('g')}{sub(i('u'))}{db}{sub(i('k') + '−1')}", 300, y0 - 38, 270, 76, I_BLOCK)
     p.box("alloc", f"Pair allocation<br>4.5 + {i('P')}{i('δ')}{sub(i('k'))}", 610, y0 - 32, 120, 64, I_BLOCK)
-    p.box("sat", "<br><br>[0, 9] psi", 770, y0 - 32, 80, 64, I_BLOCK)
-    cx, cy = 810, y0 - 8                                     # saturation glyph
-    p.line([(cx - 22, cy), (cx + 22, cy)], width=0.6, arrow=True)
-    p.line([(cx, cy + 14), (cx, cy - 16)], width=0.6, arrow=True)
-    p.line([(cx - 20, cy + 10), (cx - 9, cy + 10), (cx + 9, cy - 10), (cx + 20, cy - 10)])
-    p.box("act", f"{i('G')} / ({i('τs')} + 1)", 930, y0 - 25, 105, 50, I_BLOCK)
-    p.box("H", i("H"), 1090, y0 - 25, 50, 50, I_BLOCK)
-    p.box("mech", f"{i('a')}{sub(i('i'))} / ({i('s')} + {i('a')}{sub(i('i'))})", 1195, y0 - 25, 115, 50, I_BLOCK)
+    p.limiter("sat", 770, y0 - 32)
+    p.box("plant", "Plant (<span style=\"font-family:Courier New\">make_sim</span>)", 930, y0 - 25, 260, 50, I_BLOCK)
     p.box("y", i("y"), 1395, y0 - 15, 30, 30, I_TEXT)
-    p.box("plant", "Plant (<span style=\"font-family:Courier New\">make_sim</span>) as modelled (M2), "
-                   f"axes {i('i')} ∈ {{{i('x')}, {i('y')}}}", 910, y0 - 68, 420, 120, I_GROUP)
     p.dot("utap", 885, y0)
-    p.dot("ptap", 1062, y0)
     p.dot("ytap", 1350, y0)
     p.link("ref", "prev")
     p.link("prev", "mpc", f"{i('R')}{sub(i('k'))}", ly=-12)
     p.link("mpc", "alloc", f"{i('δ')}{sub(i('k'))}", ly=-12)
     p.link("alloc", "sat")
     p.link("sat", "utap", f"{i('u')}{sub(i('k'))}", ly=-12, arrow=False)
-    p.link("utap", "act")
-    p.link("act", "ptap", i("p"), ly=-12, arrow=False)
-    p.link("ptap", "H")
-    p.link("H", "mech", i("v"), ly=-12)
-    p.link("mech", "ytap", arrow=False)
+    p.link("utap", "plant")
+    p.link("plant", "ytap", arrow=False)
     p.link("ytap", "y")
 
     p.box("state", f"State<br>{i('X')}{sub(i('k'))} = ( {i('y')}{sub(i('k'))}, {i('p')}{sub(i('k'))} − 4.5 )",
@@ -194,8 +204,8 @@ def submission_page() -> IEEEPage:
     yp, yy = 360, 385                                        # measurement buses
     p.link("ytap", "state", f"{i('y')}{sub(i('k'))} (tip position)", out="b", inn=(0.3, 1),
            pts=[(1350, yy), (147, yy)], lx=0.55, ly=-12)
-    p.link("ptap", "state", f"{i('p')}{sub(i('k'))} (segment pressure sensors)", out="b", inn=(0.7, 1),
-           pts=[(1062, yp), (223, yp)], lx=0.25, ly=-12)
+    p.link("plant", "state", f"{i('p')}{sub(i('k'))} (segment pressure sensors)", out=(0.5, 1), inn=(0.7, 1),
+           pts=[(1060, yp), (223, yp)], lx=0.25, ly=-12)
     p.link("utap", "rec", out="b", inn=(0.275, 0), pts=[(885, y1 - 30)])
     p.link("rec", "z1", f"{db}{sub(i('k'))}", out="l", inn="r", ly=-12)
     p.link("z1", "dtap", out="l", inn="r", arrow=False)
@@ -205,10 +215,13 @@ def submission_page() -> IEEEPage:
     p.link("offset", "mpc", f"{i('w')}{sub(i('k'))}", out="t", inn=(0.55, 1), pts=[(510, 195), (448, 195)], lx=0.6)
     p.link("dtap", "mpc", f"{db}{sub(i('k') + '−1')}", out="t", inn=(0.9, 1), pts=[(700, 165), (543, 165)], lx=0.3)
     p.box("note", f"Δ{i('t')} = 10 ms; prediction horizon {i('N')}<sub>p</sub> = 100 steps (1 s); {i('R')}{sub(i('u'))} = 0.1 mm²/psi²; "
-                  f"{i('τ')} = 0.60 s; {i('G')} = 1; {i('a')}{sub(i('x'))} = 4.66 s⁻¹, {i('a')}{sub(i('y'))} = 4.69 s⁻¹; "
-                  f"pressure map {i('H')} ∈ ℝ<sup>2×4</sup> (≈ 1.84 mm/psi); {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup> maps "
-                  f"({i('δ')}{sub(i('x'))}, {i('δ')}{sub(i('y'))}) to S1–S4; {i('α')} = 1 − e<sup>−Δ<i>t</i>/0.5 s</sup>; "
-                  "each segment command drives its five pouches.", 90, 400, 1240, 40, I_NOTE)
+                  f"{i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup> maps ({i('δ')}{sub(i('x'))}, {i('δ')}{sub(i('y'))}) to S1–S4; "
+                  f"{i('α')} = 1 − e<sup>−Δ<i>t</i>/0.5 s</sup>; each segment command drives its five pouches. "
+                  f"Controller's internal model (M2, in {i('A')}, {i('B')}, {i('C')} and the gains): "
+                  f"{i('p')} = {i('G')}/({i('τ')}{i('s')} + 1) {i('u')}, {i('y')}{sub(i('i'))} = {i('a')}{sub(i('i'))}/({i('s')} + {i('a')}{sub(i('i'))}) "
+                  f"({i('H')}{i('p')}){sub(i('i'))}; {i('τ')} = 0.60 s, {i('G')} = 1, {i('a')}{sub(i('x'))} = 4.66 s⁻¹, "
+                  f"{i('a')}{sub(i('y'))} = 4.69 s⁻¹, pressure map {i('H')} ∈ ℝ<sup>2×4</sup> (≈ 1.84 mm/psi).",
+          90, 400, 1240, 40, I_NOTE)
     return p
 
 
@@ -268,7 +281,7 @@ class SimulinkPage(IEEEPage):
 
 def simulink_page() -> SimulinkPage:
     """The submitted MPC (M2 on make_sim) drawn as a Simulink model: the control law as four gain paths
-    into a Sum, the offset estimator as a subsystem (next page), the plant as Transfer Fcn and Gain blocks."""
+    into a Sum, the offset estimator as a subsystem (next page), the plant (the simulator) as one block."""
     p = SimulinkPage("MPC M2 submission (Simulink)", 1150, 600)
     i = lambda s: f"<i>{s}</i>"          # noqa: E731
     sub = lambda s: f"<sub>{s}</sub>"    # noqa: E731
@@ -300,22 +313,14 @@ def simulink_page() -> SimulinkPage:
     p.link("c45", "sumb", out="b", inn="t")
     p.link("sumb", "sat")
 
-    # plant model
-    p.box("plant", "Plant model (<span style=\"font-family:Courier New\">make_sim</span>), axes <i>x</i>, <i>y</i>",
-          625, 95, 330, 125, S_GROUP)
+    # plant: the simulator, one block with two measured outputs (p and y)
     p.dot("utap", 605, 150)
-    p.block("act", frac(i("G"), f"{i('τ')}{i('s')} + 1"), 640, 125, 90, 50, "Actuator lag")
-    p.dot("ptap", 755, 150)
-    p.gain("H", i("H"), 775, 130, "Pressure map")
-    p.block("mech", frac(f"{i('a')}{sub(i('i'))}", f"{i('s')} + {i('a')}{sub(i('i'))}"), 850, 125, 90, 50, "Mechanics")
+    p.block("plant", "Plant<br>(<span style=\"font-family:Courier New\">make_sim</span>)", 640, 120, 300, 60)
     p.dot("ytap", 975, 150)
     p.port("out_y", 1, 1005, 142, i("y"))
     p.link("sat", "utap", f"{i('u')}{sub(i('k'))}", ly=-10, arrow=False)
-    p.link("utap", "act")
-    p.link("act", "ptap", i("p"), ly=-10, arrow=False)
-    p.link("ptap", "H")
-    p.link("H", "mech", i("v"), ly=-10)
-    p.link("mech", "ytap", arrow=False)
+    p.link("utap", "plant")
+    p.link("plant", "ytap", arrow=False)
     p.link("ytap", "out_y")
 
     # applied correction and its delay
@@ -323,7 +328,7 @@ def simulink_page() -> SimulinkPage:
     p.block("zd", frac("1", i("z")), 470, 280, 40, 40, "Unit Delay")
     p.dot("dtap", 450, 300)
     p.link("utap", "Pt", out="b", inn="r", pts=[(605, 300)])
-    p.link("Pt", "zd", f"{db}{sub(i('k'))}", out="l", inn="r", ly=10)        # leftward: +y is above
+    p.link("Pt", "zd", f"{db}{sub(i('k'))}", out="l", inn="r", ly=-10)
     p.link("zd", "dtap", out="l", inn="r", arrow=False)
     p.link("dtap", "gu", f"{db}{sub(i('k') + '−1')}", out="l", inn="l", pts=[(230, 300), (230, 240)], lx=-0.3, ly=-10)
 
@@ -332,7 +337,7 @@ def simulink_page() -> SimulinkPage:
     p.box("mux", "", 1060, 380, 6, 70, S_MUX)
     p.box("mux_name", "Mux", 1033, 452, 60, 16, S_NAME)
     p.link("ytap", "mux", f"{i('y')}{sub(i('k'))}", out="b", inn=(0, 0.214), pts=[(975, 395)], lx=0.6, ly=-10)
-    p.link("ptap", "bias", f"{i('p')}{sub(i('k'))}", out="b", inn="l", pts=[(755, 435)], lx=0.5, ly=-10)
+    p.link("plant", "bias", f"{i('p')}{sub(i('k'))}", out=(0.383, 1), inn="l", pts=[(755, 435)], lx=0.5, ly=-10)
     p.link("bias", "mux", inn=(0, 0.786))
     p.dot("xtap", 470, 500)
     p.link("mux", "xtap", f"{i('X')}{sub(i('k'))}", out="r", inn="r", pts=[(1085, 415), (1085, 500)], lx=0.3, ly=-10,
@@ -347,9 +352,9 @@ def simulink_page() -> SimulinkPage:
 
     p.box("note", f"Fixed-step discrete, Δ{i('t')} = 10 ms. {i('g')}<sub>r</sub>, {i('g')}<sub>x</sub>, {i('g')}<sub>w</sub>, "
                   f"{i('g')}<sub>u</sub>: first block row of the closed-form MPC solution (prediction horizon {i('N')}<sub>p</sub> = 100 steps, "
-                  f"{i('R')}<sub>u</sub> = 0.1). {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup>; {i('G')} = 1, "
-                  f"{i('τ')} = 0.60 s, {i('a')}<sub>x</sub> = 4.66, {i('a')}<sub>y</sub> = 4.69 s⁻¹, "
-                  f"pressure map {i('H')} ∈ ℝ<sup>2×4</sup>. Each segment command drives its five pouches.", 20, 530, 1100, 40, S_NOTE)
+                  f"{i('R')}<sub>u</sub> = 0.1). {i('P')} = [1 0 −1 0; 0 1 0 −1]<sup>T</sup>. Each segment command drives "
+                  f"its five pouches. Controller's internal model (M2): {i('G')} = 1, {i('τ')} = 0.60 s, {i('a')}<sub>x</sub> = 4.66, "
+                  f"{i('a')}<sub>y</sub> = 4.69 s⁻¹, pressure map {i('H')} ∈ ℝ<sup>2×4</sup>.", 20, 530, 1100, 40, S_NOTE)
     return p
 
 
@@ -384,6 +389,84 @@ def simulink_offset_page() -> SimulinkPage:
     p.link("lp", "out_w")
     p.box("note", f"{i('A')}, {i('B')}, {i('C')}: the model discretised with a zero-order hold at 10 ms; "
                   f"{i('α')} = 1 − e<sup>−0.01/0.5</sup>.", 20, 250, 700, 30, S_NOTE)
+    return p
+
+
+def three_input_page() -> IEEEPage:
+    """The three-input MPC for make_calibrated_sim (DelayPreviewMPC, section 10 of
+    notebooks/Soft_robotic_arm_MPC_M2sim.ipynb), IEEE style. Same law as the submission, plus a prediction
+    across the 0.5 s dead time from the buffered corrections; no pair allocation (S2-S4 commanded directly)."""
+    p = IEEEPage("3 input MPC (detailed)", 1300, 610)
+    jump = "jumpStyle=arc;jumpSize=8;"
+    i = lambda s: f"<i>{s}</i>"          # noqa: E731
+    sub = lambda s: f"<sub>{s}</sub>"    # noqa: E731
+    db = "<span style=\"text-decoration:overline\"><i>δ</i></span>"
+    xh = "<i>X̂</i>"
+    kN, kk = sub(f"{i('k')}+{i('N')}"), sub(f"{i('k')}|{i('k')}−{i('N')}")
+    y0 = 70
+
+    p.box("ref", f"{i('r')}({i('t')})", 0, y0 - 15, 40, 30, I_TEXT)
+    p.box("prev", f"Reference preview<br>{i('R')}{sub(i('k'))} = [ {i('r')}({i('t')}{sub(i('k'))} + ({i('N')} + {i('i')})Δ{i('t')}) ], "
+                  f"{i('i')} = 1 … {i('N')}<sub>p</sub>", 60, y0 - 32, 240, 64, I_BLOCK)
+    p.box("mpc", f"Unconstrained MPC (first move)<br>{i('δ')}{sub(i('k'))} = {i('g')}{sub(i('r'))}{i('R')}{sub(i('k'))} + "
+                 f"{i('g')}{sub(i('x'))}{xh}{kN} + {i('g')}{sub(i('w'))}{i('w')}{sub(i('k'))} + "
+                 f"{i('g')}{sub(i('u'))}{db}{sub(i('k') + '−1')}", 340, y0 - 38, 340, 76, I_BLOCK)
+    p.junction("sum", 730, y0, [("+", -18, -10), ("+", 10, -20)])
+    p.box("c45", "4.5", 710, 0, 40, 20, I_TEXT)
+    p.limiter("sat", 780, y0 - 32)
+    p.dot("utap", 900, y0)
+    p.box("plant", "Plant<br>(<span style=\"font-family:Courier New\">make_calibrated_sim</span>)", 940, y0 - 25, 220, 50, I_BLOCK)
+    p.dot("ytap", 1210, y0)
+    p.box("y", i("y"), 1240, y0 - 15, 30, 30, I_TEXT)
+    p.link("ref", "prev")
+    p.link("prev", "mpc", f"{i('R')}{sub(i('k'))}", ly=-12)
+    p.link("mpc", "sum", f"{i('δ')}{sub(i('k'))}", ly=-12)
+    p.link("c45", "sum", out="b", inn="t")
+    p.link("sum", "sat")
+    p.link("sat", "utap", f"{i('u')}{sub(i('k'))}", ly=-12, arrow=False)
+    p.link("utap", "plant")
+    p.link("plant", "ytap", arrow=False)
+    p.link("ytap", "y")
+
+    # corrections: applied value, buffer of the last N, dead-time prediction
+    p.box("rec", f"Applied correction<br>{db}{sub(i('k'))} = {i('u')}{sub(i('k'))} − 4.5", 860, 212, 200, 56, I_BLOCK)
+    p.box("buf", f"Buffer<br>{i('z')}<sup>−1</sup> … {i('z')}<sup>−{i('N')}</sup>", 680, 212, 120, 56, I_BLOCK)
+    p.box("pred", f"Dead-time predictor<br>{xh}{kN} = {i('A')}<sup>{i('N')}</sup>{i('X')}{sub(i('k'))} + "
+                  f"Σ<sub>{i('i')}=0</sub><sup>{i('N')}−1</sup> {i('A')}<sup>{i('N')}−1−{i('i')}</sup>{i('B')}{db}"
+                  f"{sub(i('k') + '−' + i('N') + '+' + i('i'))}", 230, 208, 330, 64, I_BLOCK)
+    p.box("state", f"State<br>{i('X')}{sub(i('k'))} = ( {i('y')}{sub(i('k'))} − {i('y')}<sub>0</sub>, "
+                   f"{i('p')}{sub(i('k'))} − {i('p')}<sub>0</sub> )", 40, 350, 190, 60, I_BLOCK)
+    p.box("zN", f"{i('z')}<sup>−{i('N')}</sup>", 400, 358, 60, 44, I_BLOCK)
+    p.box("offset", f"Offset estimator<br>{i('e')}{sub(i('k'))} = {i('y')}{sub(i('k'))} − {i('C')}{xh}{kk}<br>"
+                    f"{i('w')}{sub(i('k'))} = {i('w')}{sub(i('k') + '−1')} + {i('α')}({i('e')}{sub(i('k'))} − "
+                    f"{i('w')}{sub(i('k') + '−1')})", 540, 338, 340, 84, I_BLOCK)
+    p.link("utap", "rec", out="b", inn=(0.2, 0))
+    p.link("rec", "buf", f"{db}{sub(i('k'))}", out="l", inn="r", ly=-12)
+    p.link("buf", "pred", f"{db}{sub(i('k') + '−' + i('N') + ' … ' + i('k') + '−1')}", out="l", inn="r", lx=-0.1, ly=-12)
+    p.link("buf", "mpc", f"{db}{sub(i('k') + '−1')}", out="t", inn=(0.912, 1), pts=[(740, 160), (650, 160)], lx=-0.2)
+    p.link("state", "pred", f"{i('X')}{sub(i('k'))}", out="t", inn="l", pts=[(135, 240)], lx=-0.3)
+    p.link("pred", "mpc", f"{xh}{kN}", out=(0.515, 0), inn=(0.176, 1))
+    p.link("pred", "zN", f"{xh}{kN}", out=(0.606, 1), inn="t")
+    p.link("zN", "offset", f"{xh}{kk}", out="r", inn="l", ly=-14)
+    p.link("offset", "mpc", f"{i('w')}{sub(i('k'))}", out=(0.103, 0), inn=(0.691, 1), lx=-0.55, style=jump)
+
+    yp, yy = 470, 500                                        # measurement buses
+    p.dot("ybr", 840, yy)
+    p.link("plant", "state", f"{i('p')}{sub(i('k'))} (S2–S4 segment pressure sensors)", out=(0.864, 1), inn=(0.789, 1),
+           pts=[(1130, yp), (190, yp)], lx=0.6, ly=-12)
+    p.link("ytap", "state", f"{i('y')}{sub(i('k'))} (tip position {i('x')}, {i('y')}, {i('z')})", out="b", inn=(0.263, 1),
+           pts=[(1210, yy), (90, yy)], lx=0.5, ly=-12)
+    p.link("ybr", "offset", f"{i('y')}{sub(i('k'))}", out="t", inn=(0.882, 1), lx=0.5, style=jump)
+    p.box("note", f"Δ{i('t')} = 10 ms; dead time {i('N')} = 50 steps (0.5 s); prediction horizon {i('N')}<sub>p</sub> = 100 steps "
+                  f"(1 s); {i('R')}{sub(i('u'))} = 10<sup>−5</sup> mm²/psi²; {i('α')} = 1 − e<sup>−Δ<i>t</i>/0.5 s</sup>. "
+                  f"{i('u')}, {i('δ')}, {db} ∈ ℝ³ (segments S2–S4; S1 is a sealed reservoir), each segment command drives "
+                  f"its five pouches; {i('y')} = tip ({i('x')}, {i('y')}, {i('z')}) in mm. {i('y')}<sub>0</sub>, {i('p')}<sub>0</sub>: "
+                  f"tip and pressures at the first step. The {i('z')} row of {i('R')}{sub(i('k'))} is set to "
+                  f"{i('C')}{xh}{kN} + {i('w')} ({i('z')} is predicted, not tracked); {i('w')} = 0 for the first {i('N')} steps. "
+                  f"The 0.5 s transport delay is inside the plant. Controller's internal model (M2, identified on "
+                  f"<span style=\"font-family:Courier New\">make_calibrated_sim</span>): {i('τ')} = 0.60 s, "
+                  f"{i('G')} = (1.12, 1.10, 1.16), {i('a')} = (4.77, 4.70, 15.49) s⁻¹, pressure map {i('H')} ∈ ℝ<sup>3×3</sup>.",
+          40, 535, 1220, 56, I_NOTE)
     return p
 
 
@@ -522,11 +605,33 @@ def mpc_f_page() -> Page:
     return p
 
 
+# A page generated here that is missing from the file goes after this page (or at the end).
+PLACE_AFTER = {"MPC M2 submission (Simulink)": "MPC M2 submission (IEEE)",
+               "MPC M2 submission (Simulink): Offset estimator": "MPC M2 submission (Simulink)",
+               "3 input MPC (detailed)": "3 input MPC diagram"}
+
+
+def merge(existing: str, pages: list) -> list[str]:
+    """Pages of the existing file, with the generated ones replaced by name (or inserted); hand pages kept as is."""
+    blocks = re.findall(r"<diagram\b.*?</diagram>", existing, flags=re.S)
+    names = [unescape(re.search(r'name="([^"]*)"', b).group(1)) for b in blocks]
+    for page in pages:
+        if page.name in names:
+            blocks[names.index(page.name)] = page.xml()
+            continue
+        anchor = PLACE_AFTER.get(page.name)
+        at = names.index(anchor) + 1 if anchor in names else len(blocks)
+        blocks.insert(at, page.xml())
+        names.insert(at, page.name)
+    return blocks
+
+
 def main() -> None:
     pages = [
         submission_page(),
         simulink_page(),
         simulink_offset_page(),
+        three_input_page(),
         smc_page("SMC known ref", "Delay-aware SMC (M2), reference known",
                  False,
                  "Code: softarm.controllers.DelayAwareNDOSMC(observer=False, exact_preview=True), fed r(t+T) by "
@@ -542,12 +647,11 @@ def main() -> None:
     ]
     args = sys.argv[1:]
     out = Path(args[args.index("--out") + 1]) if "--out" in args else OUT
-    if out == OUT and OUT.exists() and "--force" not in args:
-        sys.exit(f"{OUT} is edited by hand; pass --out <path>, or --force to overwrite it")
+    blocks = merge(out.read_text() if out.exists() else "", pages)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text('<mxfile host="Electron" agent="scripts/draw_controller_diagrams.py">'
-                   + "".join(p.xml() for p in pages) + "</mxfile>\n")
-    print(f"wrote {out} ({len(pages)} pages)")
+                   + "".join(blocks) + "</mxfile>\n")
+    print(f"wrote {out} ({len(blocks)} pages, {len(pages)} generated)")
 
 
 if __name__ == "__main__":
