@@ -13,15 +13,19 @@ Pages 4-7 (softarm.controllers.DelayAwareNDOSMC, DelayMPC, KalmanDelayMPC): blue
 controller every 10 ms, dashed blocks are models the controller runs internally, grey is the simulator.
 Signals are in mm (tip) and psi (pressure).
 
-Hand edits made in draw.io are overwritten when this script is run again.
+Since 2026-11-15 controllers.drawio is edited by hand in diagrams.net: it has pages this script
+does not draw (the simplified submission diagrams and the three-input MPC), and the Simulink pages
+were removed. The script therefore refuses to overwrite it; pass --force to regenerate anyway
+(that discards the hand-edited pages), or --out <path> to write elsewhere.
 
 Writes docs/diagrams/controllers.drawio (open with draw.io / diagrams.net, or the VS Code
 Draw.io Integration extension).
 
 Usage:
-    uv run python scripts/draw_controller_diagrams.py
+    uv run python scripts/draw_controller_diagrams.py --out /tmp/controllers_generated.drawio
 """
 
+import sys
 from html import escape
 from pathlib import Path
 
@@ -536,10 +540,14 @@ def main() -> None:
         mpc_m2_page(),
         mpc_f_page(),
     ]
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text('<mxfile host="Electron" agent="scripts/draw_controller_diagrams.py">'
+    args = sys.argv[1:]
+    out = Path(args[args.index("--out") + 1]) if "--out" in args else OUT
+    if out == OUT and OUT.exists() and "--force" not in args:
+        sys.exit(f"{OUT} is edited by hand; pass --out <path>, or --force to overwrite it")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text('<mxfile host="Electron" agent="scripts/draw_controller_diagrams.py">'
                    + "".join(p.xml() for p in pages) + "</mxfile>\n")
-    print(f"wrote {OUT.relative_to(OUT.parent.parent.parent)} ({len(pages)} pages)")
+    print(f"wrote {out} ({len(pages)} pages)")
 
 
 if __name__ == "__main__":

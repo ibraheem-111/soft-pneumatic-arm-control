@@ -3,6 +3,16 @@
 Newest first. Record decisions, findings and open questions here so the next
 person (or agent) can pick up without asking. Keep entries short and dated.
 
+## 2026-11-15
+
+- `docs/diagrams/controllers.drawio` is now edited by hand in diagrams.net (Ibraheem). New pages:
+  `simplest_MPC_representation` and `simplified_MPC` (the submitted MPC, plant drawn as one block, since
+  the plant is the simulator and G/(τs+1), H, a/(s+a) are the controller's model M2), and
+  `3 input MPC diagram` (the make_calibrated_sim version, `DelayPreviewMPC` in §10 of the submission
+  notebook). The Simulink pages were removed. `scripts/draw_controller_diagrams.py` no longer
+  overwrites the file without `--force`. Decision: keep the diagrams simple and put the equations in
+  the report text.
+
 ## 2026-11-11
 
 - IEEE-style block diagram of the submitted controller (MPC with trajectory preview on M2 identified
