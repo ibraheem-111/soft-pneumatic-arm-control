@@ -88,7 +88,8 @@ def main() -> None:
 
     bracket(ax, xs[0], xs[1] + wb, yb - 0.12, "Actuator model, per segment: u → p")
     bracket(ax, xs[2], xs[3] + wb, yb - 0.12, "Tip model, per axis: p → y")
-    ax.text(xs[0] + wb / 2, yb + hb + 0.06, "0.5 s, or none on make_sim", ha="center", va="bottom", fontsize=7)
+    ax.text(xs[0] + wb / 2, yb + hb + 0.06, "T = 0.5 s on make_calibrated_sim\nT = 0 on make_sim", ha="center",
+            va="bottom", fontsize=7, linespacing=1.1)
 
     out = FIG / "model_structure.png"
     fig.savefig(out, dpi=300, bbox_inches="tight", facecolor="white")
