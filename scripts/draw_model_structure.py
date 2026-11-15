@@ -2,7 +2,7 @@
 
 Left: the arm's cross-section with the four pressure columns S1-S4 and the direction each one pushes the tip.
 Right: the signal chain command -> transport delay -> pneumatic lag -> pouch pressure -> pressure-to-tip map ->
-arm mechanics -> tip position, with the two measured signals (pressure sensors, tip tracking) that split the
+arm mechanics -> tip position, with the two measured signals (segment pressure sensors, tip tracking) that split the
 identification into two independent fits. Black and white, serif text, no equations (they are in the report text).
 
 Writes docs/figures/model_structure.png (7 x 2 in, 300 dpi).
@@ -75,7 +75,7 @@ def main() -> None:
     arrow(ax, xs[1] + wb, ym, xs[2], ym)
     ax.plot(xp, ym, "o", color="black", ms=3)
     arrow(ax, xp, ym, xp, ym + 0.42)
-    ax.text(xp, ym + 0.47, "pouch pressure p\n(pressure sensors)", ha="center", va="bottom", fontsize=7.5,
+    ax.text(xp, ym + 0.47, "segment pressure p\n(pressure sensors)", ha="center", va="bottom", fontsize=7.5,
             linespacing=1.1)
     arrow(ax, xs[2] + wb, ym, xs[3], ym)
     # tip position, measured
